@@ -186,21 +186,33 @@ function createVisualization(rawTreeData) {
             }
         });
 
-    // Zoom functionality
-    const zoom = d3.zoom().on("zoom", function (event) {
-        svg.attr("transform", event.transform);  // Apply zoom transform to the entire svg
-
-        // Log the zoom transform values
-        console.log("--------------------------------")
-        console.log("Zoom scale:", event.transform.k);  // Zoom scale (k)
-        console.log("Zoom translate X:", event.transform.x);  // Zoom translate X
-        console.log("Zoom translate Y:", event.transform.y);  // Zoom translate Y
-
-        // Sync scrollbars with zoom
-        const transform = event.transform;
-        document.querySelector("#visualization").scrollLeft = transform.x;
-        document.querySelector("#visualization").scrollTop = transform.y;
-    });
+        const zoom = d3.zoom()
+        .scaleExtent([0.5, 2]) // Limit zoom scale
+        .on("zoom", function (event) {
+            const transform = event.transform;
+            const scale = transform.k; // Get the current zoom level
+    
+            // Compute the scaled width and height
+            const scaledWidth = width * scale;
+            const scaledHeight = height * scale;
+    
+            // Define clamped translation bounds
+            const minX = -scaledWidth / 2;
+            const maxX = width - scaledWidth / 2;
+            const minY = -scaledHeight / 2;
+            const maxY = height - scaledHeight / 2;
+    
+            // Clamp translation values based on zoom
+            const clampedX = Math.max(minX, Math.min(transform.x, maxX));
+            const clampedY = Math.max(minY, Math.min(transform.y, maxY));
+    
+            // Apply the clamped transform
+            svg.attr("transform", `translate(${clampedX},${clampedY}) scale(${scale})`);
+    
+            // Sync scrollbars with zoom
+            document.querySelector("#visualization").scrollLeft = clampedX;
+            document.querySelector("#visualization").scrollTop = clampedY;
+        });
 
     // Apply zoom behavior to the SVG container
     d3.select("svg").call(zoom);
