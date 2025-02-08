@@ -156,6 +156,8 @@ function createVisualization(rawTreeData) {
                 .style("stroke-width", "2px");
         })
         .on("click", function (event, d) {
+            event.stopPropagation();  // Prevent the drag event from being triggered
+
             // Clear previous path color changes
             d3.selectAll(".link").style("stroke", "#ccc"); // Reset all link colors
 
