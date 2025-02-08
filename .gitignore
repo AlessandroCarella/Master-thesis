@@ -1,8 +1,5 @@
-#### Personal data ####
-backend/data/*.csv
-!backend/data/mock.csv
-backend/config/*.json
-!backend/config/default.json
+#### Personal ####
+*.csv
 
 #### Python ####
 # Byte-compiled / optimized / DLL files

@@ -96,19 +96,10 @@ function createVisualization(rawTreeData) {
         .attr("r", 10)
         .style("fill", (d) => {
             if (d.data.is_leaf) {
-                switch (d.data.class_label) {
-                    case "setosa":
-                        return "#4CAF50";
-                    case "versicolor":
-                        return "#2196F3";
-                    case "virginica":
-                        return "#9C27B0";
-                    default:
-                        return "#FFA726";
-                }
+                return `#${Math.floor(Math.random() * 16777215).toString(16)}`; // Generates a random hex color
             }
-            return "#FFA726";
-        })
+            return "#FFA726"; // Default color for non-leaf nodes
+        })        
         .on("mouseover", function (event, d) {
             // Create tooltip content
             let content = `<strong>Node ID:</strong> ${d.data.node_id}<br>`;

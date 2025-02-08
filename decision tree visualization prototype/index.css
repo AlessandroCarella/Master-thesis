@@ -38,45 +38,6 @@ h1 {
     stroke-width: 2px;
 }
 
-.legend {
-    margin-top: 20px;
-    padding: 10px;
-    border-top: 1px solid #eee;
-}
-
-.legend h3 {
-    margin-bottom: 10px;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    margin: 5px 0;
-}
-
-.legend-color {
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
-    border-radius: 50%;
-}
-
-.setosa {
-    background-color: #4CAF50;
-}
-
-.versicolor {
-    background-color: #2196F3;
-}
-
-.virginica {
-    background-color: #9C27B0;
-}
-
-.decision {
-    background-color: #FFA726;
-}
-
 .node-label {
     font-size: 10px;
 }
