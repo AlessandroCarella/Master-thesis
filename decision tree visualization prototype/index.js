@@ -197,17 +197,15 @@ function createVisualization(rawTreeData) {
         .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`)
         .on("mouseover", function (event, d) {
             let content = `<strong>Node ID:</strong> ${d.data.node_id}<br>`;
-            if (d.data.feature_name !== null) {
-                content += `<strong>Feature:</strong> ${d.data.feature_name}<br>`;
-            }
-            if (d.data.threshold !== null) {
-                content += `<strong>Threshold:</strong> ${d.data.threshold.toFixed(2)}<br>`;
-            }
+            // leaf
             if (d.data.class_label !== null) {
                 content += `<strong>Class:</strong> ${d.data.class_label}<br>`;
             }
-            content += `<strong>Samples:</strong> ${d.data.samples}`;
-
+            // split
+            if (d.data.feature_name !== null) {
+                content += `<strong>Split:</strong>${d.data.feature_name} > ${d.data.threshold.toFixed(2)}<br>`;
+            }
+            
             tooltip
                 .html(content)
                 .style("visibility", "visible")
