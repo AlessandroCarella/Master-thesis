@@ -168,6 +168,17 @@ function createVisualization(rawTreeData) {
         .attr("class", "node")
         .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
+    // Function to generate a random color
+    const getRandomColor = () => `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+
+    // Generate classColorMap dynamically based on unique class labels
+    const classColorMap = {};
+    const uniqueClasses = [...new Set(rawTreeData.map(d => d.class_label))]; // Assuming 'data' contains your nodes
+
+    uniqueClasses.forEach(classLabel => {
+        classColorMap[classLabel] = getRandomColor(); // Assign a random color to each class
+    });
+
     // Add circles to nodes with dynamic sizing
     nodes
         .append("circle")
@@ -178,7 +189,8 @@ function createVisualization(rawTreeData) {
         })
         .style("fill", (d) => {
             if (d.data.is_leaf) {
-                return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+                // Use the classColorMap to assign colors based on class_label
+                return classColorMap[d.data.class_label] || getRandomColor(); // Fallback to random color if class not found
             }
             return "#FFA726";
         })
