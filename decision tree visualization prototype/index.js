@@ -1,4 +1,16 @@
-// Convert flat structure to hierarchical
+async function fetchTreeData() {
+    try {
+        const response = await fetch("http://localhost:8000/tree_data");
+        if (!response.ok) {
+            throw new Error("Failed to fetch tree data");
+        }
+        const data = await response.json();
+        createVisualization(data);
+    } catch (error) {
+        console.error("Error fetching tree data:", error);
+    }
+}
+
 function createHierarchy(data) {
     const nodesById = {};
     data.forEach(node => {
@@ -18,9 +30,7 @@ function createHierarchy(data) {
     return root;
 }
 
-// Create the visualization
 function createVisualization(rawTreeData) {
-    // Set up dimensions
     const margin = { top: 90, right: 30, bottom: 90, left: 90 };
     const width = 1200 - margin.left - margin.right;
     const height = 900 - margin.top - margin.bottom;
@@ -36,7 +46,12 @@ function createVisualization(rawTreeData) {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Create tree layout - switched dimensions for vertical layout
+    // Create tooltip div
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip");
+
+    // Create tree layout
     const treeLayout = d3.tree().size([width, height]);
 
     // Convert the data to hierarchy
@@ -76,59 +91,52 @@ function createVisualization(rawTreeData) {
                 }
             }
             return "#FFA726";
-        });
-
-    // Add labels to nodes
-    nodes.append("text")
-        .attr("dy", "-1.2em")
-        .attr("x", 0)
-        .style("text-anchor", "middle")
-        .text(d => {
-            if (d.data.is_leaf) {
-                return `${d.data.class_label} (${d.data.samples})`;
+        })
+        .on("mouseover", function(event, d) {
+            // Create tooltip content
+            let content = `<strong>Node ID:</strong> ${d.data.node_id}<br>`;
+            
+            // Add feature name if present
+            if (d.data.feature_name !== null) {
+                content += `<strong>Feature:</strong> ${d.data.feature_name}<br>`;
             }
-            return `${d.data.feature_name}`;
+            
+            // Add threshold if present
+            if (d.data.threshold !== null) {
+                content += `<strong>Threshold:</strong> ${d.data.threshold.toFixed(2)}<br>`;
+            }
+            
+            // Add class label if present
+            if (d.data.class_label !== null) {
+                content += `<strong>Class:</strong> ${d.data.class_label}<br>`;
+            }
+            
+            // Always add samples
+            content += `<strong>Samples:</strong> ${d.data.samples}`;
+            
+            tooltip
+                .html(content)
+                .style("visibility", "visible")
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+            
+            // Highlight the current node
+            d3.select(this)
+                .style("stroke", "#000")
+                .style("stroke-width", "3px");
+        })
+        .on("mousemove", function(event) {
+            tooltip
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        })
+        .on("mouseout", function() {
+            tooltip.style("visibility", "hidden");
+            d3.select(this)
+                .style("stroke", "#fff")
+                .style("stroke-width", "2px");
         });
-
-    // Add threshold values below feature names
-    nodes.filter(d => !d.data.is_leaf)
-        .append("text")
-        .attr("dy", "0em")
-        .attr("x", 0)
-        .style("text-anchor", "middle")
-        .text(d => `≤ ${d.data.threshold.toFixed(2)}`);
-
-    // Add sample count below nodes for non-leaf nodes
-    nodes.filter(d => !d.data.is_leaf)
-        .append("text")
-        .attr("dy", "1.2em")
-        .attr("x", 0)
-        .style("text-anchor", "middle")
-        .text(d => `samples = ${d.data.samples}`);
 }
 
-// Tree data structure
-const rawTreeData = [
-    {"node_id":0,"feature_name":"petal length (cm)","threshold":2.449999988079071,"left_child":1,"right_child":2,"is_leaf":false,"class_label":null,"samples":105},
-    {"node_id":1,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"setosa","samples":31},
-    {"node_id":2,"feature_name":"petal length (cm)","threshold":4.75,"left_child":3,"right_child":6,"is_leaf":false,"class_label":null,"samples":74},
-    {"node_id":3,"feature_name":"petal width (cm)","threshold":1.600000023841858,"left_child":4,"right_child":5,"is_leaf":false,"class_label":null,"samples":33},
-    {"node_id":4,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"versicolor","samples":32},
-    {"node_id":5,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"virginica","samples":1},
-    {"node_id":6,"feature_name":"petal width (cm)","threshold":1.75,"left_child":7,"right_child":14,"is_leaf":false,"class_label":null,"samples":41},
-    {"node_id":7,"feature_name":"petal length (cm)","threshold":4.950000047683716,"left_child":8,"right_child":9,"is_leaf":false,"class_label":null,"samples":8},
-    {"node_id":8,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"versicolor","samples":2},
-    {"node_id":9,"feature_name":"petal width (cm)","threshold":1.550000011920929,"left_child":10,"right_child":11,"is_leaf":false,"class_label":null,"samples":6},
-    {"node_id":10,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"virginica","samples":3},
-    {"node_id":11,"feature_name":"petal length (cm)","threshold":5.450000047683716,"left_child":12,"right_child":13,"is_leaf":false,"class_label":null,"samples":3},
-    {"node_id":12,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"versicolor","samples":2},
-    {"node_id":13,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"virginica","samples":1},
-    {"node_id":14,"feature_name":"petal length (cm)","threshold":4.8500001430511475,"left_child":15,"right_child":18,"is_leaf":false,"class_label":null,"samples":33},
-    {"node_id":15,"feature_name":"sepal width (cm)","threshold":3.100000023841858,"left_child":16,"right_child":17,"is_leaf":false,"class_label":null,"samples":3},
-    {"node_id":16,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"virginica","samples":2},
-    {"node_id":17,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"versicolor","samples":1},
-    {"node_id":18,"feature_name":null,"threshold":null,"left_child":null,"right_child":null,"is_leaf":true,"class_label":"virginica","samples":30}
-];
-
 // Initialize visualization when the page loads
-document.addEventListener("DOMContentLoaded", () => createVisualization(rawTreeData));
+document.addEventListener("DOMContentLoaded", () => fetchTreeData());

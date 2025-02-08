@@ -4,12 +4,15 @@
     "description": "D3.js Decision Tree Visualization",
     "main": "index.js",
     "scripts": {
-      "start": "http-server -c-1"
+        "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
+        "start-server": "py main.py",
+        "start-client": "http-server -c-1"
     },
     "dependencies": {
-      "d3": "^7.8.5"
+        "d3": "^7.8.5"
     },
     "devDependencies": {
-      "http-server": "^14.1.1"
+        "http-server": "^14.1.1",
+        "concurrently": "^7.0.0"
     }
-  }
+}

@@ -1,0 +1,31 @@
+/* Tooltip styles */
+.tooltip {
+    position: absolute;
+    visibility: hidden;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Node circle styles */
+.node circle {
+    fill: #FFA726;
+    stroke: #fff;
+    stroke-width: 2px;
+}
+
+/* Node hover effect */
+.node circle:hover {
+    stroke: #000;
+    stroke-width: 3px;
+}
+
+/* Link styles */
+.link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 2px;
+}
