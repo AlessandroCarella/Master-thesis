@@ -31,9 +31,41 @@ function createHierarchy(data) {
 }
 
 function createVisualization(rawTreeData) {
-    const margin = { top: 90, right: 30, bottom: 90, left: 90 };
-    const width = 1100 - margin.left - margin.right;
-    const height = 1100 - margin.top - margin.bottom;
+    // Core visualization settings
+    const SETTINGS = {
+        margin: { top: 90, right: 90, bottom: 90, left: 90 },
+        size: {
+            width: 1000,
+            height: 1000,
+            get innerWidth() { return this.width - SETTINGS.margin.left - SETTINGS.margin.right },
+            get innerHeight() { return this.height - SETTINGS.margin.top - SETTINGS.margin.bottom }
+        },
+        tree: {
+            splitAngle: -0,
+            minSplitWidth: 1000,
+            levelHeightScale: 100,
+            get radianAngle() { return (this.splitAngle * Math.PI) / 180 }
+        },
+        node: {
+            baseRadius: 5,
+            minRadius: 2,
+            maxZoom: 100
+        }
+    };
+
+    // Convert the data to hierarchy and calculate core metrics
+    const root = d3.hierarchy(createHierarchy(rawTreeData));
+    const metrics = {
+        totalNodes: root.descendants().length,
+        maxDepth: Math.max(...root.descendants().map(d => d.depth)),
+        get scaleFactor() { return Math.max(0.3, 1 - (this.totalNodes / 1000)) },
+        get nodeRadius() { return Math.max(SETTINGS.node.minRadius, SETTINGS.node.baseRadius * this.scaleFactor) },
+        get depthSpacing() { return (SETTINGS.size.innerHeight * SETTINGS.tree.levelHeightScale) / (this.maxDepth + 1) },
+        get treeWidth() {
+            const levelWidth = 100 * this.depthSpacing * Math.tan(SETTINGS.tree.radianAngle);
+            return Math.max(SETTINGS.size.innerWidth, levelWidth * (this.maxDepth + 1));
+        }
+    };
 
     // Clear any existing SVG
     d3.select("#visualization svg").remove();
@@ -42,47 +74,90 @@ function createVisualization(rawTreeData) {
     const svg = d3
         .select("#visualization")
         .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
+        .attr("width", SETTINGS.size.innerWidth + SETTINGS.margin.left + SETTINGS.margin.right)
+        .attr("height", SETTINGS.size.innerHeight + SETTINGS.margin.top + SETTINGS.margin.bottom);
     
     // Create a group for all content that will be transformed
     const contentGroup = svg
         .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+        .attr("transform", `translate(${SETTINGS.margin.left},${SETTINGS.margin.top})`);
 
     // Create tooltip div
     const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
-    // Create tree layout
-    const treeLayout = d3.tree().size([width, height]);
-
-    // Convert the data to hierarchy
-    const root = d3.hierarchy(createHierarchy(rawTreeData));
+    // Create tree layout with custom sizing
+    const treeLayout = d3.tree()
+        .size([metrics.treeWidth * 3, SETTINGS.size.innerHeight * 3])
+        .separation((a, b) => {
+            // Enhanced separation logic
+            const depthFactor = Math.pow(0.7, Math.min(a.depth, b.depth)); // Increased from 0.5 to 0.7
+            const baseSeparation = SETTINGS.tree.minSplitWidth / metrics.treeWidth;
+            
+            // Reduce depth multiplier to allow closer horizontal spacing
+            const depthMultiplier = Math.max(1, (metrics.maxDepth - a.depth) * 2); // Reduced from 10 to 2
+            const separationMultiplier = a.parent === b.parent ? 
+                depthMultiplier : depthMultiplier * 1.5; // Reduced multiplier for non-siblings
+            
+            // Enhanced leaf node handling
+            const aLeaves = a.leaves().length;
+            const bLeaves = b.leaves().length;
+            const leafFactor = Math.max(aLeaves, bLeaves) / root.leaves().length;
+            
+            // Additional spacing for leaf nodes
+            const isLeafParent = a.children?.[0]?.data.is_leaf || b.children?.[0]?.data.is_leaf;
+            const leafParentBonus = isLeafParent ? 1.2 : 1; // Reduced from 1.5 to 1.2
+            
+            return Math.max(
+                baseSeparation * separationMultiplier * leafParentBonus,
+                (leafFactor + depthFactor) * baseSeparation * 1.5 // Reduced multiplier from 2 to 1.5
+            );
+        });
 
     // Generate tree layout
     const treeData = treeLayout(root);
 
+    // Custom path generator for angled splits
+    function createSplitPath(d) {
+        const sourceX = d.source.x;
+        const sourceY = d.source.y;
+        const targetX = d.target.x;
+        const targetY = d.target.y;
+        
+        // Calculate control point for the curve
+        const midY = (sourceY + targetY) / 2;
+        const controlX = sourceX + (targetX - sourceX) / 2;
+        const controlY = midY - Math.abs(targetX - sourceX) * Math.tan(SETTINGS.tree.radianAngle / 2);
+        
+        return `M${sourceX},${sourceY}
+                Q${controlX},${controlY}
+                ${targetX},${targetY}`;
+    }
+
+    // Calculate initial transform
+    const initialTransform = {
+        x: (SETTINGS.size.innerWidth - metrics.treeWidth) / 2,  // Use the root node's x, or fallback to centering
+        y: 0,
+        k: Math.min(1, SETTINGS.size.innerWidth / metrics.treeWidth)
+    };
+
     // Add background layer for dragging
     contentGroup.append("rect")
-        .attr("width", width)
-        .attr("height", height)
+        .attr("width", Math.max(SETTINGS.size.innerWidth, metrics.treeWidth))
+        .attr("height", SETTINGS.size.innerHeight * 3) // Match the new height from tree layout
         .style("fill", "transparent")
         .style("pointer-events", "all");
 
-    // Add links
-    const links = contentGroup
+    // Add links with dynamic stroke width and custom path
+    contentGroup
         .selectAll(".link")
         .data(treeData.links())
         .enter()
         .append("path")
         .attr("class", "link")
-        .attr(
-            "d",
-            d3
-                .linkVertical()
-                .x((d) => d.x)
-                .y((d) => d.y)
-        );
+        .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`)
+        .attr("d", createSplitPath)
+        .style("fill", "none")
+        .style("stroke", "#ccc");
 
     // Create nodes
     const nodes = contentGroup
@@ -93,16 +168,21 @@ function createVisualization(rawTreeData) {
         .attr("class", "node")
         .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    // Add circles to nodes
+    // Add circles to nodes with dynamic sizing
     nodes
         .append("circle")
-        .attr("r", 10)
+        .attr("r", (d) => {
+            if (d.depth === 0) return metrics.nodeRadius * 1.5;
+            if (d.data.is_leaf) return metrics.nodeRadius * 1.2;
+            return metrics.nodeRadius;
+        })
         .style("fill", (d) => {
             if (d.data.is_leaf) {
                 return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
             }
             return "#FFA726";
-        })        
+        })
+        .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`)
         .on("mouseover", function (event, d) {
             let content = `<strong>Node ID:</strong> ${d.data.node_id}<br>`;
             if (d.data.feature_name !== null) {
@@ -124,7 +204,7 @@ function createVisualization(rawTreeData) {
 
             d3.select(this)
                 .style("stroke", "#000")
-                .style("stroke-width", "3px");
+                .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
         })
         .on("mousemove", function (event) {
             tooltip
@@ -135,7 +215,7 @@ function createVisualization(rawTreeData) {
             tooltip.style("visibility", "hidden");
             d3.select(this)
                 .style("stroke", "#fff")
-                .style("stroke-width", "2px");
+                .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`);
         })
         .on("click", function (event, d) {
             event.stopPropagation();
@@ -154,26 +234,35 @@ function createVisualization(rawTreeData) {
                                 linkData.target === currentNode
                         );
 
-                    link.style("stroke", "red");
+                    link.style("stroke", "red")
+                        .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
                     currentNode = currentNode.parent;
                 }
 
                 d3.select(this)
                     .select("circle")
                     .style("stroke", "red")
-                    .style("stroke-width", "3px");
+                    .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
             }
         });
 
+    // Apply initial transform
+    contentGroup.attr("transform", 
+        `translate(${initialTransform.x + SETTINGS.margin.left},${SETTINGS.margin.top}) scale(${initialTransform.k})`
+    );
+
     // Initialize zoom behavior
-    const maxZoom = 100;
-    let currentTransform = d3.zoomIdentity;
+    let currentTransform = d3.zoomIdentity
+        .translate(initialTransform.x, 0)
+        .scale(initialTransform.k);
 
     const zoom = d3.zoom()
-        .scaleExtent([0.5, maxZoom])
+        .scaleExtent([0.1, SETTINGS.node.maxZoom])
         .on("zoom", function(event) {
             currentTransform = event.transform;
-            contentGroup.attr("transform", `translate(${event.transform.x + margin.left},${event.transform.y + margin.top}) scale(${event.transform.k})`);
+            contentGroup.attr("transform", 
+                `translate(${event.transform.x + SETTINGS.margin.left},${event.transform.y + SETTINGS.margin.top}) scale(${event.transform.k})`
+            );
         });
 
     // Apply zoom behavior to the SVG
@@ -184,7 +273,7 @@ function createVisualization(rawTreeData) {
     let dragStartX, dragStartY;
 
     svg.on("mousedown", function(event) {
-        if (event.target.tagName === "circle") return; // Don't initiate drag on nodes
+        if (event.target.tagName === "circle") return;
         isDragging = true;
         dragStartX = event.clientX - currentTransform.x;
         dragStartY = event.clientY - currentTransform.y;
@@ -196,13 +285,11 @@ function createVisualization(rawTreeData) {
         const dx = event.clientX - dragStartX;
         const dy = event.clientY - dragStartY;
         
-        // Update the transform
         currentTransform.x = dx;
         currentTransform.y = dy;
         
-        // Apply the new transform
         contentGroup.attr("transform", 
-            `translate(${dx + margin.left},${dy + margin.top}) scale(${currentTransform.k})`
+            `translate(${dx + SETTINGS.margin.left},${dy + SETTINGS.margin.top}) scale(${currentTransform.k})`
         );
     });
 
@@ -215,5 +302,4 @@ function createVisualization(rawTreeData) {
     });
 }
 
-// Initialize visualization when the page loads
 document.addEventListener("DOMContentLoaded", () => fetchTreeData());
