@@ -56,6 +56,7 @@ class TreeNode:
 
 # Sample tree data (same data as you provided)
 dataFile = "fishingTree.json"
+# dataFile = "testTree.json"
 with open (dataFile, 'r') as f:
     tree_data = json.load(f)
 

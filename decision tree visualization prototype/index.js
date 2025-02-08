@@ -43,7 +43,10 @@ function createVisualization(rawTreeData) {
         .select("#visualization")
         .append("svg")
         .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("height", height + margin.top + margin.bottom);
+    
+    // Create a group for all content that will be transformed
+    const contentGroup = svg
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -59,15 +62,15 @@ function createVisualization(rawTreeData) {
     // Generate tree layout
     const treeData = treeLayout(root);
 
-    // Add background layer for dragging (transparent rectangle)
-    svg.append("rect")
+    // Add background layer for dragging
+    contentGroup.append("rect")
         .attr("width", width)
         .attr("height", height)
         .style("fill", "transparent")
-        .style("pointer-events", "all"); // Make sure this layer is interactive
+        .style("pointer-events", "all");
 
     // Add links
-    const links = svg
+    const links = contentGroup
         .selectAll(".link")
         .data(treeData.links())
         .enter()
@@ -82,7 +85,7 @@ function createVisualization(rawTreeData) {
         );
 
     // Create nodes
-    const nodes = svg
+    const nodes = contentGroup
         .selectAll(".node")
         .data(treeData.descendants())
         .enter()
@@ -96,32 +99,21 @@ function createVisualization(rawTreeData) {
         .attr("r", 10)
         .style("fill", (d) => {
             if (d.data.is_leaf) {
-                return `#${Math.floor(Math.random() * 16777215).toString(16)}`; // Generates a random hex color
+                return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
             }
-            return "#FFA726"; // Default color for non-leaf nodes
+            return "#FFA726";
         })        
         .on("mouseover", function (event, d) {
-            // Create tooltip content
             let content = `<strong>Node ID:</strong> ${d.data.node_id}<br>`;
-
-            // Add feature name if present
             if (d.data.feature_name !== null) {
                 content += `<strong>Feature:</strong> ${d.data.feature_name}<br>`;
             }
-
-            // Add threshold if present
             if (d.data.threshold !== null) {
-                content += `<strong>Threshold:</strong> ${d.data.threshold.toFixed(
-                    2
-                )}<br>`;
+                content += `<strong>Threshold:</strong> ${d.data.threshold.toFixed(2)}<br>`;
             }
-
-            // Add class label if present
             if (d.data.class_label !== null) {
                 content += `<strong>Class:</strong> ${d.data.class_label}<br>`;
             }
-
-            // Always add samples
             content += `<strong>Samples:</strong> ${d.data.samples}`;
 
             tooltip
@@ -130,7 +122,6 @@ function createVisualization(rawTreeData) {
                 .style("left", event.pageX + 10 + "px")
                 .style("top", event.pageY - 10 + "px");
 
-            // Highlight the current node
             d3.select(this)
                 .style("stroke", "#000")
                 .style("stroke-width", "3px");
@@ -147,16 +138,14 @@ function createVisualization(rawTreeData) {
                 .style("stroke-width", "2px");
         })
         .on("click", function (event, d) {
-            event.stopPropagation();  // Prevent the drag event from being triggered
+            event.stopPropagation();
 
-            // Clear previous path color changes
-            d3.selectAll(".link").style("stroke", "#ccc"); // Reset all link colors
+            d3.selectAll(".link").style("stroke", "#ccc");
 
-            // Traverse up to the root and change the color of links
             let currentNode = d;
-            if (typeof d.children === 'undefined') { // is leaf
+            if (typeof d.children === 'undefined') {
                 while (currentNode.parent) {
-                    let link = svg
+                    let link = contentGroup
                         .selectAll(".link")
                         .data(treeData.links())
                         .filter(
@@ -165,11 +154,10 @@ function createVisualization(rawTreeData) {
                                 linkData.target === currentNode
                         );
 
-                    link.style("stroke", "red"); // Change link color to red
-                    currentNode = currentNode.parent; // Move up to the parent node
+                    link.style("stroke", "red");
+                    currentNode = currentNode.parent;
                 }
 
-                // Optionally, highlight the clicked leaf node itself
                 d3.select(this)
                     .select("circle")
                     .style("stroke", "red")
@@ -177,73 +165,52 @@ function createVisualization(rawTreeData) {
             }
         });
 
-        const zoom = d3.zoom()
-        .scaleExtent([0.5, 2]) // Limit zoom scale
-        .on("zoom", function (event) {
-            const transform = event.transform;
-            const scale = transform.k; // Get the current zoom level
-    
-            // Compute the scaled width and height
-            const scaledWidth = width * scale;
-            const scaledHeight = height * scale;
-    
-            // Define clamped translation bounds
-            const minX = -scaledWidth / 2;
-            const maxX = width - scaledWidth / 2;
-            const minY = -scaledHeight / 2;
-            const maxY = height - scaledHeight / 2;
-    
-            // Clamp translation values based on zoom
-            const clampedX = Math.max(minX, Math.min(transform.x, maxX));
-            const clampedY = Math.max(minY, Math.min(transform.y, maxY));
-    
-            // Apply the clamped transform
-            svg.attr("transform", `translate(${clampedX},${clampedY}) scale(${scale})`);
-    
-            // Sync scrollbars with zoom
-            document.querySelector("#visualization").scrollLeft = clampedX;
-            document.querySelector("#visualization").scrollTop = clampedY;
+    // Initialize zoom behavior
+    const maxZoom = 100;
+    let currentTransform = d3.zoomIdentity;
+
+    const zoom = d3.zoom()
+        .scaleExtent([0.5, maxZoom])
+        .on("zoom", function(event) {
+            currentTransform = event.transform;
+            contentGroup.attr("transform", `translate(${event.transform.x + margin.left},${event.transform.y + margin.top}) scale(${event.transform.k})`);
         });
 
-    // Apply zoom behavior to the SVG container
-    d3.select("svg").call(zoom);
+    // Apply zoom behavior to the SVG
+    svg.call(zoom);
 
-    // Dragging functionality (without conflicting with zoom)
+    // Drag handling
     let isDragging = false;
-    let startX, startY;
+    let dragStartX, dragStartY;
 
-    svg.select("rect") // Use the background rect for dragging
-        .on("mousedown", function (event) {
-            isDragging = true;
-            startX = event.pageX;
-            startY = event.pageY;
-        });
-
-    svg.on("click", function (event) {
-        if (isDragging) {
-            const dx = event.pageX - startX;
-            const dy = event.pageY - startY;
-
-            // Apply dragging offset to the zoom transform
-            const transform = d3.zoomTransform(svg.node());
-            const newTranslateX = transform.x + dx;
-            const newTranslateY = transform.y + dy;
-
-            svg.attr(
-                "transform",
-                `translate(${newTranslateX},${newTranslateY})`
-            );
-
-            // Sync scrollbars with dragging
-            document.querySelector("#visualization").scrollLeft = newTranslateX;
-            document.querySelector("#visualization").scrollTop = newTranslateY;
-
-            startX = event.pageX;
-            startY = event.pageY;
-        }
+    svg.on("mousedown", function(event) {
+        if (event.target.tagName === "circle") return; // Don't initiate drag on nodes
+        isDragging = true;
+        dragStartX = event.clientX - currentTransform.x;
+        dragStartY = event.clientY - currentTransform.y;
     });
 
-    svg.on("mouseup", function () {
+    svg.on("mousemove", function(event) {
+        if (!isDragging) return;
+        
+        const dx = event.clientX - dragStartX;
+        const dy = event.clientY - dragStartY;
+        
+        // Update the transform
+        currentTransform.x = dx;
+        currentTransform.y = dy;
+        
+        // Apply the new transform
+        contentGroup.attr("transform", 
+            `translate(${dx + margin.left},${dy + margin.top}) scale(${currentTransform.k})`
+        );
+    });
+
+    svg.on("mouseup", function() {
+        isDragging = false;
+    });
+
+    svg.on("mouseleave", function() {
         isDragging = false;
     });
 }
