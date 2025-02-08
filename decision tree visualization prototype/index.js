@@ -44,7 +44,7 @@ function createHierarchy(data) {
 function createVisualization(rawTreeData) {
     const SETTINGS = getVisualizationSettings(); // Get visualization settings
     const root = d3.hierarchy(createHierarchy(rawTreeData)); // Create a D3 hierarchy
-    const metrics = calculateMetrics(root, SETTINGS); // Calculate metrics for layout
+    metrics = calculateMetrics(root, SETTINGS); // Calculate metrics for layout and store globally
 
     clearExistingSVG(); // Clear any existing SVG elements
     const svg = createSVGContainer(SETTINGS); // Create the SVG container
@@ -372,6 +372,46 @@ function handleDragging(svg, contentGroup, SETTINGS, metrics) {
     svg.on("mouseleave", function() {
         isDragging = false; // Stop dragging if mouse leaves SVG
     });
+}
+
+// Function to highlight node by ID
+function highlightNodeById() {
+    const nodeId = document.getElementById('node-id-input').value;
+    const node = d3.selectAll('.node').filter(d => d.data.node_id === parseInt(nodeId));
+    
+    if (node.empty()) {
+        console.log(`Node with ID ${nodeId} not found`);
+        return;
+    }
+
+    // Reset all links and nodes
+    d3.selectAll(".link").style("stroke", "#ccc")
+        .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`);
+    d3.selectAll(".node circle")
+        .style("stroke", "#fff")
+        .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`);
+
+    // Get the node data
+    const nodeData = node.datum();
+    let currentNode = nodeData;
+
+    // Highlight path to root
+    while (currentNode.parent) {
+        d3.selectAll(".link")
+            .filter(linkData => 
+                linkData.source === currentNode.parent && 
+                linkData.target === currentNode
+            )
+            .style("stroke", "red")
+            .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
+        
+        currentNode = currentNode.parent;
+    }
+
+    // Highlight the target node
+    node.select("circle")
+        .style("stroke", "red")
+        .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
 }
 
 // Event listener to fetch tree data once the document is fully loaded
