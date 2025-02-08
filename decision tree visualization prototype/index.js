@@ -378,11 +378,10 @@ function handleDragging(svg, contentGroup, SETTINGS, metrics) {
 function highlightNodeById() {
     const nodeId = document.getElementById('node-id-input').value;
     const node = d3.selectAll('.node').filter(d => d.data.node_id === parseInt(nodeId));
-    
-    if (node.empty()) {
-        console.log(`Node with ID ${nodeId} not found`);
-        return;
-    }
+
+    // Get the node data
+    const nodeData = node.datum();
+    let currentNode = nodeData;
 
     // Reset all links and nodes
     d3.selectAll(".link").style("stroke", "#ccc")
@@ -391,27 +390,31 @@ function highlightNodeById() {
         .style("stroke", "#fff")
         .style("stroke-width", `${Math.max(1, metrics.scaleFactor * 2)}px`);
 
-    // Get the node data
-    const nodeData = node.datum();
-    let currentNode = nodeData;
-
-    // Highlight path to root
-    while (currentNode.parent) {
-        d3.selectAll(".link")
-            .filter(linkData => 
-                linkData.source === currentNode.parent && 
-                linkData.target === currentNode
-            )
-            .style("stroke", "red")
-            .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
-        
-        currentNode = currentNode.parent;
+    if (node.empty()) {
+        console.log(`Node with ID ${nodeId} not found`);
+        return;
     }
 
-    // Highlight the target node
-    node.select("circle")
-        .style("stroke", "red")
-        .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
+    // Only highlight path if it's a leaf node
+    if (typeof currentNode.children === 'undefined') {
+        // Highlight path to root
+        while (currentNode.parent) {
+            d3.selectAll(".link")
+                .filter(linkData => 
+                    linkData.source === currentNode.parent && 
+                    linkData.target === currentNode
+                )
+                .style("stroke", "red")
+                .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
+            
+            currentNode = currentNode.parent;
+        }
+
+        // Highlight the target node
+        node.select("circle")
+            .style("stroke", "red")
+            .style("stroke-width", `${Math.max(2, metrics.scaleFactor * 3)}px`);
+    }
 }
 
 // Event listener to fetch tree data once the document is fully loaded
