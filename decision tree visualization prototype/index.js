@@ -154,9 +154,56 @@ function createVisualization(rawTreeData) {
             d3.select(this)
                 .style("stroke", "#fff")
                 .style("stroke-width", "2px");
+        })
+        .on("click", function (event, d) {
+            // Clear previous path color changes
+            d3.selectAll(".link").style("stroke", "#ccc"); // Reset all link colors
+
+            // Traverse up to the root and change the color of links
+            let currentNode = d;
+            if (typeof d.children === 'undefined') { // is leaf
+                while (currentNode.parent) {
+                    let link = svg
+                        .selectAll(".link")
+                        .data(treeData.links())
+                        .filter(
+                            (linkData) =>
+                                linkData.source === currentNode.parent &&
+                                linkData.target === currentNode
+                        );
+
+                    link.style("stroke", "red"); // Change link color to red
+                    currentNode = currentNode.parent; // Move up to the parent node
+                }
+
+                // Optionally, highlight the clicked leaf node itself
+                d3.select(this)
+                    .select("circle")
+                    .style("stroke", "red")
+                    .style("stroke-width", "3px");
+            }
         });
 
-    // Add mouse event listeners for dragging the entire visualization
+    // Zoom functionality
+    const zoom = d3.zoom().on("zoom", function (event) {
+        svg.attr("transform", event.transform);  // Apply zoom transform to the entire svg
+
+        // Log the zoom transform values
+        console.log("--------------------------------")
+        console.log("Zoom scale:", event.transform.k);  // Zoom scale (k)
+        console.log("Zoom translate X:", event.transform.x);  // Zoom translate X
+        console.log("Zoom translate Y:", event.transform.y);  // Zoom translate Y
+
+        // Sync scrollbars with zoom
+        const transform = event.transform;
+        document.querySelector("#visualization").scrollLeft = transform.x;
+        document.querySelector("#visualization").scrollTop = transform.y;
+    });
+
+    // Apply zoom behavior to the SVG container
+    d3.select("svg").call(zoom);
+
+    // Dragging functionality (without conflicting with zoom)
     let isDragging = false;
     let startX, startY;
 
@@ -167,31 +214,27 @@ function createVisualization(rawTreeData) {
             startY = event.pageY;
         });
 
-    svg.on("mousemove", function (event) {
+    svg.on("click", function (event) {
         if (isDragging) {
             const dx = event.pageX - startX;
             const dy = event.pageY - startY;
-            const transform = svg.attr("transform");
-            const translate = transform.match(
-                /translate\(([-0-9.]+),([-0-9.]+)\)/
+
+            // Apply dragging offset to the zoom transform
+            const transform = d3.zoomTransform(svg.node());
+            const newTranslateX = transform.x + dx;
+            const newTranslateY = transform.y + dy;
+
+            svg.attr(
+                "transform",
+                `translate(${newTranslateX},${newTranslateY})`
             );
 
-            if (translate) {
-                const newTranslateX = parseFloat(translate[1]) + dx;
-                const newTranslateY = parseFloat(translate[2]) + dy;
-                svg.attr(
-                    "transform",
-                    `translate(${newTranslateX},${newTranslateY})`
-                );
+            // Sync scrollbars with dragging
+            document.querySelector("#visualization").scrollLeft = newTranslateX;
+            document.querySelector("#visualization").scrollTop = newTranslateY;
 
-                // Adjust the scroll position of the container
-                const container = document.getElementById("visualization");
-                container.scrollLeft -= dx;
-                container.scrollTop -= dy;
-
-                startX = event.pageX;
-                startY = event.pageY;
-            }
+            startX = event.pageX;
+            startY = event.pageY;
         }
     });
 
