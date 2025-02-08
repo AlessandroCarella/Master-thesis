@@ -1,14 +1,16 @@
 /* Tooltip styles */
 .tooltip {
     position: absolute;
-    visibility: hidden;
-    background-color: white;
-    border: 1px solid #ddd;
+    background-color: rgba(0, 0, 0, 0.7);  /* Dark background */
+    color: white;
+    padding: 15px;  /* Increase padding */
     border-radius: 5px;
-    padding: 10px;
-    font-size: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 20px;  /* Increase font size */
+    pointer-events: none;  /* Prevent tooltip from blocking other events */
+    white-space: nowrap;  /* Prevent text from wrapping */
+    max-width: 300px;  /* You can also adjust max-width if necessary */
 }
+
 
 /* Node circle styles */
 .node circle {
