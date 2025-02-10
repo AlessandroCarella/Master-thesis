@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from dataclasses import asdict
 import json
+from sklearn.tree._tree import Tree 
 
 @dataclass
 class TreeNode:
@@ -52,7 +53,11 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
     List[TreeNode]
         List of TreeNode objects containing the tree structure
     """
-    tree = tree_classifier.tree_
+    if isinstance(tree_classifier, DecisionTreeClassifier): #account for LORE DecisionTreeSurrogate class
+        tree = tree_classifier.tree_
+    else:
+        tree = tree_classifier
+
     nodes = []
 
     for node_id in range(tree.node_count):
