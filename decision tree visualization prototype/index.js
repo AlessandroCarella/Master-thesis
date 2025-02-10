@@ -44,29 +44,34 @@ function createHierarchy(data) {
 function createVisualization(rawTreeData) {
     const SETTINGS = getVisualizationSettings();
     const root = d3.hierarchy(createHierarchy(rawTreeData));
-    metrics = calculateMetrics(root, SETTINGS);
-    
+    const metrics = calculateMetrics(root, SETTINGS); // Declare locally with const
+
     clearExistingSVG();
     const svg = createSVGContainer(SETTINGS);
     const contentGroup = createContentGroup(svg, SETTINGS);
     const tooltip = createTooltip();
-    
+
     const treeLayout = createTreeLayout(metrics, SETTINGS, root);
     const treeData = treeLayout(root);
-    
+
     addBackgroundLayer(contentGroup, SETTINGS, metrics);
     addLinks(contentGroup, treeData, metrics, SETTINGS);
     addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeData);
-    
+
     // Calculate initial transform before initializing zoom
     const initialTransform = calculateInitialTransform(treeData, SETTINGS);
-    const zoom = initializeZoom(svg, contentGroup, SETTINGS, metrics, initialTransform.k);
-    
+    const zoom = initializeZoom(
+        svg,
+        contentGroup,
+        SETTINGS,
+        metrics,
+        initialTransform.k
+    );
+
     // Apply initial transform using the zoom behavior
     svg.call(zoom.transform, initialTransform);
 }
 
-////////////////////////////////////////////////////////////////////////
 // Function to get visualization settings
 function getVisualizationSettings() {
     const margin = { top: 90, right: 90, bottom: 90, left: 90 };
@@ -81,7 +86,7 @@ function getVisualizationSettings() {
             innerHeight: height - margin.top - margin.bottom,
         },
         tree: {
-            splitAngle: -0,
+            splitAngle: 0,
             minSplitWidth: 10,
             minSplitHeight: 10,
             levelHeightScale: 100,
@@ -90,15 +95,12 @@ function getVisualizationSettings() {
             },
         },
         node: {
-            // Updated base values and scaling factors
             baseRadius: 12,
             minRadius: 4,
             maxRadius: 20,
-            
             baseLinkAndNodeBorderStrokeWidth: 3,
             minLinkAndNodeBorderStrokeWidth: 1,
             maxLinkAndNodeBorderStrokeWidth: 8,
-            
             maxZoom: 50,
         },
     };
@@ -107,23 +109,15 @@ function getVisualizationSettings() {
 // Function to calculate metrics for the tree layout
 function calculateMetrics(root, SETTINGS) {
     const levelCounts = {};
-    root.descendants().forEach(node => {
+    root.descendants().forEach((node) => {
         levelCounts[node.depth] = (levelCounts[node.depth] || 0) + 1;
     });
-    const maxNodesAtLevel = Math.max(...Object.values(levelCounts));
     const maxDepth = Math.max(...root.descendants().map((d) => d.depth));
     const totalNodes = root.descendants().length;
 
-    // Helper function to calculate scaled values using a modified logarithmic scale
     function calculateLogScale(totalNodes, baseValue, minValue, maxValue) {
-        let scale = Math.sqrt(totalNodes/30)    
-        return Math.min(
-            maxValue,
-            Math.max(
-                minValue,
-                baseValue * scale
-            )
-        );
+        let scale = Math.sqrt(totalNodes / 30);
+        return Math.min(maxValue, Math.max(minValue, baseValue * scale));
     }
 
     return {
@@ -152,12 +146,7 @@ function calculateMetrics(root, SETTINGS) {
             );
         },
         get nodeBorderStrokeWidth() {
-            return calculateLogScale(
-                this.totalNodes,
-                SETTINGS.node.baseLinkAndNodeBorderStrokeWidth,
-                SETTINGS.node.minLinkAndNodeBorderStrokeWidth,
-                SETTINGS.node.maxLinkAndNodeBorderStrokeWidth
-            );
+            return this.linkStrokeWidth;
         },
     };
 }
@@ -171,12 +160,16 @@ function calculateSeparation(a, b, metrics, SETTINGS, root) {
 // Function to create the tree layout
 function createTreeLayout(metrics, SETTINGS, root) {
     // More moderate horizontal spacing
-    const horizontalSpacing = root.descendants().length * SETTINGS.tree.minSplitWidth;
-    const verticalSpacing = root.descendants().length * SETTINGS.tree.minSplitHeight;
+    const horizontalSpacing =
+        root.descendants().length * SETTINGS.tree.minSplitWidth;
+    const verticalSpacing =
+        root.descendants().length * SETTINGS.tree.minSplitHeight;
     return d3
         .tree()
         .size([horizontalSpacing, verticalSpacing])
-        .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, root));
+        .separation((a, b) =>
+            calculateSeparation(a, b, metrics, SETTINGS, root)
+        );
 }
 
 // Function to calculate the radius of a node
@@ -188,26 +181,33 @@ function calculateNodeRadius(d, metrics) {
 function applyZoomToFit(contentGroup, treeData, SETTINGS) {
     // Compute the extents of the tree based on layout coordinates
     const allNodes = treeData.descendants();
-    const xExtent = d3.extent(allNodes, d => d.x);
-    const yExtent = d3.extent(allNodes, d => d.y);
-    
+    const xExtent = d3.extent(allNodes, (d) => d.x);
+    const yExtent = d3.extent(allNodes, (d) => d.y);
+
     const treeWidth = xExtent[1] - xExtent[0];
     const treeHeight = yExtent[1] - yExtent[0];
-    
+
     // Compute the scale factors for both directions
     const scaleX = SETTINGS.size.innerWidth / treeWidth;
     const scaleY = SETTINGS.size.innerHeight / treeHeight;
     // Use the smaller scaling to ensure the tree fits in both dimensions
     const k = Math.min(scaleX, scaleY);
-    
-    // Compute the translation offsets to center the tree in the container
-    const translateX = (SETTINGS.size.innerWidth - treeWidth * k) / 2 - xExtent[0] * k + SETTINGS.margin.left;
-    const translateY = (SETTINGS.size.innerHeight - treeHeight * k) / 2 - yExtent[0] * k + SETTINGS.margin.top;
-    
-    contentGroup.attr("transform", `translate(${translateX}, ${translateY}) scale(${k})`);
-}
 
-////////////////////////////////////////////////////////////////////////
+    // Compute the translation offsets to center the tree in the container
+    const translateX =
+        (SETTINGS.size.innerWidth - treeWidth * k) / 2 -
+        xExtent[0] * k +
+        SETTINGS.margin.left;
+    const translateY =
+        (SETTINGS.size.innerHeight - treeHeight * k) / 2 -
+        yExtent[0] * k +
+        SETTINGS.margin.top;
+
+    contentGroup.attr(
+        "transform",
+        `translate(${translateX}, ${translateY}) scale(${k})`
+    );
+}
 
 // Function to initialize zoom functionality
 function initializeZoom(svg, contentGroup, SETTINGS, metrics, minZoom) {
@@ -286,18 +286,16 @@ function addLinks(contentGroup, treeData, metrics, SETTINGS) {
 }
 
 // Function to create a path for links
-function createSplitPath(d, SETTINGS) {
-    const sourceX = d.source.x; // Source x-coordinate
-    const sourceY = d.source.y; // Source y-coordinate
-    const targetX = d.target.x; // Target x-coordinate
-    const targetY = d.target.y; // Target y-coordinate
-    const midY = (sourceY + targetY) / 2; // Midpoint y-coordinate
-    const controlX = sourceX + (targetX - sourceX) / 2; // Control point x-coordinate
+function createSplitPath({ source, target }, SETTINGS) {
+    const { x: sourceX, y: sourceY } = source;
+    const { x: targetX, y: targetY } = target;
+    const midY = (sourceY + targetY) / 2;
+    const controlX = sourceX + (targetX - sourceX) / 2;
     const controlY =
         midY -
-        Math.abs(targetX - sourceX) * Math.tan(SETTINGS.tree.radianAngle / 2); // Control point y-coordinate
+        Math.abs(targetX - sourceX) * Math.tan(SETTINGS.tree.radianAngle / 2);
 
-    return `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`; // Return path string
+    return `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`;
 }
 
 // Function to add nodes to the visualization
@@ -311,46 +309,55 @@ function addNodes(
 ) {
     const nodes = contentGroup
         .selectAll(".node")
-        .data(treeData.descendants()) // Bind data for nodes
-        .enter()
-        .append("g")
+        .data(treeData.descendants())
+        .join("g")
         .attr("class", "node")
-        .attr("transform", (d) => `translate(${d.x},${d.y})`); // Position nodes
+        .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    const classColorMap = generateClassColorMap(rawTreeData); // Generate color map for classes
+    const classColorMap = generateClassColorMap(rawTreeData);
 
     nodes
         .append("circle")
-        .attr("r", (d) => calculateNodeRadius(d, metrics)) // Set radius
-        .style("fill", (d) => getNodeColor(d, classColorMap)) // Set fill color
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`) // Set stroke width
-        .style("stroke", "#ccc") // Set stroke
+        .attr("r", (d) => calculateNodeRadius(d, metrics))
+        .style("fill", (d) => getNodeColor(d, classColorMap))
+        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+        .style("stroke", "#ccc")
         .on("mouseover", (event, d) =>
             handleMouseOver(event, d, tooltip, metrics)
-        ) // Mouseover event
-        .on("mousemove", (event) => handleMouseMove(event, tooltip)) // Mousemove event
+        )
+        .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", function () {
             handleMouseOut(this, tooltip, metrics);
-        }) // Mouseout event
+        })
         .on("click", (event, d) =>
             handleClick(event, d, contentGroup, treeData, metrics)
-        ); // Click event
+        );
 }
 
 // Function to generate a color map for node classes
 function generateClassColorMap(rawTreeData) {
     const predefinedColors = [
-        "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
-        "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
-        "#ccebc5", "#ffed6f",
+        "#8dd3c7",
+        "#ffffb3",
+        "#bebada",
+        "#fb8072",
+        "#80b1d3",
+        "#fdb462",
+        "#b3de69",
+        "#fccde5",
+        "#d9d9d9",
+        "#bc80bd",
+        "#ccebc5",
+        "#ffed6f",
     ];
     const classColorMap = {};
     const uniqueClasses = [...new Set(rawTreeData.map((d) => d.class_label))];
 
     uniqueClasses.forEach((classLabel, index) => {
-        classColorMap[classLabel] = index < predefinedColors.length 
-            ? predefinedColors[index] 
-            : "#" + Math.floor(Math.random() * 16777215).toString(16);
+        classColorMap[classLabel] =
+            index < predefinedColors.length
+                ? predefinedColors[index]
+                : "#" + Math.floor(Math.random() * 16777215).toString(16);
     });
 
     return classColorMap;
@@ -358,29 +365,35 @@ function generateClassColorMap(rawTreeData) {
 
 // Function to get the color of a node
 function getNodeColor(d, classColorMap) {
-    return d.data.is_leaf ? (classColorMap[d.data.class_label] || "purple") : "purple";
+    return d.data.is_leaf
+        ? classColorMap[d.data.class_label] || "purple"
+        : "purple";
 }
 
 // Function to handle mouseover event on nodes
 function handleMouseOver(event, d, tooltip, metrics) {
-    let content = `<strong>Node ID:</strong> ${d.data.node_id}<br>`; // Node ID
-    if (d.data.class_label !== null) {
-        content += `<strong>Class:</strong> ${d.data.class_label}<br>`; // Class label
-    }
-    if (d.data.feature_name !== null) {
-        content += `<strong>Split: </strong>${
-            d.data.feature_name
-        } > ${d.data.threshold.toFixed(2)}<br>`; // Split feature
-    }
+    const content = [
+        `<strong>Node ID:</strong> ${d.data.node_id}`,
+        d.data.class_label !== null
+            ? `<strong>Class:</strong> ${d.data.class_label}`
+            : "",
+        d.data.feature_name !== null
+            ? `<strong>Split: </strong>${
+                  d.data.feature_name
+              } > ${d.data.threshold.toFixed(2)}`
+            : "",
+    ]
+        .filter(Boolean)
+        .join("<br>");
 
     tooltip
-        .html(content) // Set tooltip content
-        .style("visibility", "visible") // Make tooltip visible
-        .style("left", event.pageX + 10 + "px") // Position tooltip
+        .html(content)
+        .style("visibility", "visible")
+        .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
 
     d3.select(event.currentTarget)
-        .style("stroke", "#000") // Highlight node
+        .style("stroke", "#000")
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
 }
 
@@ -417,9 +430,7 @@ function handleClick(event, d, contentGroup, treeData, metrics) {
                 );
 
             link.style("stroke", "red") // Highlight path to root
-                .style(
-                    "stroke-width",
-                    `${(metrics.linkStrokeWidth * 1.5)}px`                );
+                .style("stroke-width", `${metrics.linkStrokeWidth * 1.5}px`);
             currentNode = currentNode.parent;
         }
 
@@ -492,30 +503,41 @@ function highlightNodeById() {
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth * 1.5}px`);
 }
 
-// New function to calculate initial transform
+// Function to compute the initial transform
 function calculateInitialTransform(treeData, SETTINGS) {
     const allNodes = treeData.descendants();
-    const xExtent = d3.extent(allNodes, d => d.x);
-    const yExtent = d3.extent(allNodes, d => d.y);
-    
-    const treeWidth = xExtent[1] - xExtent[0];
-    const treeHeight = yExtent[1] - yExtent[0];
-    
+    const [minX, maxX] = d3.extent(allNodes, (d) => d.x);
+    const [minY, maxY] = d3.extent(allNodes, (d) => d.y);
+
+    const treeWidth = maxX - minX;
+    const treeHeight = maxY - minY;
+
     const scaleX = SETTINGS.size.innerWidth / treeWidth;
     const scaleY = SETTINGS.size.innerHeight / treeHeight;
     const k = Math.min(scaleX, scaleY);
-    
-    const translateX = (SETTINGS.size.innerWidth - treeWidth * k) / 2 - xExtent[0] * k + SETTINGS.margin.left;
-    const translateY = (SETTINGS.size.innerHeight - treeHeight * k) / 2 - yExtent[0] * k + SETTINGS.margin.top;
-    
-    return d3.zoomIdentity.translate(translateX, translateY).scale(k);
+
+    const translateX =
+        (SETTINGS.size.innerWidth - treeWidth * k) / 2 -
+        minX * k +
+        SETTINGS.margin.left;
+    const translateY =
+        (SETTINGS.size.innerHeight - treeHeight * k) / 2 -
+        minY * k +
+        SETTINGS.margin.top;
+
+    // Return the transform and also attach 'k' for later use in zoom initialization
+    const transform = d3.zoomIdentity
+        .translate(translateX, translateY)
+        .scale(k);
+    transform.k = k;
+    return transform;
 }
 
 // Add this near the top of the file with other function declarations
 async function switchTree() {
     try {
         const response = await fetch("http://localhost:8000/switch_tree", {
-            method: 'POST'
+            method: "POST",
         });
         if (!response.ok) {
             throw new Error("Failed to switch tree");
@@ -531,6 +553,7 @@ async function switchTree() {
 document.addEventListener("DOMContentLoaded", () => {
     fetchTreeData();
     // Add event listener for the switch button
-    document.getElementById("switch-tree").addEventListener("click", switchTree);
+    document
+        .getElementById("switch-tree")
+        .addEventListener("click", switchTree);
 });
-
