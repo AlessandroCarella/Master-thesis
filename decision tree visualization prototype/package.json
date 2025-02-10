@@ -6,13 +6,14 @@
     "scripts": {
         "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
         "start-server": "py main.py",
-        "start-client": "http-server -c-1"
+        "start-client": "concurrently \"http-server -c-1\" \"cmd /c start http://localhost:8080\""
     },
     "dependencies": {
         "d3": "^7.8.5"
     },
     "devDependencies": {
+        "concurrently": "^7.0.0",
         "http-server": "^14.1.1",
-        "concurrently": "^7.0.0"
+        "open": "^10.1.0"
     }
 }
