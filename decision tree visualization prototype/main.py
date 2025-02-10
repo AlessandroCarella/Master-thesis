@@ -7,6 +7,13 @@ from typing import List, Optional
 import uvicorn
 import json
 
+# Sample tree data (same data as you provided)
+dataFile = "fishingTree.json"
+dataFile2 = "testTree.json"
+
+# Keep track of which file is currently active
+current_file = dataFile
+
 app = FastAPI()
 
 # Allow all origins for now (or specify the frontend URL in `origins`)
@@ -54,16 +61,20 @@ class TreeNode:
     # The number of samples (data points) that reached this node during training.
     samples: int
 
-# Sample tree data (same data as you provided)
-dataFile = "fishingTree.json"
-# dataFile = "testTree.json"
-with open (dataFile, 'r') as f:
-    tree_data = json.load(f)
-
 # Endpoint to get tree data
 @app.get("/tree_data", response_model=List[TreeNode])
 async def get_tree_data():
+    global current_file
+    with open(current_file, 'r') as f:
+        tree_data = json.load(f)
     return tree_data
+
+# New endpoint to switch between files
+@app.post("/switch_tree")
+async def switch_tree():
+    global current_file
+    current_file = dataFile2 if current_file == dataFile else dataFile
+    return {"message": "Switched tree data", "current_file": current_file}
 
 # Run the server if this file is executed directly
 if __name__ == "__main__":

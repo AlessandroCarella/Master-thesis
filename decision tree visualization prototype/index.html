@@ -11,9 +11,12 @@
 <body>
     <div id="tree-container">
         <h1>Decision Tree</h1>
-        <div id="node-search">
-            <input type="number" id="node-id-input" placeholder="Enter node ID">
-            <button onclick="highlightNodeById()">Highlight Node</button>
+        <div id="controls">
+            <div id="node-search">
+                <input type="number" id="node-id-input" placeholder="Enter node ID">
+                <button onclick="highlightNodeById()">Highlight Node</button>
+            </div>
+            <button id="switch-tree">Switch Tree</button>
         </div>
         <div id="visualization"></div>
     </div>

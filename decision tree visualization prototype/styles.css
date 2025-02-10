@@ -10,24 +10,3 @@
     white-space: nowrap;  /* Prevent text from wrapping */
     max-width: 300px;  /* You can also adjust max-width if necessary */
 }
-
-
-/* Node circle styles */
-.node circle {
-    fill: #FFA726;
-    stroke: #fff;
-    stroke-width: 2px;
-}
-
-/* Node hover effect */
-.node circle:hover {
-    stroke: #000;
-    stroke-width: 3px;
-}
-
-/* Link styles */
-.link {
-    fill: none;
-    stroke: #ccc;
-    stroke-width: 2px;
-}
