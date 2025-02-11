@@ -1,6 +1,6 @@
 // Fetch data from the FastAPI backend
 async function fetchData() {
-    const response = await fetch('http://localhost:8000/api/tree-data');
+    const response = await fetch('http://localhost:8000/tree-data');
     return await response.json();
 }
 
