@@ -47,14 +47,11 @@ function createScatterPlot(data, container) {
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
     
-    // Create color scales
+    // Create dynamic color scale based on unique classes
+    const uniqueClasses = Array.from(new Set(data.targets));
     const color = d3.scaleOrdinal()
-        .domain(d3.range(3))
-        .range(['#ff7f0e', '#1f77b4', '#2ca02c']);
-    
-    const probabilityColor = d3.scaleSequential()
-        .domain([0, 1])
-        .interpolator(d3.interpolateViridis);
+        .domain(uniqueClasses)
+        .range(d3.schemeCategory10); // Uses D3's built-in categorical color scheme
     
     // Draw decision boundaries with improved visualization
     const cellWidth = Math.ceil((width - margin.left - margin.right) / 
@@ -66,7 +63,7 @@ function createScatterPlot(data, container) {
     const boundaryGroups = g.append('g')
         .attr('class', 'boundaries');
     
-    // Draw decision boundaries with opacity based on probability
+    // Draw decision boundaries
     data.decisionBoundary.points.forEach(point => {
         boundaryGroups.append('rect')
             .attr('x', x(point.x) - cellWidth/2)
@@ -153,82 +150,10 @@ function createScatterPlot(data, container) {
         });
 }
 
-// Create decision tree visualization
-function createTreeVisualization(data, container) {
-    const width = 1000;
-    const height = 1000;
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-    
-    const svg = d3.select(container)
-        .append('svg')
-        .attr('width', width)
-        .attr('height', height);
-    
-    const g = svg.append('g')
-        .attr('transform', `translate(${margin.left},${margin.top})`);
-    
-    // Create hierarchical structure
-    const root = d3.stratify()
-        .id(d => d.id)
-        .parentId(d => {
-            if (d.id === 0) return null;
-            for (const node of data.treeData) {
-                if (node.left === d.id || node.right === d.id) return node.id;
-            }
-        })
-        (data.treeData);
-    
-    const treeLayout = d3.tree()
-        .size([width - margin.left - margin.right, height - margin.top - margin.bottom]);
-    
-    const nodes = root.descendants();
-    const links = root.links();
-    
-    treeLayout(root);
-    
-    // Create links
-    g.selectAll('.link')
-        .data(links)
-        .enter()
-        .append('path')
-        .attr('class', 'link')
-        .attr('d', d3.linkVertical()
-            .x(d => d.x)
-            .y(d => d.y));
-    
-    // Create nodes
-    const node = g.selectAll('.node')
-        .data(nodes)
-        .enter()
-        .append('g')
-        .attr('class', 'node')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
-    
-    // Add circles to nodes
-    node.append('circle')
-        .attr('r', 5);
-    
-    // Add labels to nodes
-    node.append('text')
-        .attr('dy', '0.31em')
-        .attr('x', d => d.children ? -6 : 6)
-        .style('text-anchor', d => d.children ? 'end' : 'start')
-        .text(d => {
-            const nodeData = data.treeData[d.id];
-            if (nodeData.feature === 'leaf') {
-                const values = nodeData.value[0];
-                const maxIndex = values.indexOf(Math.max(...values));
-                return data.targetNames[maxIndex];
-            }
-            return `${nodeData.feature}\n< ${nodeData.threshold.toFixed(2)}`;
-        });
-}
-
 // Initialize visualizations
 async function initialize() {
     const data = await fetchData();
     createScatterPlot(data, '#pca-plot');
-    // createTreeVisualization(data, '#tree-visualization');
 }
 
 initialize();
