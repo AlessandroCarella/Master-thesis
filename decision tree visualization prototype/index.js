@@ -466,11 +466,6 @@ function highlightNodeById() {
         .style("stroke", "#ccc")
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
 
-    if (node.empty()) {
-        console.log(`Node with ID ${nodeId} not found`);
-        return;
-    }
-
     // Check if it's a non-leaf node
     if (typeof currentNode.children !== "undefined") {
         // Create and append message element

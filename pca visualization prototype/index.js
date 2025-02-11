@@ -135,8 +135,6 @@ function createScatterPlot(data, container) {
                 .style('opacity', 0);
         })
         .on('click', function(event, d) {
-            console.log("clicked node", d);
-        
             // Reset the color of the previously clicked node
             if (lastClickedNode && lastClickedNode !== this) {
                 d3.select(lastClickedNode)
