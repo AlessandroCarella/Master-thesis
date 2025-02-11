@@ -10,10 +10,9 @@ from sklearn.model_selection import train_test_split
 
 app = FastAPI()
 
-# Update CORS middleware with specific origin
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Specify the exact origin
+    allow_origins=["http://localhost:8080"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,7 +46,7 @@ async def get_decision_tree_data():
     data = load_iris()
     X = data.data
     y = data.target
-    feature_names = list(data.feature_names)  # Convert to list explicitly
+    feature_names = list(data.feature_names)
     
     # Standardize the dataset
     scaler = StandardScaler()
@@ -57,19 +56,24 @@ async def get_decision_tree_data():
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X_scaled)
     
-    # Train decision tree on PCA data
-    dt_classifier_pca = DecisionTreeClassifier(random_state=42, max_depth=3)
-    dt_classifier_pca.fit(X_pca, y)
+    # Split the data and train the tree (following your original script)
+    X_train_pca, X_test_pca, y_train, y_test = train_test_split(X_pca, y, test_size=0.3, random_state=42)
+    dt_classifier_pca = DecisionTreeClassifier(random_state=42)  # Removed max_depth constraint
+    dt_classifier_pca.fit(X_train_pca, y_train)
     
-    # Generate decision boundary data
+    # Generate decision boundary data with finer grid
     x_min, x_max = X_pca[:, 0].min() - 1, X_pca[:, 0].max() + 1
     y_min, y_max = X_pca[:, 1].min() - 1, X_pca[:, 1].max() + 1
-    step = 0.1
+    step = 0.05  # Reduced step size for finer grid
     xx, yy = np.meshgrid(np.arange(x_min, x_max, step), np.arange(y_min, y_max, step))
     
     # Get predictions for the grid
     Z = dt_classifier_pca.predict(np.c_[xx.ravel(), yy.ravel()])
     Z = Z.reshape(xx.shape)
+    
+    # Get prediction probabilities for more detailed visualization
+    Z_prob = dt_classifier_pca.predict_proba(np.c_[xx.ravel(), yy.ravel()])
+    Z_prob = Z_prob.reshape((xx.shape[0], xx.shape[1], -1))
     
     # Create grid points and predictions for the frontend
     grid_points = []
@@ -78,23 +82,22 @@ async def get_decision_tree_data():
             grid_points.append({
                 'x': float(xx[i][j]),
                 'y': float(yy[i][j]),
-                'class': int(Z[i][j])
+                'class': int(Z[i][j]),
+                'probabilities': [float(p) for p in Z_prob[i, j]]
             })
     
     return {
         "treeData": get_tree_data(dt_classifier_pca.tree_, ['PC1', 'PC2']),
         "pcaData": X_pca.tolist(),
         "targets": y.tolist(),
-        "featureNames": feature_names,  # No need for tolist() here
-        "targetNames": list(data.target_names),  # Convert to list explicitly
+        "featureNames": feature_names,
+        "targetNames": list(data.target_names),
         "decisionBoundary": {
             "points": grid_points,
             "xRange": [float(x_min), float(x_max)],
             "yRange": [float(y_min), float(y_max)],
             "step": step
-        }
+        },
+        "trainIndices": y_train.tolist(),  # Added to show train/test split
+        "testIndices": y_test.tolist()
     }
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -6,9 +6,9 @@ async function fetchData() {
 
 // Create PCA scatter plot with decision boundaries
 function createScatterPlot(data, container) {
-    const width = 600;
-    const height = 500;
-    const margin = { top: 20, right: 20, bottom: 40, left: 40 };
+    const width = 800;
+    const height = 600;
+    const margin = { top: 40, right: 100, bottom: 60, left: 60 };
     
     const svg = d3.select(container)
         .append('svg')
@@ -23,55 +23,70 @@ function createScatterPlot(data, container) {
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
     
-    // Create color scale
+    // Create color scales
     const color = d3.scaleOrdinal()
         .domain(d3.range(3))
         .range(['#ff7f0e', '#1f77b4', '#2ca02c']);
     
-    // Draw decision boundaries
-    const cellWidth = (width - margin.left - margin.right) / 
-        ((data.decisionBoundary.xRange[1] - data.decisionBoundary.xRange[0]) / data.decisionBoundary.step);
-    const cellHeight = (height - margin.top - margin.bottom) / 
-        ((data.decisionBoundary.yRange[1] - data.decisionBoundary.yRange[0]) / data.decisionBoundary.step);
+    const probabilityColor = d3.scaleSequential()
+        .domain([0, 1])
+        .interpolator(d3.interpolateViridis);
     
-    svg.selectAll('rect.boundary')
-        .data(data.decisionBoundary.points)
-        .enter()
-        .append('rect')
-        .attr('class', 'boundary')
-        .attr('x', d => x(d.x) - cellWidth/2)
-        .attr('y', d => y(d.y) - cellHeight/2)
-        .attr('width', cellWidth)
-        .attr('height', cellHeight)
-        .style('fill', d => color(d.class))
-        .style('opacity', 0.2);
+    // Draw decision boundaries with improved visualization
+    const cellWidth = Math.ceil((width - margin.left - margin.right) / 
+        ((data.decisionBoundary.xRange[1] - data.decisionBoundary.xRange[0]) / data.decisionBoundary.step));
+    const cellHeight = Math.ceil((height - margin.top - margin.bottom) / 
+        ((data.decisionBoundary.yRange[1] - data.decisionBoundary.yRange[0]) / data.decisionBoundary.step));
     
-    // Add axes
+    // Create groups for each class
+    const boundaryGroups = svg.append('g')
+        .attr('class', 'boundaries');
+    
+    // Draw decision boundaries with opacity based on probability
+    data.decisionBoundary.points.forEach(point => {
+        boundaryGroups.append('rect')
+            .attr('x', x(point.x) - cellWidth/2)
+            .attr('y', y(point.y) - cellHeight/2)
+            .attr('width', cellWidth)
+            .attr('height', cellHeight)
+            .style('fill', color(point.class))
+            .style('opacity', point.probabilities[point.class] * 0.3);
+    });
+    
+    // Add axes with grid lines
     svg.append('g')
+        .attr('class', 'grid')
         .attr('transform', `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x))
-        .append('text')
-        .attr('x', width - margin.right)
-        .attr('y', -10)
-        .text('PC1');
+        .call(d3.axisBottom(x)
+            .ticks(10)
+            .tickSize(-height + margin.top + margin.bottom))
+        .call(g => g.select('.domain').remove())
+        .call(g => g.selectAll('.tick line')
+            .attr('stroke', '#ddd')
+            .attr('stroke-dasharray', '2,2'));
     
     svg.append('g')
+        .attr('class', 'grid')
         .attr('transform', `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y))
-        .append('text')
-        .attr('transform', 'rotate(-90)')
-        .attr('y', 15)
-        .text('PC2');
+        .call(d3.axisLeft(y)
+            .ticks(10)
+            .tickSize(-width + margin.left + margin.right))
+        .call(g => g.select('.domain').remove())
+        .call(g => g.selectAll('.tick line')
+            .attr('stroke', '#ddd')
+            .attr('stroke-dasharray', '2,2'));
     
-    // Add points
-    svg.selectAll('circle.point')
+    // Add points with different symbols for train/test
+    const symbolGenerator = d3.symbol().size(100);
+    
+    svg.selectAll('path.point')
         .data(data.pcaData)
         .enter()
-        .append('circle')
+        .append('path')
         .attr('class', 'point')
-        .attr('cx', d => x(d[0]))
-        .attr('cy', d => y(d[1]))
-        .attr('r', 4)
+        .attr('transform', d => `translate(${x(d[0])},${y(d[1])})`)
+        .attr('d', symbolGenerator.type((d, i) => 
+            data.trainIndices.includes(data.targets[i]) ? d3.symbolCircle : d3.symbolTriangle))
         .style('fill', (d, i) => color(data.targets[i]))
         .style('stroke', '#fff')
         .style('stroke-width', 1)
@@ -79,11 +94,12 @@ function createScatterPlot(data, container) {
     
     // Add legend
     const legend = svg.append('g')
-        .attr('transform', `translate(${width - margin.right - 100},${margin.top})`);
+        .attr('transform', `translate(${width - margin.right + 20},${margin.top})`);
     
+    // Class legend
     data.targetNames.forEach((name, i) => {
         const legendRow = legend.append('g')
-            .attr('transform', `translate(0, ${i * 20})`);
+            .attr('transform', `translate(0, ${i * 25})`);
         
         legendRow.append('rect')
             .attr('width', 15)
@@ -97,6 +113,52 @@ function createScatterPlot(data, container) {
             .text(name)
             .style('font-size', '12px');
     });
+    
+    // Train/Test legend
+    const splitLegend = legend.append('g')
+        .attr('transform', `translate(0, ${data.targetNames.length * 25 + 20})`);
+    
+    splitLegend.append('path')
+        .attr('d', symbolGenerator.type(d3.symbolCircle))
+        .attr('transform', 'translate(7.5, 7.5)')
+        .style('fill', '#666');
+    
+    splitLegend.append('text')
+        .attr('x', 20)
+        .attr('y', 12)
+        .text('Training')
+        .style('font-size', '12px');
+    
+    splitLegend.append('path')
+        .attr('d', symbolGenerator.type(d3.symbolTriangle))
+        .attr('transform', 'translate(7.5, 32.5)')
+        .style('fill', '#666');
+    
+    splitLegend.append('text')
+        .attr('x', 20)
+        .attr('y', 37)
+        .text('Test')
+        .style('font-size', '12px');
+    
+    // Add titles and labels
+    svg.append('text')
+        .attr('class', 'title')
+        .attr('x', width / 2)
+        .attr('y', margin.top / 2)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '16px')
+        .text('Decision Tree Boundaries in PCA Space');
+    
+    svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height - margin.bottom / 3)
+        .attr('text-anchor', 'middle')
+        .text('Principal Component 1');
+    
+    svg.append('text')
+        .attr('transform', `rotate(-90) translate(${-height/2}, ${margin.left/2})`)
+        .attr('text-anchor', 'middle')
+        .text('Principal Component 2');
 }
 
 // Create decision tree visualization
