@@ -68,9 +68,37 @@ h2 {
 .tooltip {
     position: absolute;
     padding: 8px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
+    background: white;
+    color: black;
     border-radius: 4px;
     font-size: 12px;
     pointer-events: none;
+}
+
+.tooltip {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    pointer-events: none;
+}
+
+.pca-labels {
+    width: 1000px; /* Match the plot width */
+    margin: auto;
+    text-align: center;
+}
+
+.x-label {
+    display: block;
+    margin-top: 0px;
+}
+
+.y-label {
+    position: absolute;
+    left: 150px; /* Adjust for proper alignment */
+    top: 50%;
+    transform: rotate(-90deg) translateY(-50%);
+    transform-origin: center;
 }

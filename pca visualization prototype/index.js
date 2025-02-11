@@ -6,14 +6,38 @@ async function fetchData() {
 
 // Create PCA scatter plot with decision boundaries
 function createScatterPlot(data, container) {
-    const width = 800;
-    const height = 600;
-    const margin = { top: 40, right: 100, bottom: 60, left: 60 };
+    const width = 1000;
+    const height = 1000;
+    const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+    
+    // Create tooltip div
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0)
+        .style("position", "absolute")
+        .style("background-color", "white")
+        .style("border", "1px solid #ddd")
+        .style("border-radius", "4px")
+        .style("padding", "8px")
+        .style("pointer-events", "none");
     
     const svg = d3.select(container)
         .append('svg')
         .attr('width', width)
         .attr('height', height);
+    
+    // Create a group for zoom transformation
+    const g = svg.append('g');
+    
+    // Add zoom behavior with initial scale
+    const initialZoom = d3.zoomIdentity;
+    const zoom = d3.zoom()
+        .scaleExtent([initialZoom.k, 5]) // Min zoom set to initial zoom level
+        .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+        });
+    
+    svg.call(zoom);
     
     const x = d3.scaleLinear()
         .domain(data.decisionBoundary.xRange)
@@ -39,7 +63,7 @@ function createScatterPlot(data, container) {
         ((data.decisionBoundary.yRange[1] - data.decisionBoundary.yRange[0]) / data.decisionBoundary.step));
     
     // Create groups for each class
-    const boundaryGroups = svg.append('g')
+    const boundaryGroups = g.append('g')
         .attr('class', 'boundaries');
     
     // Draw decision boundaries with opacity based on probability
@@ -54,7 +78,7 @@ function createScatterPlot(data, container) {
     });
     
     // Add axes with grid lines
-    svg.append('g')
+    g.append('g')
         .attr('class', 'grid')
         .attr('transform', `translate(0,${height - margin.bottom})`)
         .call(d3.axisBottom(x)
@@ -65,7 +89,7 @@ function createScatterPlot(data, container) {
             .attr('stroke', '#ddd')
             .attr('stroke-dasharray', '2,2'));
     
-    svg.append('g')
+    g.append('g')
         .attr('class', 'grid')
         .attr('transform', `translate(${margin.left},0)`)
         .call(d3.axisLeft(y)
@@ -78,8 +102,9 @@ function createScatterPlot(data, container) {
     
     // Add points with different symbols for train/test
     const symbolGenerator = d3.symbol().size(100);
-    
-    svg.selectAll('path.point')
+
+    let lastClickedNode = null;
+    const points = g.selectAll('path.point')
         .data(data.pcaData)
         .enter()
         .append('path')
@@ -90,81 +115,52 @@ function createScatterPlot(data, container) {
         .style('fill', (d, i) => color(data.targets[i]))
         .style('stroke', '#fff')
         .style('stroke-width', 1)
-        .style('opacity', 0.8);
-    
-    // Add legend
-    const legend = svg.append('g')
-        .attr('transform', `translate(${width - margin.right + 20},${margin.top})`);
-    
-    // Class legend
-    data.targetNames.forEach((name, i) => {
-        const legendRow = legend.append('g')
-            .attr('transform', `translate(0, ${i * 25})`);
+        .style('opacity', 0.8)
+        // Add hover interaction
+        .on('mouseover', (event, d, i) => {
+            const index = data.pcaData.indexOf(d);
+            const pointType = data.trainIndices.includes(data.targets[index]) ? 'Training' : 'Test';
+            const className = data.targetNames[data.targets[index]];
+            
+            tooltip.transition()
+                .duration(200)
+                .style('opacity', 0.9);
+            tooltip.html(`Class: ${className}<br/>Type: ${pointType}`)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', () => {
+            tooltip.transition()
+                .duration(500)
+                .style('opacity', 0);
+        })
+        .on('click', function(event, d) {
+            console.log("clicked node", d);
         
-        legendRow.append('rect')
-            .attr('width', 15)
-            .attr('height', 15)
-            .style('fill', color(i))
-            .style('opacity', 0.7);
+            // Reset the color of the previously clicked node
+            if (lastClickedNode && lastClickedNode !== this) {
+                d3.select(lastClickedNode)
+                    .style('fill', (d, i) => color(data.targets[data.pcaData.indexOf(d)]));
+            }
         
-        legendRow.append('text')
-            .attr('x', 20)
-            .attr('y', 12)
-            .text(name)
-            .style('font-size', '12px');
-    });
-    
-    // Train/Test legend
-    const splitLegend = legend.append('g')
-        .attr('transform', `translate(0, ${data.targetNames.length * 25 + 20})`);
-    
-    splitLegend.append('path')
-        .attr('d', symbolGenerator.type(d3.symbolCircle))
-        .attr('transform', 'translate(7.5, 7.5)')
-        .style('fill', '#666');
-    
-    splitLegend.append('text')
-        .attr('x', 20)
-        .attr('y', 12)
-        .text('Training')
-        .style('font-size', '12px');
-    
-    splitLegend.append('path')
-        .attr('d', symbolGenerator.type(d3.symbolTriangle))
-        .attr('transform', 'translate(7.5, 32.5)')
-        .style('fill', '#666');
-    
-    splitLegend.append('text')
-        .attr('x', 20)
-        .attr('y', 37)
-        .text('Test')
-        .style('font-size', '12px');
-    
-    // Add titles and labels
-    svg.append('text')
-        .attr('class', 'title')
-        .attr('x', width / 2)
-        .attr('y', margin.top / 2)
-        .attr('text-anchor', 'middle')
-        .style('font-size', '16px')
-        .text('Decision Tree Boundaries in PCA Space');
-    
-    svg.append('text')
-        .attr('x', width / 2)
-        .attr('y', height - margin.bottom / 3)
-        .attr('text-anchor', 'middle')
-        .text('Principal Component 1');
-    
-    svg.append('text')
-        .attr('transform', `rotate(-90) translate(${-height/2}, ${margin.left/2})`)
-        .attr('text-anchor', 'middle')
-        .text('Principal Component 2');
+            const node = d3.select(this);
+            const currentColor = node.style('fill');
+        
+            // Toggle color: if red, revert to original, otherwise change to red
+            if (currentColor === "red") {
+                node.style('fill', (d, i) => color(data.targets[data.pcaData.indexOf(d)]));
+                lastClickedNode = null;
+            } else {
+                node.style('fill', "red");
+                lastClickedNode = this;
+            }
+        });
 }
 
 // Create decision tree visualization
 function createTreeVisualization(data, container) {
-    const width = 500;
-    const height = 400;
+    const width = 1000;
+    const height = 1000;
     const margin = { top: 20, right: 20, bottom: 20, left: 20 };
     
     const svg = d3.select(container)
