@@ -74,7 +74,7 @@ function createScatterPlot(data, container) {
             .attr('width', cellWidth)
             .attr('height', cellHeight)
             .style('fill', color(point.class))
-            .style('opacity', point.probabilities[point.class] * 0.3);
+            .style('opacity', 0.3);
     });
     
     // Add axes with grid lines
@@ -110,8 +110,7 @@ function createScatterPlot(data, container) {
         .append('path')
         .attr('class', 'point')
         .attr('transform', d => `translate(${x(d[0])},${y(d[1])})`)
-        .attr('d', symbolGenerator.type((d, i) => 
-            data.trainIndices.includes(data.targets[i]) ? d3.symbolCircle : d3.symbolTriangle))
+        .attr('d', symbolGenerator.type(d3.symbolCircle))
         .style('fill', (d, i) => color(data.targets[i]))
         .style('stroke', '#fff')
         .style('stroke-width', 1)
@@ -119,13 +118,12 @@ function createScatterPlot(data, container) {
         // Add hover interaction
         .on('mouseover', (event, d, i) => {
             const index = data.pcaData.indexOf(d);
-            const pointType = data.trainIndices.includes(data.targets[index]) ? 'Training' : 'Test';
             const className = data.targetNames[data.targets[index]];
             
             tooltip.transition()
                 .duration(200)
                 .style('opacity', 0.9);
-            tooltip.html(`Class: ${className}<br/>Type: ${pointType}`)
+            tooltip.html(`Class: ${className}`)
                 .style('left', (event.pageX + 10) + 'px')
                 .style('top', (event.pageY - 28) + 'px');
         })
@@ -230,7 +228,7 @@ function createTreeVisualization(data, container) {
 async function initialize() {
     const data = await fetchData();
     createScatterPlot(data, '#pca-plot');
-    createTreeVisualization(data, '#tree-visualization');
+    // createTreeVisualization(data, '#tree-visualization');
 }
 
 initialize();
