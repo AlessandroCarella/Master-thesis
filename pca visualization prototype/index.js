@@ -36,7 +36,8 @@ function createScatterPlot(data, container) {
     // Add zoom behavior with initial scale
     const initialZoom = d3.zoomIdentity;
     const zoom = d3.zoom()
-        .scaleExtent([initialZoom.k, 5]) // Min zoom set to initial zoom level
+        .scaleExtent([initialZoom.k, 5])
+        .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
         .on('zoom', (event) => {
             g.attr('transform', event.transform);
         });
@@ -92,22 +93,21 @@ function createScatterPlot(data, container) {
     const symbolGenerator = d3.symbol().size(100);
 
     let lastClickedNode = null;
+    // When binding data, you can use the index parameter in your event handlers
     const points = g.selectAll('path.point')
         .data(data.pcaData)
         .enter()
         .append('path')
         .attr('class', 'point')
-        .attr('transform', d => `translate(${x(d[0])},${y(d[1])})`)
+        .attr('transform', (d) => `translate(${x(d[0])},${y(d[1])})`)
         .attr('d', symbolGenerator.type(d3.symbolCircle))
         .style('fill', (d, i) => color(data.targets[i]))
         .style('stroke', '#fff')
         .style('stroke-width', 1)
         .style('opacity', 0.8)
-        // Add hover interaction
+        // Use the index (i) directly instead of doing an indexOf lookup
         .on('mouseover', (event, d, i) => {
-            const index = data.pcaData.indexOf(d);
-            const className = data.targetNames[data.targets[index]];
-            
+            const className = data.targetNames[data.targets[i]];
             tooltip.transition()
                 .duration(200)
                 .style('opacity', 0.9);
@@ -120,25 +120,23 @@ function createScatterPlot(data, container) {
                 .duration(500)
                 .style('opacity', 0);
         })
-        .on('click', function(event, d) {
-            // Reset the color of the previously clicked node
+        .on('click', function(event, d, i) {
+            // Toggle point color without searching the entire array
             if (lastClickedNode && lastClickedNode !== this) {
                 d3.select(lastClickedNode)
-                    .style('fill', (d, i) => color(data.targets[data.pcaData.indexOf(d)]));
+                .style('fill', (d, i) => color(data.targets[i]));
             }
-        
             const node = d3.select(this);
             const currentColor = node.style('fill');
-        
-            // Toggle color: if red, revert to original, otherwise change to red
             if (currentColor === "red") {
-                node.style('fill', (d, i) => color(data.targets[data.pcaData.indexOf(d)]));
+                node.style('fill', color(data.targets[i]));
                 lastClickedNode = null;
             } else {
                 node.style('fill', "red");
                 lastClickedNode = this;
             }
         });
+
 }
 
 // Initialize visualizations
