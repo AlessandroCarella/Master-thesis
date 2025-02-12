@@ -21,6 +21,10 @@ function createScatterPlot(data, container) {
         .style("padding", "8px")
         .style("pointer-events", "none");
     
+    // Set the X-axis and Y-axis labels outside the SVG
+    document.getElementById("x-axis-label").textContent = data.xAxisLabel;
+    document.getElementById("y-axis-label").textContent = data.yAxisLabel;
+
     const svg = d3.select(container)
         .append('svg')
         .attr('width', width)

@@ -10,13 +10,15 @@
 <body>
     <div class="container">
         <h1>Iris Dataset PCA Visualization</h1>
-        <div class="pca-labels">
-            <div id="pca-plot"></div>
-            <span class="x-label">Principal Component 1</span>
-            <span class="y-label">Principal Component 2</span>
-        </div>
         
+        <div class="plot-container">
+            <div id="pca-plot"></div>  <!-- D3 Visualization -->
+        </div>
+
+        <div id="y-axis-label" class="axis-label y-axis-label"></div>  <!-- Y-axis Label -->
+        <div id="x-axis-label" class="axis-label x-axis-label"></div>  <!-- X-axis Label -->
     </div>
+    
     <script src="index.js"></script>
 </body>
 </html>

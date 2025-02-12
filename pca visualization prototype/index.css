@@ -6,20 +6,39 @@ body {
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.plot-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.y-axis-label {
+    position: absolute;
+    left: 0px; /* Adjust this to move it closer to the Y-axis */
+    top: 50%;
+    transform: rotate(-90deg) translateY(-50%);
+    transform-origin: center;
+    font-size: 16px;
+    font-weight: bold;
+    white-space: nowrap; /* Prevents line breaks */
+}
+
+.x-axis-label {
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
 }
 
 h1 {
     text-align: center;
     color: #333;
-}
-
-.visualization-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
 }
 
 .visualization {
@@ -70,37 +89,10 @@ h2 {
     padding: 8px;
     background: white;
     color: black;
+    border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 12px;
     pointer-events: none;
-}
-
-.tooltip {
-    position: absolute;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 8px;
-    pointer-events: none;
-}
-
-.pca-labels {
-    width: 1000px; /* Match the plot width */
-    margin: auto;
-    text-align: center;
-}
-
-.x-label {
-    display: block;
-    margin-top: 0px;
-}
-
-.y-label {
-    position: absolute;
-    left: 150px; /* Adjust for proper alignment */
-    top: 50%;
-    transform: rotate(-90deg) translateY(-50%);
-    transform-origin: center;
 }
 
 #pca-plot{
