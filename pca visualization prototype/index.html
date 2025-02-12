@@ -26,7 +26,7 @@
         let currentDataFile = "iris.json";  // Default data file
 
         document.getElementById("switch-data-button").addEventListener("click", async () => {
-            currentDataFile = currentDataFile === "iris.json" ? "fishing.json" : "iris.json";  // Toggle data file
+            currentDataFile = currentDataFile === "iris.json" ? "lorePCATest.json" : "iris.json";  // Toggle data file
             await fetch(`http://localhost:8000/switch-data/${currentDataFile}`);  // Switch data on the server
             const data = await fetchData();  // Fetch new data
             createScatterPlot(data, "#pca-plot");  // Recreate the scatter plot

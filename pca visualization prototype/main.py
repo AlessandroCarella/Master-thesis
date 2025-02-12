@@ -17,7 +17,7 @@ current_data_file = "iris.json"  # Default value
 @app.get("/switch-data/{file_name}")
 async def switch_data(file_name: str):
     global current_data_file
-    if file_name in ["iris.json", "fishing.json"]:
+    if file_name in ["iris.json", "lorePCATest.json"]:
         current_data_file = file_name
         return {"message": f"Switched to {file_name}"}
     return {"error": "Invalid file name"}
