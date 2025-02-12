@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 
 data_file = "iris.json"
-# data_file = 'fishing.json'
+data_file = 'fishing.json'
 
 app = FastAPI()
 
