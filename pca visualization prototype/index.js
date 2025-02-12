@@ -57,42 +57,19 @@ function createScatterPlot(data, container) {
         .domain(uniqueClasses)
         .range(d3.schemeCategory10); // Uses D3's built-in categorical color scheme
     
-    // // Draw decision boundaries with improved visualization
-    // const cellWidth = Math.ceil((width - margin.left - margin.right) / 
-    //     ((data.decisionBoundary.xRange[1] - data.decisionBoundary.xRange[0]) / data.decisionBoundary.step));
-    // const cellHeight = Math.ceil((height - margin.top - margin.bottom) / 
-    //     ((data.decisionBoundary.yRange[1] - data.decisionBoundary.yRange[0]) / data.decisionBoundary.step));
-    
-    // Create groups for each class
-    const boundaryGroup = g.append('g')
-        .attr('class', 'boundaries');
-    
-    // // Draw decision boundaries
-    // data.decisionBoundary.points.forEach(point => {
-    //     boundaryGroup.append('rect')
-    //         .attr('x', x(point.x) - cellWidth/2)
-    //         .attr('y', y(point.y) - cellHeight/2)
-    //         .attr('width', cellWidth)
-    //         .attr('height', cellHeight)
-    //         .style('fill', color(point.class))
-    //         .style('opacity', 0.3);
-    // });
-    
+    // Draw decision boundary as filled Voronoi regions
+    const voronoiGroup = g.append('g')
+        .attr('class', 'voronoi-regions');
 
-    // Create a D3 line generator to convert point arrays into SVG paths.
-    const lineGenerator = d3.line()
-        .x(d => x(d[0]))
-        .y(d => y(d[1]));
-
-    // Check if the backend sent boundary paths
-    data.decisionBoundary.boundaryPaths.forEach(pathData => {
-        boundaryGroup.append('path')
-            .attr('d', lineGenerator(pathData))
-            .attr('fill', 'none')
-            .attr('stroke', 'black') // You can adjust the stroke color as needed.
-            .attr('stroke-width', 2)
-            .attr('opacity', 0.7);
-    });
+    data.decisionBoundary.regions.forEach((polygon, i) => {
+        voronoiGroup.append('polygon')
+            .attr('points', polygon.map(d => `${x(d[0])},${y(d[1])}`).join(" "))
+            .attr('fill', color(data.decisionBoundary.regionClasses[i]))
+            .attr('stroke', 'white')
+            .attr('stroke-width', 0.5)
+            .attr('opacity', 0.3);
+        }
+    );
 
     // Add axes with grid lines
     g.append('g')
@@ -102,9 +79,6 @@ function createScatterPlot(data, container) {
             .ticks(10)
             .tickSize(-height + margin.top + margin.bottom))
         .call(g => g.select('.domain').remove())
-        .call(g => g.selectAll('.tick line')
-            .attr('stroke', '#ddd')
-            .attr('stroke-dasharray', '2,2'));
     
     g.append('g')
         .attr('class', 'grid')
@@ -113,9 +87,6 @@ function createScatterPlot(data, container) {
             .ticks(10)
             .tickSize(-width + margin.left + margin.right))
         .call(g => g.select('.domain').remove())
-        .call(g => g.selectAll('.tick line')
-            .attr('stroke', '#ddd')
-            .attr('stroke-dasharray', '2,2'));
     
     // Add points with different symbols for train/test
     const symbolGenerator = d3.symbol().size(100);
