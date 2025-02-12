@@ -1,17 +1,14 @@
 // Fetch data from the FastAPI backend
 async function fetchData() {
-    const response = await fetch('http://localhost:8000/tree-data');
+    const response = await fetch("http://localhost:8000/tree-data");
     return await response.json();
 }
 
-// Create PCA scatter plot with decision boundaries
-function createScatterPlot(data, container) {
-    const width = 1000;
-    const height = 1000;
-    const margin = { top: 40, right: 40, bottom: 60, left: 60 };
-    
-    // Create tooltip div
-    const tooltip = d3.select("body").append("div")
+// Create tooltip
+function createTooltip() {
+    return d3
+        .select("body")
+        .append("div")
         .attr("class", "tooltip")
         .style("opacity", 0)
         .style("position", "absolute")
@@ -20,129 +17,182 @@ function createScatterPlot(data, container) {
         .style("border-radius", "4px")
         .style("padding", "8px")
         .style("pointer-events", "none");
-    
+}
+
+// Create the zoom behavior
+function createZoom(svg, g, margin, width, height) {
+    const initialZoom = d3.zoomIdentity;
+    const zoom = d3
+        .zoom()
+        .scaleExtent([initialZoom.k, 5])
+        .translateExtent([
+            [margin.left, margin.top],
+            [width - margin.right, height - margin.bottom],
+        ])
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+
+    svg.call(zoom);
+}
+
+// Create axes
+function createAxes(g, x, y, margin, width, height) {
+    // X-axis
+    g.append("g")
+        .attr("class", "grid")
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(
+            d3
+                .axisBottom(x)
+                .ticks(10)
+                .tickSize(-height + margin.top + margin.bottom)
+        )
+        .call((g) => g.select(".domain").remove());
+
+    // Y-axis
+    g.append("g")
+        .attr("class", "grid")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(
+            d3
+                .axisLeft(y)
+                .ticks(10)
+                .tickSize(-width + margin.left + margin.right)
+        )
+        .call((g) => g.select(".domain").remove());
+}
+
+// Create the Voronoi regions for the decision boundaries
+function drawVoronoi(g, data, x, y, color) {
+    const voronoiGroup = g.append("g").attr("class", "voronoi-regions");
+
+    data.decisionBoundary.regions.forEach((polygon, i) => {
+        voronoiGroup
+            .append("polygon")
+            .attr(
+                "points",
+                polygon.map((d) => `${x(d[0])},${y(d[1])}`).join(" ")
+            )
+            .attr("fill", color(data.decisionBoundary.regionClasses[i]))
+            .attr("stroke", "white")
+            .attr("stroke-width", 0.5)
+            .attr("opacity", 0.3);
+    });
+}
+
+// Create points with event handlers
+function createPoints(g, data, x, y, color, tooltip) {
+    const symbolGenerator = d3.symbol().size(100);
+    let lastClickedNode = null;
+
+    g.selectAll("path.point")
+        .data(data.pcaData)
+        .enter()
+        .append("path")
+        .attr("class", "point")
+        .attr("transform", (d) => `translate(${x(d[0])},${y(d[1])})`)
+        .attr("d", symbolGenerator.type(d3.symbolCircle))
+        .style("fill", (d, i) => color(data.targets[i]))
+        .style("stroke", "#fff")
+        .style("stroke-width", 1)
+        .style("opacity", 0.8)
+        .on("mouseover", (event, d, i) =>
+            showTooltip(event, d, i, data, tooltip)
+        )
+        .on("mouseout", () => hideTooltip(tooltip))
+        .on("click", function (event, d, i) {
+            togglePointColor(this, d, i, data, color, lastClickedNode);
+            lastClickedNode = this;
+        });
+}
+
+// Show tooltip on hover
+function showTooltip(event, d, i, data, tooltip) {
+    const index = data.pcaData.indexOf(d);
+    const className = data.targetNames[data.targets[index]];
+    tooltip.transition().duration(200).style("opacity", 0.9);
+    tooltip
+        .html(`Class: ${className}`)
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 28 + "px");
+}
+
+// Hide tooltip
+function hideTooltip(tooltip) {
+    tooltip.transition().duration(500).style("opacity", 0);
+}
+
+// Toggle point color on click
+function togglePointColor(node, d, i, data, color, lastClickedNode) {
+    if (lastClickedNode && lastClickedNode !== node) {
+        d3.select(lastClickedNode).style("fill", (d, i) =>
+            color(data.targets[i])
+        );
+    }
+    const currentColor = d3.select(node).style("fill");
+    if (currentColor === "red") {
+        d3.select(node).style("fill", color(data.targets[i]));
+        lastClickedNode = null;
+    } else {
+        d3.select(node).style("fill", "red");
+    }
+}
+
+// Create the PCA scatter plot
+function createScatterPlot(data, container) {
+    const width = 1000;
+    const height = 1000;
+    const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+
+    const tooltip = createTooltip();
+
     // Set the X-axis and Y-axis labels outside the SVG
     document.getElementById("x-axis-label").textContent = data.xAxisLabel;
     document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
-    const svg = d3.select(container)
-        .append('svg')
-        .attr('width', width)
-        .attr('height', height);
-    
-    // Create a group for zoom transformation
-    const g = svg.append('g');
-    
-    // Add zoom behavior with initial scale
-    const initialZoom = d3.zoomIdentity;
-    const zoom = d3.zoom()
-        .scaleExtent([initialZoom.k, 5])
-        .translateExtent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
-        .on('zoom', (event) => {
-            g.attr('transform', event.transform);
-        });
-    
-    svg.call(zoom);
-    
-    const x = d3.scaleLinear()
+    const svg = d3
+        .select(container)
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    const g = svg.append("g");
+
+    // Create zoom behavior
+    createZoom(svg, g, margin, width, height);
+
+    const x = d3
+        .scaleLinear()
         .domain(data.decisionBoundary.xRange)
         .range([margin.left, width - margin.right]);
-    
-    const y = d3.scaleLinear()
+
+    const y = d3
+        .scaleLinear()
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
-    
-    // Create dynamic color scale based on unique classes
+
+    // Create color scale
     const uniqueClasses = Array.from(new Set(data.targets));
-    const color = d3.scaleOrdinal()
+    const color = d3
+        .scaleOrdinal()
         .domain(uniqueClasses)
-        .range(d3.schemeCategory10); // Uses D3's built-in categorical color scheme
-    
-    // Draw decision boundary as filled Voronoi regions
-    const voronoiGroup = g.append('g')
-        .attr('class', 'voronoi-regions');
+        .range(d3.schemeCategory10);
 
-    data.decisionBoundary.regions.forEach((polygon, i) => {
-        voronoiGroup.append('polygon')
-            .attr('points', polygon.map(d => `${x(d[0])},${y(d[1])}`).join(" "))
-            .attr('fill', color(data.decisionBoundary.regionClasses[i]))
-            .attr('stroke', 'white')
-            .attr('stroke-width', 0.5)
-            .attr('opacity', 0.3);
-        }
-    );
+    // Draw Voronoi regions
+    drawVoronoi(g, data, x, y, color);
 
-    // Add axes with grid lines
-    g.append('g')
-        .attr('class', 'grid')
-        .attr('transform', `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x)
-            .ticks(10)
-            .tickSize(-height + margin.top + margin.bottom))
-        .call(g => g.select('.domain').remove())
-    
-    g.append('g')
-        .attr('class', 'grid')
-        .attr('transform', `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y)
-            .ticks(10)
-            .tickSize(-width + margin.left + margin.right))
-        .call(g => g.select('.domain').remove())
-    
-    // Add points with different symbols for train/test
-    const symbolGenerator = d3.symbol().size(100);
+    // Create axes
+    createAxes(g, x, y, margin, width, height);
 
-    let lastClickedNode = null;
-    // When binding data, you can use the index parameter in your event handlers
-    const points = g.selectAll('path.point')
-        .data(data.pcaData)
-        .enter()
-        .append('path')
-        .attr('class', 'point')
-        .attr('transform', (d) => `translate(${x(d[0])},${y(d[1])})`)
-        .attr('d', symbolGenerator.type(d3.symbolCircle))
-        .style('fill', (d, i) => color(data.targets[i]))
-        .style('stroke', '#fff')
-        .style('stroke-width', 1)
-        .style('opacity', 0.8)
-        // Use the index (i) directly instead of doing an indexOf lookup
-        .on('mouseover', (event, d, i) => {
-            const className = data.targetNames[data.targets[i]];
-            tooltip.transition()
-                .duration(200)
-                .style('opacity', 0.9);
-            tooltip.html(`Class: ${className}`)
-                .style('left', (event.pageX + 10) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mouseout', () => {
-            tooltip.transition()
-                .duration(500)
-                .style('opacity', 0);
-        })
-        .on('click', function(event, d, i) {
-            // Toggle point color without searching the entire array
-            if (lastClickedNode && lastClickedNode !== this) {
-                d3.select(lastClickedNode)
-                .style('fill', (d, i) => color(data.targets[i]));
-            }
-            const node = d3.select(this);
-            const currentColor = node.style('fill');
-            if (currentColor === "red") {
-                node.style('fill', color(data.targets[i]));
-                lastClickedNode = null;
-            } else {
-                node.style('fill', "red");
-                lastClickedNode = this;
-            }
-        });
-
+    // Create points
+    createPoints(g, data, x, y, color, tooltip);
 }
 
 // Initialize visualizations
 async function initialize() {
     const data = await fetchData();
-    createScatterPlot(data, '#pca-plot');
+    createScatterPlot(data, "#pca-plot");
 }
 
 initialize();
