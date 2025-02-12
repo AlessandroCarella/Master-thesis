@@ -151,6 +151,9 @@ function createScatterPlot(data, container) {
     document.getElementById("x-axis-label").textContent = data.xAxisLabel;
     document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
+    // Clear the existing plot before creating a new one
+    d3.select(container).select("svg").remove();  // Remove the existing SVG
+
     const svg = d3
         .select(container)
         .append("svg")

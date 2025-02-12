@@ -11,6 +11,8 @@
     <div class="container">
         <h1>Iris Dataset PCA Visualization</h1>
         
+        <button id="switch-data-button">Switch Data</button>  <!-- Button to switch data files -->
+
         <div class="plot-container">
             <div id="pca-plot"></div>  <!-- D3 Visualization -->
         </div>
@@ -20,5 +22,15 @@
     </div>
     
     <script src="index.js"></script>
+    <script>
+        let currentDataFile = "iris.json";  // Default data file
+
+        document.getElementById("switch-data-button").addEventListener("click", async () => {
+            currentDataFile = currentDataFile === "iris.json" ? "fishing.json" : "iris.json";  // Toggle data file
+            await fetch(`http://localhost:8000/switch-data/${currentDataFile}`);  // Switch data on the server
+            const data = await fetchData();  // Fetch new data
+            createScatterPlot(data, "#pca-plot");  // Recreate the scatter plot
+        });
+    </script>
 </body>
 </html>
