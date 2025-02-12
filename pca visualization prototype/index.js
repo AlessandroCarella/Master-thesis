@@ -121,7 +121,6 @@ function togglePointColor(node, d, data, color) {
     const index = data.pcaData.indexOf(d); // Get the index of the clicked data point
     const originalColor = color(data.targets[index]); // Get original color
     const selection = d3.select(node);
-    const currentColor = selection.style("fill");
 
     // If this node was the last clicked one, revert to original color
     if (lastClickedNode === node) {
