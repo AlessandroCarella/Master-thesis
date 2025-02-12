@@ -94,7 +94,7 @@ function createPoints(g, data, x, y, color, tooltip) {
         )
         .on("mouseout", () => hideTooltip(tooltip))
         .on("click", function (event, d, i) {
-            togglePointColor(this, d, i, data, color, lastClickedNode);
+            togglePointColor(this, d, data, color, lastClickedNode);
             lastClickedNode = this;
         });
 }
@@ -115,19 +115,27 @@ function hideTooltip(tooltip) {
     tooltip.transition().duration(500).style("opacity", 0);
 }
 
+let lastClickedNode = null; // Declare globally
 // Toggle point color on click
-function togglePointColor(node, d, i, data, color, lastClickedNode) {
-    if (lastClickedNode && lastClickedNode !== node) {
-        d3.select(lastClickedNode).style("fill", (d, i) =>
-            color(data.targets[i])
-        );
-    }
-    const currentColor = d3.select(node).style("fill");
-    if (currentColor === "red") {
-        d3.select(node).style("fill", color(data.targets[i]));
-        lastClickedNode = null;
+function togglePointColor(node, d, data, color) {
+    const index = data.pcaData.indexOf(d); // Get the index of the clicked data point
+    const originalColor = color(data.targets[index]); // Get original color
+    const selection = d3.select(node);
+    const currentColor = selection.style("fill");
+
+    // If this node was the last clicked one, revert to original color
+    if (lastClickedNode === node) {
+        selection.style("fill", originalColor);
+        lastClickedNode = null; // Reset last clicked node
     } else {
-        d3.select(node).style("fill", "red");
+        // Restore previous node's color if another node is clicked
+        if (lastClickedNode) {
+            d3.select(lastClickedNode).style("fill", color(data.targets[data.pcaData.indexOf(lastClickedNode.__data__)]));
+        }
+
+        // Store original color and turn this node red
+        selection.style("fill", "red");
+        lastClickedNode = node; // Update last clicked node
     }
 }
 
