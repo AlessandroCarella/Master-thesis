@@ -1,0 +1,132 @@
+[
+    {
+        "node_id": 0,
+        "feature_name": "engine_age",
+        "threshold": 7.302994728088379,
+        "left_child": 1,
+        "right_child": 12,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 110
+    },
+    {
+        "node_id": 1,
+        "feature_name": "length",
+        "threshold": 2.70368754863739,
+        "left_child": 2,
+        "right_child": 5,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 101
+    },
+    {
+        "node_id": 2,
+        "feature_name": "power",
+        "threshold": 2.260563552379608,
+        "left_child": 3,
+        "right_child": 4,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 27
+    },
+    {
+        "node_id": 3,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "samples": 11
+    },
+    {
+        "node_id": 4,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "samples": 16
+    },
+    {
+        "node_id": 5,
+        "feature_name": "month",
+        "threshold": 0.8747117966413498,
+        "left_child": 6,
+        "right_child": 9,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 74
+    },
+    {
+        "node_id": 6,
+        "feature_name": "engine_age",
+        "threshold": 6.211442708969116,
+        "left_child": 7,
+        "right_child": 8,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 62
+    },
+    {
+        "node_id": 7,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "samples": 61
+    },
+    {
+        "node_id": 8,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "samples": 1
+    },
+    {
+        "node_id": 9,
+        "feature_name": "power",
+        "threshold": 2.50707745552063,
+        "left_child": 10,
+        "right_child": 11,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 12
+    },
+    {
+        "node_id": 10,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "samples": 10
+    },
+    {
+        "node_id": 11,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "samples": 2
+    },
+    {
+        "node_id": 12,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "samples": 9
+    }
+]

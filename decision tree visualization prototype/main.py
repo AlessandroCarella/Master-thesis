@@ -8,8 +8,9 @@ import uvicorn
 import json
 
 # Sample tree data (same data as you provided)
-dataFile = "fishingTree.json"
+dataFile = "loreTest.json"
 dataFile2 = "testTree.json"
+dataFile3 = "fishingTree.json"
 
 # Keep track of which file is currently active
 current_file = dataFile
