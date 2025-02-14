@@ -2,7 +2,7 @@
 let chart1, chart2;
 
 // Fetch features when page loads
-window.onload = async function() {
+window.onload = async function () {
     try {
         const features = await fetchFeatures();
         populateFeatureCarousel(features);
@@ -13,20 +13,22 @@ window.onload = async function() {
 };
 
 function showError(message) {
-    const errorDiv = document.getElementById('error-message');
+    const errorDiv = document.getElementById("error-message");
     errorDiv.textContent = message;
 }
 
 async function fetchFeatures() {
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/get-df-features');
+        const response = await fetch(
+            "http://127.0.0.1:8000/api/get-df-features"
+        );
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         return data.features;
     } catch (error) {
-        console.error('Error fetching features:', error);
+        console.error("Error fetching features:", error);
         throw error;
     }
 }
@@ -38,19 +40,15 @@ async function resetFeatures() {
 
 async function fetchDefaultFeatures() {
     // Mock default values for features
-    return [
-        "Default Feature 1",
-        "Default Feature 2",
-        "Default Feature 3"
-    ];
+    return ["Default Feature 1", "Default Feature 2", "Default Feature 3"];
 }
 
 function populateFeatureCarousel(features) {
-    const carousel = document.getElementById('featureCarousel');
-    carousel.innerHTML = ''; // Clear existing content
-    features.forEach(feature => {
-        const box = document.createElement('div');
-        box.className = 'feature-box';
+    const carousel = document.getElementById("featureCarousel");
+    carousel.innerHTML = ""; // Clear existing content
+    features.forEach((feature) => {
+        const box = document.createElement("div");
+        box.className = "feature-box";
         box.innerHTML = `
             <div>${feature}</div>
             <input type="text" id="${feature}" placeholder="Enter value">
@@ -61,57 +59,57 @@ function populateFeatureCarousel(features) {
 
 async function submitFeatures() {
     const features = {};
-    document.querySelectorAll('.feature-box input').forEach(input => {
+    document.querySelectorAll(".feature-box input").forEach((input) => {
         features[input.id] = input.value;
     });
 
     try {
-        const response = await fetch('/api/make-explanation', {
-            method: 'POST',
+        const response = await fetch("/api/make-explanation", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json'
+                "Content-Type": "application/json",
             },
-            body: JSON.stringify(features)
+            body: JSON.stringify(features),
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        console.log('Explanation:', data);
+        console.log("Explanation:", data);
     } catch (error) {
-        console.error('Error getting explanation:', error);
+        console.error("Error getting explanation:", error);
         showError("Failed to get explanation. Please try again.");
     }
 }
 
 // Dataset Panel Functions
 function toggleDataset() {
-    const panel = document.getElementById('datasetPanel');
-    const container = document.querySelector('.container');
-    panel.classList.toggle('visible');
-    container.classList.toggle('shifted');
+    const panel = document.getElementById("datasetPanel");
+    const container = document.querySelector(".container");
+    panel.classList.toggle("visible");
+    container.classList.toggle("shifted");
 }
 
 async function fetchAndDisplayDataset() {
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/get-dataset');
+        const response = await fetch("http://127.0.0.1:8000/api/get-dataset");
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         displayDataset(data.dataset);
     } catch (error) {
-        console.error('Error fetching dataset:', error);
+        console.error("Error fetching dataset:", error);
         showError("Failed to load dataset. Please try refreshing the page.");
     }
 }
 
 function displayDataset(dataset) {
-    const tableDiv = document.getElementById('datasetTable');
+    const tableDiv = document.getElementById("datasetTable");
     if (!dataset || !dataset.length) {
-        tableDiv.innerHTML = '<p>No data available</p>';
+        tableDiv.innerHTML = "<p>No data available</p>";
         return;
     }
 
@@ -120,18 +118,24 @@ function displayDataset(dataset) {
         <table>
             <thead>
                 <tr>
-                    ${headers.map(header => `<th>${header}</th>`).join('')}
+                    ${headers.map((header) => `<th>${header}</th>`).join("")}
                 </tr>
             </thead>
             <tbody>
-                ${dataset.map(row => `
+                ${dataset
+                    .map(
+                        (row) => `
                     <tr>
-                        ${headers.map(header => `<td>${row[header]}</td>`).join('')}
+                        ${headers
+                            .map((header) => `<td>${row[header]}</td>`)
+                            .join("")}
                     </tr>
-                `).join('')}
+                `
+                    )
+                    .join("")}
             </tbody>
         </table>
     `;
-    
+
     tableDiv.innerHTML = tableHTML;
 }
