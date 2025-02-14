@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instance Explainer</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="container">
+        <div class="other-svg">
+            <svg width="100%" height="50">
+                <text x="10" y="25" font-size="20">Git track/LORE explaination/project shown during the first meeting</text>
+            </svg>
+        </div>
+
+        <div class="header">
+            <h1>Explain the instance</h1>
+            <button class="show-dataset-btn" onclick="toggleDataset()">Show dataset</button>
+        </div>
+
+        <div id="error-message"></div>
+
+        <div class="feature-button-container">
+            <div class="feature-carousel" id="featureCarousel">
+                <!-- Features will be dynamically added here -->
+            </div>
+            
+            <button class="reset-btn" onclick="resetFeatures()">Reset Features</button>
+            <button class="submit-btn" onclick="submitFeatures()">Explain Instance</button>
+        </div>
+        
+        <div class="svg-container">
+            <div class="svg-side-by-side">
+                <svg width="1000px" height="1000px">
+                    <text x="10" y="100" font-size="100">PCA</text>
+                </svg>
+                <svg width="1000px" height="1000px">
+                    <text x="10" y="100" font-size="100">Decision Tree</text>
+                </svg>
+            </div>
+            <div class="other-svg">
+                <svg width="100%" height="50">
+                    <text x="10" y="25" font-size="20">Git track/LORE explaination/project shown during the first meeting</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dataset Panel -->
+    <div id="datasetPanel" class="dataset-panel">
+        <div class="dataset-header">
+            <button class="hide-dataset-btn" onclick="toggleDataset()">←</button>
+            <h2>Dataset Overview</h2>
+        </div>
+        <div class="dataset-content">
+            <div id="datasetTable"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>
