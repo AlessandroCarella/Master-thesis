@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
 import json
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon
@@ -30,29 +28,6 @@ def preprocess_data(X):
     X_scaled = scaler.fit_transform(X)
     X_pca = pca.fit_transform(X_scaled)
     return X_pca, pca, scaler
-
-def train_decision_tree(X_pca, y):
-    """
-    Train a decision tree classifier on PCA-transformed data.
-    
-    Parameters:
-    -----------
-    X_pca : array-like
-        PCA transformed features
-    y : array-like
-        Target labels
-        
-    Returns:
-    --------
-    DecisionTreeClassifier
-        Trained classifier
-    """
-    X_train_pca, _, y_train, _ = train_test_split(
-        X_pca, y, test_size=0.3, random_state=42
-    )
-    dt_classifier = DecisionTreeClassifier(random_state=42)
-    dt_classifier.fit(X_train_pca, y_train)
-    return dt_classifier
 
 def generate_decision_boundary_grid(X_pca, step=0.1):
     """
@@ -219,9 +194,9 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def generate_pca_visualization_data(data_file, feature_names, target_names, X, y, step=0.1):
+def generate_pca_visualization_data(data_file, feature_names, target_names, X, y, pretrained_tree, step=0.1):
     """
-    Generate PCA visualization data and decision boundaries for classification data.
+    Generate PCA visualization data and decision boundaries for a pre-trained decision tree.
     
     Parameters:
     -----------
@@ -235,20 +210,24 @@ def generate_pca_visualization_data(data_file, feature_names, target_names, X, y
         Input features
     y : array-like
         Target labels
+    pretrained_tree : DecisionTreeClassifier
+        Pre-trained decision tree classifier on original (non-PCA) data
     step : float, default=0.1
         Step size for decision boundary grid
     """
     # Transform data
-    X_pca, pca, _ = preprocess_data(X)
+    X_pca, pca, scaler = preprocess_data(X)
     
-    # Train classifier
-    classifier = train_decision_tree(X_pca, y)
-    
-    # Generate grid
+    # Generate grid in PCA space
     xx, yy, (x_min, x_max, y_min, y_max) = generate_decision_boundary_grid(X_pca, step)
     
-    # Get predictions
-    Z = classifier.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+    # Transform grid points back to original space for prediction
+    grid_points = np.c_[xx.ravel(), yy.ravel()]
+    grid_original = pca.inverse_transform(grid_points)
+    grid_original = scaler.inverse_transform(grid_original)
+    
+    # Get predictions using the pre-trained tree
+    Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
     
     # Filter PCA points
     filtered_pca_data, filtered_labels = filter_points_by_class_kmeans(
