@@ -245,7 +245,6 @@ def generate_pca_visualization_data(data_file, feature_names, target_names, X, y
     visualization_data = {
         "pcaData": filtered_pca_data.tolist(),
         "targets": filtered_labels.tolist(),
-        "targetNames": list(target_names),
         "decisionBoundary": {
             "regions": [list(p.exterior.coords) for p in merged_regions],
             "regionClasses": [int(c) for c in merged_classes],

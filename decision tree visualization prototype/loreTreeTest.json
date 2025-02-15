@@ -1,0 +1,92 @@
+[
+    {
+        "node_id": 0,
+        "feature_name": "power",
+        "threshold": 2.2930110692977905,
+        "left_child": 1,
+        "right_child": 2,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 100
+    },
+    {
+        "node_id": 1,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "samples": 30
+    },
+    {
+        "node_id": 2,
+        "feature_name": "engine_age",
+        "threshold": 7.406672716140747,
+        "left_child": 3,
+        "right_child": 8,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 70
+    },
+    {
+        "node_id": 3,
+        "feature_name": "engine_age",
+        "threshold": 5.911484003067017,
+        "left_child": 4,
+        "right_child": 5,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 58
+    },
+    {
+        "node_id": 4,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "samples": 45
+    },
+    {
+        "node_id": 5,
+        "feature_name": "month",
+        "threshold": 1.2483662068843842,
+        "left_child": 6,
+        "right_child": 7,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 13
+    },
+    {
+        "node_id": 6,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "samples": 9
+    },
+    {
+        "node_id": 7,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "virginica",
+        "samples": 4
+    },
+    {
+        "node_id": 8,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "virginica",
+        "samples": 12
+    }
+]

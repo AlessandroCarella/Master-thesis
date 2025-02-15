@@ -1,53 +1,53 @@
 [
     {
         "node_id": 0,
-        "feature_name": "month",
-        "threshold": 0.6622086763381958,
+        "feature_name": "engine_age",
+        "threshold": 6.203963041305542,
         "left_child": 1,
-        "right_child": 16,
+        "right_child": 6,
         "is_leaf": false,
         "class_label": null,
         "samples": 100
     },
     {
         "node_id": 1,
-        "feature_name": "engine_age",
-        "threshold": 6.817213773727417,
+        "feature_name": "month",
+        "threshold": 0.6179494559764862,
         "left_child": 2,
-        "right_child": 9,
+        "right_child": 3,
         "is_leaf": false,
         "class_label": null,
-        "samples": 76
+        "samples": 64
     },
     {
         "node_id": 2,
-        "feature_name": "length",
-        "threshold": 2.7191624641418457,
-        "left_child": 3,
-        "right_child": 8,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 60
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "samples": 11
     },
     {
         "node_id": 3,
         "feature_name": "power",
-        "threshold": 4.288103938102722,
+        "threshold": 2.2489569187164307,
         "left_child": 4,
-        "right_child": 7,
+        "right_child": 5,
         "is_leaf": false,
         "class_label": null,
-        "samples": 21
+        "samples": 53
     },
     {
         "node_id": 4,
-        "feature_name": "power",
-        "threshold": 3.0053982734680176,
-        "left_child": 5,
-        "right_child": 6,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 6
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "samples": 2
     },
     {
         "node_id": 5,
@@ -56,28 +56,28 @@
         "left_child": null,
         "right_child": null,
         "is_leaf": true,
-        "class_label": "setosa",
-        "samples": 4
+        "class_label": "versicolor",
+        "samples": 51
     },
     {
         "node_id": 6,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "versicolor",
-        "samples": 2
+        "feature_name": "month",
+        "threshold": 1.08671173453331,
+        "left_child": 7,
+        "right_child": 12,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 36
     },
     {
         "node_id": 7,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "setosa",
-        "samples": 15
+        "feature_name": "length",
+        "threshold": 3.094053030014038,
+        "left_child": 8,
+        "right_child": 9,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 13
     },
     {
         "node_id": 8,
@@ -86,61 +86,21 @@
         "left_child": null,
         "right_child": null,
         "is_leaf": true,
-        "class_label": "setosa",
-        "samples": 39
+        "class_label": "versicolor",
+        "samples": 8
     },
     {
         "node_id": 9,
-        "feature_name": "power",
-        "threshold": 5.007050633430481,
+        "feature_name": "month",
+        "threshold": 0.6953906118869781,
         "left_child": 10,
-        "right_child": 13,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 16
-    },
-    {
-        "node_id": 10,
-        "feature_name": "length",
-        "threshold": 3.6231372356414795,
-        "left_child": 11,
-        "right_child": 12,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 11
-    },
-    {
-        "node_id": 11,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "versicolor",
-        "samples": 9
-    },
-    {
-        "node_id": 12,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "setosa",
-        "samples": 2
-    },
-    {
-        "node_id": 13,
-        "feature_name": "engine_age",
-        "threshold": 7.239418268203735,
-        "left_child": 14,
-        "right_child": 15,
+        "right_child": 11,
         "is_leaf": false,
         "class_label": null,
         "samples": 5
     },
     {
-        "node_id": 14,
+        "node_id": 10,
         "feature_name": null,
         "threshold": null,
         "left_child": null,
@@ -150,7 +110,7 @@
         "samples": 2
     },
     {
-        "node_id": 15,
+        "node_id": 11,
         "feature_name": null,
         "threshold": null,
         "left_child": null,
@@ -160,73 +120,13 @@
         "samples": 3
     },
     {
-        "node_id": 16,
-        "feature_name": "power",
-        "threshold": 3.0053982734680176,
-        "left_child": 17,
-        "right_child": 18,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 24
-    },
-    {
-        "node_id": 17,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "versicolor",
-        "samples": 4
-    },
-    {
-        "node_id": 18,
-        "feature_name": "engine_age",
-        "threshold": 7.387653589248657,
-        "left_child": 19,
-        "right_child": 20,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 20
-    },
-    {
-        "node_id": 19,
+        "node_id": 12,
         "feature_name": null,
         "threshold": null,
         "left_child": null,
         "right_child": null,
         "is_leaf": true,
         "class_label": "virginica",
-        "samples": 18
-    },
-    {
-        "node_id": 20,
-        "feature_name": "month",
-        "threshold": 1.3974373936653137,
-        "left_child": 21,
-        "right_child": 22,
-        "is_leaf": false,
-        "class_label": null,
-        "samples": 2
-    },
-    {
-        "node_id": 21,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "versicolor",
-        "samples": 1
-    },
-    {
-        "node_id": 22,
-        "feature_name": null,
-        "threshold": null,
-        "left_child": null,
-        "right_child": null,
-        "is_leaf": true,
-        "class_label": "virginica",
-        "samples": 1
+        "samples": 23
     }
 ]

@@ -8,7 +8,7 @@ import uvicorn
 import json
 
 # Sample tree data (same data as you provided)
-dataFile = "loreTest.json"
+dataFile = "loreTreeTest.json"
 dataFile2 = "testTree.json"
 dataFile3 = "fishingTree.json"
 

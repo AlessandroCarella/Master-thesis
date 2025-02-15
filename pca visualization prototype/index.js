@@ -102,7 +102,7 @@ function createPoints(g, data, x, y, color, tooltip) {
 // Show tooltip on hover
 function showTooltip(event, d, i, data, tooltip) {
     const index = data.pcaData.indexOf(d);
-    const className = data.targetNames[data.targets[index]];
+    const className = data.targets[index];
     tooltip.transition().duration(200).style("opacity", 0.9);
     tooltip
         .html(`Class: ${className}`)
