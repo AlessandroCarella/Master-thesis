@@ -8,6 +8,8 @@ import json
 import numpy as np
 import pandas as pd
 
+from pythonHelpers.generate_decision_tree_visualization_data import TreeNode
+
 # Keep track of which files are currently active
 current_tree_file = "data/loreTreeTest.json"
 current_pca_file = "data/lorePCATest.json"
@@ -29,23 +31,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@dataclass
-class TreeNode:
-    """Class to store decision tree node information"""
-    node_id: int
-    feature_name: Optional[str]
-    threshold: Optional[float]
-    left_child: Optional[int]
-    right_child: Optional[int]
-    is_leaf: bool
-    class_label: Optional[str]
-    samples: int
-
-# Tree visualization endpoints
-@app.get("/api/get-df-features")
-async def get_df_features():
-    return ["test", "test"]
-
 # Tree visualization endpoints
 @app.get("/api/tree_data", response_model=List[TreeNode])
 async def get_tree_data():
@@ -53,7 +38,6 @@ async def get_tree_data():
     with open(current_tree_file, 'r') as f:
         tree_data = json.load(f)
     return tree_data
-
 
 # PCA visualization endpoints
 @app.get("/api/pca-data")
@@ -83,6 +67,10 @@ async def get_mock_dataset():
 
     """Get a mock dataset"""
     return {"dataset": create_mock_dataset().head(50).to_dict('records')}
+
+@app.get("/api/get-df-features")
+async def get_df_features():
+    return ["Feature 1", "Feature 2", "Feature 3"]
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

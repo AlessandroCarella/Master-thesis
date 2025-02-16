@@ -15,7 +15,7 @@ function createTooltip() {
     return d3
         .select("body")
         .append("div")
-        .attr("class", "tooltip")
+        .attr("class", "pca-tooltip")
         .style("opacity", 0)
         .style("position", "absolute")
         .style("background-color", "white")
@@ -146,9 +146,9 @@ function togglePointColor(node, d, data, color) {
 
 // Create the PCA scatter plot
 function createPCAscatterPlot(data, container) {
-    const width = 1000;
-    const height = 1000;
-    const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+    const width = 800;
+    const height = 800;
+    const margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
     const tooltip = createTooltip();
 

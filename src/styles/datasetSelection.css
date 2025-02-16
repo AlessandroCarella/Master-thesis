@@ -1,0 +1,52 @@
+.dataset-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80vw;
+    margin: 32px auto;
+    padding: 24px;
+    background-color: var(--panel-background);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.dataset-carousel {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    width: calc(100% - 48px);
+    overflow-x: auto;
+}
+
+.dataset-box {
+    width: 15vw;
+    padding: 16px;
+    background-color: var(--background-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.feature-name {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.dataset-box button {
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: background-color 0.2s;
+}
+
+.dataset-box button:hover {
+    background-color: var(--secondary-color);
+} 

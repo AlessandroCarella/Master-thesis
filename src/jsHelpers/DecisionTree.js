@@ -80,8 +80,8 @@ function createVisualization(rawTreeData) {
 // Function to get visualization settings
 function getVisualizationSettings() {
     const margin = { top: 90, right: 90, bottom: 90, left: 90 };
-    const width = 1000;
-    const height = 1000;
+    const width = 800;
+    const height = 800;
     return {
         margin,
         size: {
@@ -263,7 +263,10 @@ function createContentGroup(svg, SETTINGS) {
 
 // Function to create a tooltip for displaying node information
 function createTooltip() {
-    return d3.select("body").append("div").attr("class", "tooltip"); // Append a div for the tooltip
+    return d3.select("body")
+        .append("div")
+        .attr("class", "decision-tree-tooltip")
+        .style("visibility", "hidden"); // Set initial visibility to hidden
 }
 
 // Function to add a background layer to the visualization

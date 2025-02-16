@@ -11,28 +11,75 @@
         <link rel="stylesheet" href="styles/index.css" />
         <link rel="stylesheet" href="styles/dataset.css" />
         <link rel="stylesheet" href="styles/featureCarousel.css" />
+        <link rel="stylesheet" href="styles/PCA.css" />
+        <link rel="stylesheet" href="styles/DecisionTree.css" />
+        <link rel="stylesheet" href="styles/datasetSelection.css" />
     </head>
     <body>
         <div class="container">
-            <div class="svg-container">
-                <svg width="100%" height="50">
-                    <text x="1000" y="25" font-size="20">
-                        Git track/LORE explaination/project shown during the
-                        first meeting
-                    </text>
-                </svg>
+            <!-- New Dataset Selection Section -->
+            <div class="dataset-selection" id="datasetSelection">
+                <h2>Select Dataset</h2>
+                <div class="dataset-carousel" id="datasetCarousel">
+                    <div class="dataset-box">
+                        <span class="feature-name">Iris</span>
+                        <button onclick="selectDataset('iris')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                    <div class="dataset-box">
+                        <span class="feature-name">Abalone</span>
+                        <button onclick="selectDataset('abalone')">Select</button>
+                    </div>
+                </div>
             </div>
-
-            <div class="header">
+            
+            <div class="header" id="header" style="display: none;">
                 <h1>Instance Explainer</h1>
                 <button class="show-dataset-btn" onclick="toggleDataset()">
                     View Dataset
                 </button>
             </div>
 
-            <div id="error-message"></div>
-
-            <div class="feature-button-container">
+            <div class="feature-button-container" id="featureButtonContainer" style="display: none;">
                 <div class="feature-carousel" id="featureCarousel">
                     <!-- Features will be dynamically added here -->
                 </div>
@@ -47,28 +94,19 @@
                 </div>
             </div>
 
-            <div class="svg-container">
+            <div class="svg-container" id="svg-container" style="display: none;">
                 <div class="svg-side-by-side">
                     <div class="visualization-container">
-                        <h2>PCA Scatter Plot</h2>
+                        <h2>Neighborhood PCA</h2>
+                        <div id="pca-plot"></div>
                         <div id="x-axis-label"></div>
                         <div id="y-axis-label"></div>
-                        <div id="pca-plot"></div>
                     </div>
                     <div class="visualization-container">
-                        <h2>Decision Tree Visualization</h2>
+                        <h2>Surrogate Model</h2>
                         <div id="visualization"></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="svg-container">
-                <svg width="100%" height="50">
-                    <text x="1000" y="25" font-size="20">
-                        Git track/LORE explaination/project shown during the
-                        first meeting
-                    </text>
-                </svg>
             </div>
         </div>
 
