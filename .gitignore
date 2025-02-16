@@ -53,6 +53,7 @@ coverage.xml
 #### JavaScript / TypeScript ####
 # Dependency directories
 node_modules/
+*/package-lock.json
 
 # Logs
 npm-debug.log*

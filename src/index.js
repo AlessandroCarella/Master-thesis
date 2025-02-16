@@ -1,10 +1,10 @@
 // index.js
 import {
     fetchTreeData,
-} from './DecisionTree.js';
+} from './jsHelpers/DecisionTree.js';
 import {
     initializeScatterPlot,
-} from './PCA.js';
+} from './jsHelpers/PCA.js';
 
 let chart1, chart2;
 // Fetch features when page loads
