@@ -6,13 +6,12 @@ import {
     initializeScatterPlot,
 } from './jsHelpers/PCA.js';
 
-let chart1, chart2;
 // Fetch features when page loads
 window.onload = async function () {
     try {
         const features = await fetchFeatures();
         populateFeatureCarousel(features);
-        await fetchAndDisplayDataset(); // Fetch initial dataset
+        await fetchDataset(); // Fetch initial dataset
     } catch (error) {
         showError("Failed to load features. Please try refreshing the page.");
     }
@@ -45,13 +44,12 @@ async function resetFeatures() {
 }
 
 async function fetchDefaultFeatures() {
-    // Mock default values for features
     return ["Default Feature 1", "Default Feature 2", "Default Feature 3"];
 }
 
 function populateFeatureCarousel(features) {
     const carousel = document.getElementById("featureCarousel");
-    carousel.innerHTML = ""; // Clear existing content
+    carousel.innerHTML = "";
     features.forEach((feature) => {
         const box = document.createElement("div");
         box.className = "feature-box";
@@ -91,29 +89,37 @@ async function submitFeatures() {
 }
 
 // Dataset Panel Functions
-function toggleDataset() {
+window.toggleDataset = async function() {
     const panel = document.getElementById("datasetPanel");
     const container = document.querySelector(".container");
     panel.classList.toggle("visible");
     container.classList.toggle("shifted");
-}
 
-async function fetchAndDisplayDataset() {
+    if (panel.classList.contains("visible")) {
+        const dataset = await fetchDataset(); // Fetch dataset here
+        displayDataset(dataset.dataset); // Pass dataset to displayDataset
+    }
+};
+
+async function fetchDataset() {
     try {
         const response = await fetch("http://127.0.0.1:8000/api/get-dataset");
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        displayDataset(data.dataset);
+        console.log("Fetched dataset:", data);
+        return data;
     } catch (error) {
         console.error("Error fetching dataset:", error);
         showError("Failed to load dataset. Please try refreshing the page.");
+        return null;
     }
 }
 
-function displayDataset(dataset) {
+async function displayDataset(dataset) {
     const tableDiv = document.getElementById("datasetTable");
+    
     if (!dataset || !dataset.length) {
         tableDiv.innerHTML = "<p>No data available</p>";
         return;
@@ -149,7 +155,6 @@ function displayDataset(dataset) {
 // Function to initialize both visualizations
 async function initializeVisualizations() {
     try {
-        // Initialize both visualizations in parallel
         const [treeData, scatterData] = await Promise.all([
             fetchTreeData(),
             initializeScatterPlot("#pca-plot")
@@ -161,5 +166,4 @@ async function initializeVisualizations() {
     }
 }
 
-// Initialize when the document is loaded
 document.addEventListener("DOMContentLoaded", initializeVisualizations);
