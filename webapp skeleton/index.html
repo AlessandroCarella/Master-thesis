@@ -8,7 +8,9 @@
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
         />
-        <link rel="stylesheet" href="index.css" />
+        <link rel="stylesheet" href="styles/index.css" />
+        <link rel="stylesheet" href="styles/dataset.css" />
+        <link rel="stylesheet" href="styles/featureCarousel.css" />
     </head>
     <body>
         <div class="container">
@@ -47,28 +49,16 @@
 
             <div class="svg-container">
                 <div class="svg-side-by-side">
-                    <svg width="1000" height="1000" viewBox="0 0 1000 1000">
-                        <text
-                            x="50%"
-                            y="50%"
-                            font-size="24"
-                            text-anchor="middle"
-                            fill="#212529"
-                        >
-                            PCA Visualization
-                        </text>
-                    </svg>
-                    <svg width="1000" height="1000" viewBox="0 0 1000 1000">
-                        <text
-                            x="50%"
-                            y="50%"
-                            font-size="24"
-                            text-anchor="middle"
-                            fill="#212529"
-                        >
-                            Decision Tree Visualization
-                        </text>
-                    </svg>
+                    <div class="visualization-container">
+                        <h2>PCA Scatter Plot</h2>
+                        <div id="x-axis-label"></div>
+                        <div id="y-axis-label"></div>
+                        <div id="pca-plot"></div>
+                    </div>
+                    <div class="visualization-container">
+                        <h2>Decision Tree Visualization</h2>
+                        <div id="visualization"></div>
+                    </div>
                 </div>
             </div>
 
@@ -95,7 +85,7 @@
             </div>
         </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="index.js"></script>
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+        <script type="module" src="index.js"></script>
     </body>
 </html>

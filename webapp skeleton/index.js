@@ -1,6 +1,12 @@
 // index.js
-let chart1, chart2;
+import {
+    fetchTreeData,
+} from './DecisionTree.js';
+import {
+    initializeScatterPlot,
+} from './PCA.js';
 
+let chart1, chart2;
 // Fetch features when page loads
 window.onload = async function () {
     try {
@@ -139,3 +145,21 @@ function displayDataset(dataset) {
 
     tableDiv.innerHTML = tableHTML;
 }
+
+// Function to initialize both visualizations
+async function initializeVisualizations() {
+    try {
+        // Initialize both visualizations in parallel
+        const [treeData, scatterData] = await Promise.all([
+            fetchTreeData(),
+            initializeScatterPlot("#pca-plot")
+        ]);
+
+        return { treeData, scatterData };
+    } catch (error) {
+        console.error("Error initializing visualizations:", error);
+    }
+}
+
+// Initialize when the document is loaded
+document.addEventListener("DOMContentLoaded", initializeVisualizations);

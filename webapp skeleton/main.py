@@ -1,74 +1,64 @@
+from dataclasses import dataclass
+from typing import List, Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, List
-import pandas as pd
-import numpy as np
-import os
+import uvicorn
+import json
+
+# Keep track of which files are currently active
+current_tree_file = "data/loreTreeTest.json"
+current_pca_file = "data/lorePCATest.json"
 
 app = FastAPI()
 
-# Add CORS middleware
+# Allow specified origins
+origins = [
+    "http://localhost:8080",
+    "http://192.168.1.191:8080",
+]
+
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mock features list
-MOCK_FEATURES = [
-    "age", "income", "education_years", "occupation", "credit_score",
-    "debt_ratio", "employment_length", "loan_amount", "loan_term"
-]
+@dataclass
+class TreeNode:
+    """Class to store decision tree node information"""
+    node_id: int
+    feature_name: Optional[str]
+    threshold: Optional[float]
+    left_child: Optional[int]
+    right_child: Optional[int]
+    is_leaf: bool
+    class_label: Optional[str]
+    samples: int
 
-# Create mock dataset
-def create_mock_dataset(n_rows=100):
-    np.random.seed(42)
-    data = {
-        "age": np.random.randint(18, 70, n_rows),
-        "income": np.random.randint(30000, 150000, n_rows),
-        "education_years": np.random.randint(12, 22, n_rows),
-        "occupation": np.random.choice(["Engineer", "Teacher", "Doctor", "Sales", "Other"], n_rows),
-        "credit_score": np.random.randint(300, 850, n_rows),
-        "debt_ratio": np.random.uniform(0, 1, n_rows),
-        "employment_length": np.random.randint(0, 30, n_rows),
-        "loan_amount": np.random.randint(5000, 50000, n_rows),
-        "loan_term": np.random.choice([12, 24, 36, 48, 60], n_rows)
-    }
-    return pd.DataFrame(data)
-
-# Create mock dataset
-MOCK_DF = create_mock_dataset()
-
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to the API!"}
-
+# Tree visualization endpoints
 @app.get("/api/get-df-features")
-async def get_features():
-    """Return the list of features from the dataset"""
-    return {"features": MOCK_FEATURES}
+async def get_df_features():
+    return ["test", "test"]
 
-@app.get("/api/get-dataset")
-async def get_dataset():
-    """Return the dataset as a list of dictionaries"""
-    return {"dataset": MOCK_DF.head(50).to_dict('records')}
+# Tree visualization endpoints
+@app.get("/api/tree_data", response_model=List[TreeNode])
+async def get_tree_data():
+    """Get current tree visualization data"""
+    with open(current_tree_file, 'r') as f:
+        tree_data = json.load(f)
+    return tree_data
 
-@app.post("/api/make-explanation")
-async def make_explanation(feature_data: Dict[str, str]):
-    """Generate explanation based on feature values"""
-    return {
-        "explanation": "This is a mock explanation based on the provided features",
-        "importance_scores": {
-            feature: 0.5 for feature in feature_data.keys()
-        }
-    }
+
+# PCA visualization endpoints
+@app.get("/api/pca-data")
+async def get_pca_data():
+    """Get current PCA visualization data"""
+    with open(current_pca_file) as f:
+        return json.load(f)
 
 if __name__ == "__main__":
-    # Create static directory if it doesn't exist
-    os.makedirs("static", exist_ok=True)
-    
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
