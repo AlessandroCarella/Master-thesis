@@ -4,7 +4,7 @@ import {
 } from './DecisionTree.js';
 import {
     initializeScatterPlot,
-    createScatterPlot,
+    createPCAscatterPlot,
     fetchScatterData
 } from './PCA.js';
 

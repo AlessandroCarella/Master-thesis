@@ -1,6 +1,6 @@
 export {
     initialize as initializeScatterPlot,
-    createScatterPlot,
+    createPCAscatterPlot,
     fetchData as fetchScatterData
 };
 
@@ -145,7 +145,7 @@ function togglePointColor(node, d, data, color) {
 }
 
 // Create the PCA scatter plot
-function createScatterPlot(data, container) {
+function createPCAscatterPlot(data, container) {
     const width = 1000;
     const height = 1000;
     const margin = { top: 40, right: 40, bottom: 60, left: 60 };
@@ -200,6 +200,6 @@ function createScatterPlot(data, container) {
 // Initialize visualizations
 async function initialize(container = "#pca-plot") {
     const data = await fetchData();
-    createScatterPlot(data, container);
+    createPCAscatterPlot(data, container);
     return data;
 }
