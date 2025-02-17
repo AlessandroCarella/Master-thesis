@@ -130,8 +130,8 @@ window.explainInstance = async function () {
     const requestData = {
         instance: instanceData,
         dataset_name: datasetName,
-        neighbourhood_size: 50,  // Adjust as needed
-        PCAstep: 0.1             // Adjust as needed
+        neighbourhood_size: 100,
+        PCAstep: 0.1
     };
 
     try {
@@ -146,7 +146,17 @@ window.explainInstance = async function () {
         }
 
         const result = await response.json();
-        console.log("Explanation Result:", result);
+        
+        // Show the visualization container
+        document.querySelector('.svg-container').style.display = 'block';
+        
+        // Initialize visualizations with the new data
+        initializeVisualizations({
+            decisionTreeVisualizationData: result.decisionTreeVisualizationData,
+            PCAvisualizationData: result.PCAvisualizationData
+        });
+
+        console.log("Visualization data received:", result);
     } catch (error) {
         console.error("Failed to explain instance:", error);
     }
@@ -171,6 +181,3 @@ window.onload = async function() {
         console.error("Failed to load datasets:", error);
     }
 };
-
-// Initialize visualizations once the DOM content is fully loaded
-document.addEventListener("DOMContentLoaded", initializeVisualizations);

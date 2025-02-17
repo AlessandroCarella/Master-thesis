@@ -41,7 +41,18 @@
 
                 <!-- Original visualization sections (hidden initially) -->
                 <div class="svg-container" id="svg-container" style="display: none;">
-                    <!-- Original visualization content -->
+                    <div class="svg-side-by-side">
+                        <div class="visualization-container">
+                            <h2>Neighborhood PCA</h2>
+                            <div id="pca-plot"></div>
+                            <div id="x-axis-label"></div>
+                            <div id="y-axis-label"></div>
+                        </div>
+                        <div class="visualization-container">
+                            <h2>Surrogate Model</h2>
+                            <div id="visualization"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -64,21 +75,6 @@
                     <button class="submit-btn" onclick="explainInstance()">
                         Explain!
                     </button>
-                </div>
-            </div>
-
-            <div class="svg-container" id="svg-container" style="display: none;">
-                <div class="svg-side-by-side">
-                    <div class="visualization-container">
-                        <h2>Neighborhood PCA</h2>
-                        <div id="pca-plot"></div>
-                        <div id="x-axis-label"></div>
-                        <div id="y-axis-label"></div>
-                    </div>
-                    <div class="visualization-container">
-                        <h2>Surrogate Model</h2>
-                        <div id="visualization"></div>
-                    </div>
                 </div>
             </div>
         </div>

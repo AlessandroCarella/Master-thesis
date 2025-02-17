@@ -1,29 +1,15 @@
 export {
-    fetchTreeData,
     createVisualization,
 };
 
-// Function to fetch tree data from the server
-async function fetchTreeData() {
-    try {
-        // Fetch data from the specified URL
-        const response = await fetch("http://localhost:8000/api/tree_data");
-        // Check if the response is not OK, throw an error
-        if (!response.ok) {
-            throw new Error("Failed to fetch tree data");
-        }
-        // Parse the response as JSON
-        const data = await response.json();
-        // Create visualization with the fetched data
-        createVisualization(data);
-    } catch (error) {
-        // Log any errors that occur during the fetch
-        console.error("Error fetching tree data:", error);
-    }
-}
-
 // Function to create a hierarchy from the flat data
 function createHierarchy(data) {
+    // Guard against undefined or null data
+    if (!data || !Array.isArray(data)) {
+        console.error('Invalid data provided to createHierarchy:', data);
+        return null;
+    }
+
     const nodesById = {};
     // Create a map of nodes by their ID
     data.forEach((node) => {
@@ -32,6 +18,11 @@ function createHierarchy(data) {
 
     // Assume the root node has ID 0
     const root = nodesById[0];
+    if (!root) {
+        console.error('No root node found in data');
+        return null;
+    }
+
     // Assign children to each node based on left and right child IDs
     data.forEach((node) => {
         if (node.left_child !== null) {
@@ -42,14 +33,28 @@ function createHierarchy(data) {
         }
     });
 
-    return root; // Return the root of the hierarchy
+    return root;
 }
 
 // Function to create the visualization using D3.js
 function createVisualization(rawTreeData) {
+    // Guard against undefined or null data
+    if (!rawTreeData) {
+        console.error('No tree data provided to createVisualization');
+        return;
+    }
+
     const SETTINGS = getVisualizationSettings();
-    const root = d3.hierarchy(createHierarchy(rawTreeData));
-    const metrics = calculateMetrics(root, SETTINGS); // Declare locally with const
+    const hierarchyRoot = createHierarchy(rawTreeData);
+    
+    // Guard against failed hierarchy creation
+    if (!hierarchyRoot) {
+        console.error('Failed to create hierarchy from tree data');
+        return;
+    }
+
+    const root = d3.hierarchy(hierarchyRoot);
+    const metrics = calculateMetrics(root, SETTINGS);
 
     clearExistingSVG();
     const svg = createSVGContainer(SETTINGS);
@@ -63,7 +68,6 @@ function createVisualization(rawTreeData) {
     addLinks(contentGroup, treeData, metrics, SETTINGS);
     addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeData);
 
-    // Calculate initial transform before initializing zoom
     const initialTransform = calculateInitialTransform(treeData, SETTINGS);
     const zoom = initializeZoom(
         svg,
@@ -73,7 +77,6 @@ function createVisualization(rawTreeData) {
         initialTransform.k
     );
 
-    // Apply initial transform using the zoom behavior
     svg.call(zoom.transform, initialTransform);
 }
 
@@ -180,38 +183,6 @@ function createTreeLayout(metrics, SETTINGS, root) {
 // Function to calculate the radius of a node
 function calculateNodeRadius(d, metrics) {
     return metrics.nodeRadius; // Default radius
-}
-
-// Function to apply initial transform to center the visualization
-function applyZoomToFit(contentGroup, treeData, SETTINGS) {
-    // Compute the extents of the tree based on layout coordinates
-    const allNodes = treeData.descendants();
-    const xExtent = d3.extent(allNodes, (d) => d.x);
-    const yExtent = d3.extent(allNodes, (d) => d.y);
-
-    const treeWidth = xExtent[1] - xExtent[0];
-    const treeHeight = yExtent[1] - yExtent[0];
-
-    // Compute the scale factors for both directions
-    const scaleX = SETTINGS.size.innerWidth / treeWidth;
-    const scaleY = SETTINGS.size.innerHeight / treeHeight;
-    // Use the smaller scaling to ensure the tree fits in both dimensions
-    const k = Math.min(scaleX, scaleY);
-
-    // Compute the translation offsets to center the tree in the container
-    const translateX =
-        (SETTINGS.size.innerWidth - treeWidth * k) / 2 -
-        xExtent[0] * k +
-        SETTINGS.margin.left;
-    const translateY =
-        (SETTINGS.size.innerHeight - treeHeight * k) / 2 -
-        yExtent[0] * k +
-        SETTINGS.margin.top;
-
-    contentGroup.attr(
-        "transform",
-        `translate(${translateX}, ${translateY}) scale(${k})`
-    );
 }
 
 // Function to initialize zoom functionality

@@ -1,14 +1,6 @@
 export {
-    initialize as initializeScatterPlot,
     createPCAscatterPlot,
-    fetchData as fetchScatterData
 };
-
-// Fetch data from the FastAPI backend
-async function fetchData() {
-    const response = await fetch("http://localhost:8000/api/pca-data");
-    return await response.json();
-}
 
 // Create tooltip
 function createTooltip() {
@@ -146,6 +138,12 @@ function togglePointColor(node, d, data, color) {
 
 // Create the PCA scatter plot
 function createPCAscatterPlot(data, container) {
+    // Validate input data
+    if (!data || !data.pcaData || !data.targets || !data.decisionBoundary) {
+        console.error("Invalid PCA data structure:", data);
+        return;
+    }
+
     const width = 800;
     const height = 800;
     const margin = { top: 40, right: 40, bottom: 40, left: 40 };
@@ -195,11 +193,4 @@ function createPCAscatterPlot(data, container) {
 
     // Create points
     createPoints(g, data, x, y, color, tooltip);
-}
-
-// Initialize visualizations
-async function initialize(container = "#pca-plot") {
-    const data = await fetchData();
-    createPCAscatterPlot(data, container);
-    return data;
 }

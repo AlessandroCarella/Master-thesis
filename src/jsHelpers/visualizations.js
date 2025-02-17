@@ -1,15 +1,21 @@
-import { fetchTreeData } from './DecisionTree.js';
-import { initializeScatterPlot } from './PCA.js';
+import { createVisualization } from './DecisionTree.js';
+import { createPCAscatterPlot } from './PCA.js';
 
-export async function initializeVisualizations() {
-    try {
-        const [treeData, scatterData] = await Promise.all([
-            fetchTreeData(),
-            initializeScatterPlot("#pca-plot")
-        ]);
+export function initializeVisualizations(data) {
+    if (!data) {
+        console.log("No visualization data provided");
+        return;
+    }
 
-        return { treeData, scatterData };
-    } catch (error) {
-        console.error("Error initializing visualizations:", error);
+    // Clear existing visualizations
+    d3.select("#pca-plot").selectAll("*").remove();
+    d3.select("#visualization").selectAll("*").remove();
+
+    if (data.PCAvisualizationData) {
+        createPCAscatterPlot(data.PCAvisualizationData, "#pca-plot");
+    }
+
+    if (data.decisionTreeVisualizationData) {
+        createVisualization(data.decisionTreeVisualizationData);
     }
 }
