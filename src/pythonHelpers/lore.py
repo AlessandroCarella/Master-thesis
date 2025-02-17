@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from lore_sa.bbox import sklearn_classifier_bbox
 from lore_sa.dataset import TabularDataset
 
-def tutorial_train_model_generalized(dataset: TabularDataset, target_name:str, classifier=RandomForestClassifier(n_estimators=100, random_state=42)):
+def train_model_generalized(dataset: TabularDataset, target_name:str, classifier=RandomForestClassifier(n_estimators=100, random_state=42)):
     numeric_indices = [v['index'] for k, v in dataset.descriptor['numeric'].items()]
     categorical_indices = [v['index'] for k, v in dataset.descriptor['categorical'].items()]
 

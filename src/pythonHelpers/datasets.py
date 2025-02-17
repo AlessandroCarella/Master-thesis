@@ -34,22 +34,6 @@ def get_dataset_information(dataset_name: str):
     except Exception as e:
         return {"error": f"Error loading dataset: {str(e)}"}
 
-def create_mock_dataset(n_rows=100):
-    """Create a mock dataset for testing"""
-    np.random.seed(42)
-    data = {
-        "age": np.random.randint(18, 70, n_rows),
-        "income": np.random.randint(30000, 150000, n_rows),
-        "education_years": np.random.randint(12, 22, n_rows),
-        "occupation": np.random.choice(["Engineer", "Teacher", "Doctor", "Sales", "Other"], n_rows),
-        "credit_score": np.random.randint(300, 850, n_rows),
-        "debt_ratio": np.random.uniform(0, 1, n_rows),
-        "employment_length": np.random.randint(0, 30, n_rows),
-        "loan_amount": np.random.randint(5000, 50000, n_rows),
-        "loan_term": np.random.choice([12, 24, 36, 48, 60], n_rows)
-    }
-    return pd.DataFrame(data)
-
 def load_dataset(dataset_name: str):
     """Load a dataset and return features, target, and metadata"""
     if dataset_name not in DATASETS:

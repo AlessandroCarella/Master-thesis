@@ -5,7 +5,7 @@ from lore_sa.dataset import TabularDataset
 from typing import Dict, Any
 
 from pythonHelpers.datasets import load_dataset
-from pythonHelpers.lore import tutorial_train_model_generalized
+from pythonHelpers.lore import train_model_generalized
         
 # Available classifiers and their default parameters
 CLASSIFIERS = {
@@ -53,7 +53,7 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
     classifier = create_classifier(classifier_name, parameters)
     
     # Train model using LORE
-    return tutorial_train_model_generalized(
+    return train_model_generalized(
         dataset=dataset,
         target_name=target_name,
         classifier=classifier

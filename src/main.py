@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 
-from pythonHelpers.datasets import get_available_datasets, get_dataset_information, create_mock_dataset
+from pythonHelpers.datasets import get_available_datasets, get_dataset_information
 from pythonHelpers.model import get_available_classifiers, train_model_with_lore
 from pythonHelpers.visualization import get_tree_visualization, get_pca_visualization
 
@@ -72,7 +72,7 @@ async def get_pca_data():
 @app.get("/api/get-dataset")
 async def get_mock_dataset():
     """Get a mock dataset"""
-    return {"dataset": create_mock_dataset().head(50).to_dict('records')}
+    return {"dataset": {}}
 
 @app.get("/api/get-df-features")
 async def get_df_features():
