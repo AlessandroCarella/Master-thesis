@@ -27,7 +27,7 @@ export const appState = {
 /********************************************
  *              UI RESET
  ********************************************/
-function resetUI() {
+function resetUIDatasetSelection() {
     // Hide classifier section
     document.getElementById("classifierSection").style.display = "none";
     
@@ -50,6 +50,36 @@ function resetUI() {
     appState.selectedClassifier = null;
     appState.parameters = {};
     appState.featureDescriptor = null;
+}
+
+function resetUISelectClassifier() {
+
+    // // Hide and reset parameter section
+    // document.getElementById("parameterSection").style.display = "none";
+    // document.getElementById("parameterForm").innerHTML = "";
+    
+    // Hide and reset feature inputs
+    document.getElementById("featureButtonContainer").style.display = "none";
+    document.getElementById("featureCarousel").innerHTML = "";
+    
+    // Hide visualization container
+    document.querySelector('.svg-container').style.display = 'none';
+    
+    // Reset visualization elements
+    document.getElementById("pca-plot").innerHTML = "";
+    document.getElementById("visualization").innerHTML = "";
+    
+    // Reset state
+    appState.featureDescriptor = null;
+}
+
+function resetUIstartTraining() {
+    // Hide visualization container
+    document.querySelector('.svg-container').style.display = 'none';
+    
+    // Reset visualization elements
+    document.getElementById("pca-plot").innerHTML = "";
+    document.getElementById("visualization").innerHTML = "";
 }
 
 /********************************************
@@ -77,7 +107,7 @@ async function fetchClassifiers() {
 // Handle dataset selection
 window.selectDataset = async function (datasetName) {
     // Reset UI first
-    resetUI();
+    resetUIDatasetSelection();
     
     // Update state with new dataset
     appState.dataset_name = datasetName;
@@ -103,6 +133,7 @@ window.selectDataset = async function (datasetName) {
 
 // Handle classifier selection
 window.selectClassifier = async function (classifierName) {
+    resetUISelectClassifier();
     appState.selectedClassifier = classifierName;
     appState.parameters = {};
     
@@ -125,6 +156,8 @@ window.selectClassifier = async function (classifierName) {
 
 // Start training the model
 window.startTraining = async function () {
+    resetUIstartTraining();
+
     const trainingData = {
         dataset_name: appState.dataset_name,
         classifier: appState.selectedClassifier,
@@ -184,8 +217,6 @@ window.explainInstance = async function () {
             decisionTreeVisualizationData: result.decisionTreeVisualizationData,
             PCAvisualizationData: result.PCAvisualizationData
         });
-
-        console.log("Visualization data received:", result);
     } catch (error) {
         console.error("Failed to explain instance:", error);
     }

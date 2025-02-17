@@ -1,0 +1,44 @@
+/* Visualization styles */
+.svg-container {
+    background-color: var(--surface-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 2rem;
+    width: 1920px;
+    height: 950px;
+}
+
+.svg-side-by-side {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+.visualization-container {
+    background-color: #f8fafc;
+    padding: 1rem; /* Reduced padding */
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    max-width: 1920px;
+    max-height: 900px; /* Added max-height to limit height */
+    margin: 0 auto;
+}
+
+.visualization-container h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+#pca-plot,
+#visualization {
+    width: 100%;
+    overflow: hidden;
+}
+
+#x-axis-label,
+#y-axis-label {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}

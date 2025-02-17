@@ -8,13 +8,18 @@
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
         />
+        <link rel="stylesheet" href="styles/base.css">
+        <link rel="stylesheet" href="styles/carousel.css">
+        <link rel="stylesheet" href="styles/forms.css">
+        <link rel="stylesheet" href="styles/buttons.css">
+        <link rel="stylesheet" href="styles/visualizations.css">
     </head>
     <body>
         <div class="container">
                 <!-- Dataset Selection Section -->
                 <div class="section" id="datasetSection">
                     <h2>Select Dataset</h2>
-                    <div class="dataset-grid" id="datasetGrid">
+                    <div class="carousel-grid" id="datasetGrid">
                         <!-- Datasets will be dynamically added here -->
                     </div>
                     <div class="dataset-info" id="datasetInfo">
@@ -25,7 +30,7 @@
                 <!-- Classifier Selection Section (initially hidden) -->
                 <div class="section" id="classifierSection" style="display: none;">
                     <h2>Select Classifier</h2>
-                    <div class="classifier-grid" id="classifierGrid">
+                    <div class="carousel-grid" id="classifierGrid">
                         <!-- Classifiers will be dynamically added here -->
                     </div>
                 </div>
@@ -36,7 +41,7 @@
                     <div class="parameter-form" id="parameterForm">
                         <!-- Parameters will be dynamically added here -->
                     </div>
-                    <button class="training-btn" onclick="startTraining()">Train Model</button>
+                    <button class="training-btn btn" onclick="startTraining()">Train Model</button>
                 </div>
 
             <div class="feature-button-container" id="featureButtonContainer" style="display: none;">
@@ -45,10 +50,10 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="reset-btn" onclick="resetFeatures()">
+                    <button class="reset-btn btn" onclick="resetFeatures()">
                         Reset Features Values
                     </button>
-                    <button class="submit-btn" onclick="explainInstance()">
+                    <button class="submit-btn btn" onclick="explainInstance()">
                         Explain!
                     </button>
                 </div>

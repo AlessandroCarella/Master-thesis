@@ -72,7 +72,7 @@ function setDefaultFeatureValues(descriptor) {
     if (descriptor.numeric) {
         Object.entries(descriptor.numeric).forEach(([feature, details]) => {
             const input = document.getElementById(`feature-${feature}`);
-            input.value = details.median || "";
+            input.value = details.median.toFixed(2) || "";
         });
     }
 

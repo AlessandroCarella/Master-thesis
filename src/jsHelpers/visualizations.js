@@ -3,7 +3,7 @@ import { createPCAscatterPlot } from './PCA.js';
 
 export function initializeVisualizations(data) {
     if (!data) {
-        console.log("No visualization data provided");
+        console.error("No visualization data provided");
         return;
     }
 
