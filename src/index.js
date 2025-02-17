@@ -1,3 +1,6 @@
+/********************************************
+ *               IMPORTS
+ ********************************************/
 import { 
     populateDatasetGrid,
     populateClassifierGrid,
@@ -6,17 +9,15 @@ import {
     getFeatureValues,
     resetFeatures,
     initializeUI
-} from './jsHelpers/ui.js';
+} from './jsHelpers/UI.js';
 
-import {
-    initializeVisualizations
-} from './jsHelpers/visualizations.js';
+import { initializeVisualizations } from './jsHelpers/visualizations.js';
+import { updateParameter } from './jsHelpers/stateManagement.js';
 
-import {
-    updateParameter
-} from './jsHelpers/stateManagement.js';
 
-// State management
+/********************************************
+ *            GLOBAL STATE
+ ********************************************/
 export const appState = {
     dataset_name: null,
     selectedClassifier: null,
@@ -24,18 +25,10 @@ export const appState = {
     featureDescriptor: null
 };
 
-// Initialize the application
-window.onload = async function() {
-    try {
-        initializeUI(appState); // Pass state to UI module
-        const datasets = await fetchDatasets();
-        populateDatasetGrid(datasets);
-    } catch (error) {
-        console.error("Failed to load datasets:", error);
-    }
-};
 
-// API calls
+/********************************************
+ *              API CALLS
+ ********************************************/
 async function fetchDatasets() {
     const response = await fetch("http://127.0.0.1:8000/api/get-datasets");
     if (!response.ok) {
@@ -52,41 +45,56 @@ async function fetchClassifiers() {
     return await response.json();
 }
 
+
+/********************************************
+ *          EVENT HANDLERS
+ ********************************************/
 // Handle dataset selection
 window.selectDataset = async function (datasetName) {
     appState.dataset_name = datasetName;
     
-    const info = await fetch(`http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`);
-    const datasetInfo = await info.json();
+    try {
+        const infoResponse = await fetch(`http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`);
+        const datasetInfo = await infoResponse.json();
     
-    document.getElementById("datasetInfo").innerHTML = `
-        <h3>Dataset: ${datasetName}</h3>
-        <p>Samples: ${datasetInfo.n_samples}</p>
-        <p>Features: ${datasetInfo.feature_names}</p>
-        <p>Target: ${datasetInfo.target_names}</p>
-    `;
+        document.getElementById("datasetInfo").innerHTML = `
+            <h3>Dataset: ${datasetName}</h3>
+            <p>Samples: ${datasetInfo.n_samples}</p>
+            <p>Features: ${datasetInfo.feature_names}</p>
+            <p>Target: ${datasetInfo.target_names}</p>
+        `;
+    
+        const classifiers = await fetchClassifiers();
+        populateClassifierGrid(classifiers);
+        document.getElementById("classifierSection").style.display = "block";
+    } catch (error) {
+        console.error("Error fetching dataset info:", error);
+    }
+};
 
-    const classifiers = await fetchClassifiers();
-    populateClassifierGrid(classifiers);
-    document.getElementById("classifierSection").style.display = "block";
-}
-
+// Handle classifier selection
 window.selectClassifier = async function (classifierName) {
     appState.selectedClassifier = classifierName;
     appState.parameters = {};
     
-    const response = await fetch("http://127.0.0.1:8000/api/get-classifiers");
-    const data = await response.json();
-    const parameters = data.classifiers[classifierName];
-
-    Object.entries(parameters).forEach(([param, defaultValue]) => {
-        appState.parameters[param] = defaultValue;
-    });
+    try {
+        const response = await fetch("http://127.0.0.1:8000/api/get-classifiers");
+        const data = await response.json();
+        const parameters = data.classifiers[classifierName];
     
-    populateParameterForm(parameters);
-    document.getElementById("parameterSection").style.display = "block";
-}
+        // Initialize state parameters with default values
+        Object.entries(parameters).forEach(([param, defaultValue]) => {
+            appState.parameters[param] = defaultValue;
+        });
+    
+        populateParameterForm(parameters);
+        document.getElementById("parameterSection").style.display = "block";
+    } catch (error) {
+        console.error("Error fetching classifier parameters:", error);
+    }
+};
 
+// Start training the model
 window.startTraining = async function () {
     const trainingData = {
         dataset_name: appState.dataset_name,
@@ -97,9 +105,7 @@ window.startTraining = async function () {
     try {
         const response = await fetch('http://127.0.0.1:8000/api/train-model', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(trainingData)
         });
 
@@ -111,30 +117,28 @@ window.startTraining = async function () {
         appState.featureDescriptor = result.descriptor;
         createFeatureInputs(result.descriptor);
         document.getElementById("featureButtonContainer").style.display = "block";
-        
     } catch (error) {
         console.error("Training failed:", error);
     }
-}
+};
 
+// Explain an instance based on feature values
 window.explainInstance = async function () {
-    const instanceData = getFeatureValues(); // Fetch current feature values
+    const instanceData = getFeatureValues();
     const datasetName = appState.dataset_name;
     
     const requestData = {
         instance: instanceData,
         dataset_name: datasetName,
-        neighbouroodSize: 50,  // Example value, adjust as needed
-        PCAstep: 0.1 // Example value, adjust as needed
+        neighbourhood_size: 50,  // Adjust as needed
+        PCAstep: 0.1             // Adjust as needed
     };
 
     try {
         const response = await fetch("http://127.0.0.1:8000/api/explain", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestData),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestData)
         });
 
         if (!response.ok) {
@@ -148,9 +152,25 @@ window.explainInstance = async function () {
     }
 };
 
-// Expose necessary functions to window
+
+/********************************************
+ *     EXPOSED FUNCTIONS & INITIALIZATION
+ ********************************************/
+// Expose additional functions to the global scope
 window.updateParameter = updateParameter;
 window.getFeatureValues = getFeatureValues;
 window.resetFeatures = resetFeatures;
 
+// Initialize the UI and load datasets on window load
+window.onload = async function() {
+    try {
+        initializeUI(appState);  // Initialize UI with current state
+        const datasets = await fetchDatasets();
+        populateDatasetGrid(datasets);
+    } catch (error) {
+        console.error("Failed to load datasets:", error);
+    }
+};
+
+// Initialize visualizations once the DOM content is fully loaded
 document.addEventListener("DOMContentLoaded", initializeVisualizations);

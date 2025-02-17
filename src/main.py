@@ -43,7 +43,7 @@ class TrainingRequest(BaseModel):
 class InstanceRequest(BaseModel):
     instance: Dict[str, Any]
     dataset_name: str
-    neighbouroodSize: int
+    neighbourhood_size: int
     PCAstep: float
     
 @app.get("/api/get-datasets")
@@ -118,7 +118,7 @@ async def post_explain_instance(request: InstanceRequest):
         instance=instance_values,  # Pass the ordered list of values
         bbox=bbox,
         dataset=dataset,
-        neighbouroodSize=request.neighbouroodSize,
+        neighbourhood_size=request.neighbourhood_size,
     )
 
     dt_surr = get_lore_decision_tree_surrogate(
