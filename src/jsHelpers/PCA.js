@@ -157,6 +157,8 @@ function createPoints(g, data, x, y, color, tooltip, treeVisualization) {
         .style("stroke", "#fff")
         .style("stroke-width", 1)
         .style("opacity", 0.8)
+        .on("mouseover", (event, d) => showTooltip(event, d, data, tooltip))
+        .on("mouseout", () => hideTooltip(tooltip))
         .on("click", function(event, d) {
             console.log('Point clicked:', d);
             togglePointColor(this, d, data, color, treeVisualization);

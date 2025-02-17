@@ -42,3 +42,15 @@
     font-size: 0.875rem;
     margin-top: 0.5rem;
 }
+
+.decision-tree-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);  /* Dark background */
+    color: white;
+    padding: 15px;  /* Increase padding */
+    border-radius: 5px;
+    font-size: 20px;  /* Increase font size */
+    pointer-events: none;  /* Prevent tooltip from blocking other events */
+    white-space: nowrap;  /* Prevent text from wrapping */
+    max-width: 300px;  /* You can also adjust max-width if necessary */
+}
