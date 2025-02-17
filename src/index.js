@@ -138,8 +138,8 @@ window.updateParameter = function (param, value) {
     currentState.parameters[param] = value;
 }
 
+let featureDescriptor = null;
 
-// Start model training
 window.startTraining = async function () {
     const trainingData = {
         dataset: currentState.selectedDataset,
@@ -161,41 +161,238 @@ window.startTraining = async function () {
         }
 
         const result = await response.json();
+        featureDescriptor = result.descriptor;
+        createFeatureInputs(featureDescriptor);
         
-        console.log(result);
+        // Show the feature input section
+        document.getElementById("featureButtonContainer").style.display = "block";
+        
     } catch (error) {
         console.error("Training failed:", error);
     }
 }
 
-async function fetchFeatures() {
-    try {
-        const response = await fetch(
-            "http://127.0.0.1:8000/api/get-df-features"
-        );
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Error fetching features:", error);
-        throw error;
+function createFeatureInputs(descriptor) {
+    const carousel = document.getElementById("featureCarousel");
+    carousel.innerHTML = ""; // Clear existing inputs
+
+    // Create section headers
+    const sections = {
+        numeric: createSection('Numeric Features', 'numeric-features'),
+        categorical: createSection('Categorical Features', 'categorical-features'),
+        ordinal: createSection('Ordinal Features', 'ordinal-features')
+    };
+
+    // Add sections to carousel
+    Object.values(sections).forEach(section => {
+        carousel.appendChild(section);
+    });
+
+    // Handle numeric features
+    if (descriptor.numeric && Object.keys(descriptor.numeric).length > 0) {
+        Object.entries(descriptor.numeric).forEach(([featureName, details]) => {
+            createNumericInput(sections.numeric, featureName, details);
+        });
+    } else {
+        sections.numeric.style.display = 'none';
+    }
+
+    // Handle categorical features
+    if (descriptor.categorical && Object.keys(descriptor.categorical).length > 0) {
+        Object.entries(descriptor.categorical).forEach(([featureName, details]) => {
+            createCategoricalInput(sections.categorical, featureName, details);
+        });
+    } else {
+        sections.categorical.style.display = 'none';
+    }
+
+    // Handle ordinal features
+    if (descriptor.ordinal && Object.keys(descriptor.ordinal).length > 0) {
+        Object.entries(descriptor.ordinal).forEach(([featureName, details]) => {
+            createOrdinalInput(sections.ordinal, featureName, details);
+        });
+    } else {
+        sections.ordinal.style.display = 'none';
     }
 }
 
-function populateFeatureCarousel(features) {
-    const carousel = document.getElementById("featureCarousel");
-    carousel.innerHTML = "";
-    features.forEach((feature) => {
-        const box = document.createElement("div");
-        box.className = "feature-box";
-        box.innerHTML = `
-            <div>${feature}</div>
-            <input type="text" id="${feature}" placeholder="Enter value">
-        `;
-        carousel.appendChild(box);
+function createSection(title, id) {
+    const section = document.createElement('div');
+    section.className = 'feature-section';
+    section.id = id;
+    
+    const header = document.createElement('h3');
+    header.className = 'feature-section-header';
+    header.textContent = title;
+    
+    const content = document.createElement('div');
+    content.className = 'feature-section-content';
+    
+    section.appendChild(header);
+    section.appendChild(content);
+    
+    return section;
+}
+
+function createNumericInput(container, featureName, details) {
+    const box = document.createElement("div");
+    box.className = "feature-box numeric-feature";
+    
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "any";
+    input.id = `feature-${featureName}`;
+    input.min = details.min;
+    input.max = details.max;
+    
+    // Add data statistics as title tooltip
+    const stats = `Min: ${details.min}
+Max: ${details.max}
+Mean: ${details.mean.toFixed(2)}
+Median: ${details.median}
+Std: ${details.std.toFixed(2)}`;
+
+    box.innerHTML = `
+        <div class="feature-label" title="${stats}">
+            ${featureName}
+            <span class="feature-type">Numeric</span>
+            <div class="feature-range">Range: ${details.min} - ${details.max}</div>
+        </div>
+    `;
+    box.appendChild(input);
+
+    input.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        if (value < details.min || value > details.max) {
+            input.classList.add('invalid');
+            input.title = `Value must be between ${details.min} and ${details.max}`;
+        } else {
+            input.classList.remove('invalid');
+            input.title = '';
+        }
     });
+
+    container.querySelector('.feature-section-content').appendChild(box);
+}
+
+function createCategoricalInput(container, featureName, details) {
+    const box = document.createElement("div");
+    box.className = "feature-box categorical-feature";
+    
+    const select = document.createElement("select");
+    select.id = `feature-${featureName}`;
+    
+    // Add placeholder option
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a value";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+    
+    // Add options based on distinct values
+    details.distinct_values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+    });
+
+    box.innerHTML = `
+        <div class="feature-label">
+            ${featureName}
+            <span class="feature-type">Categorical</span>
+            <div class="feature-values">${details.distinct_values.length} possible values</div>
+        </div>
+    `;
+    box.appendChild(select);
+    container.querySelector('.feature-section-content').appendChild(box);
+}
+
+function createOrdinalInput(container, featureName, details) {
+    const box = document.createElement("div");
+    box.className = "feature-box ordinal-feature";
+    
+    const select = document.createElement("select");
+    select.id = `feature-${featureName}`;
+    
+    // Add placeholder option
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a value";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+    
+    // Add options based on ordered values
+    details.ordered_values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+    });
+
+    box.innerHTML = `
+        <div class="feature-label">
+            ${featureName}
+            <span class="feature-type">Ordinal</span>
+            <div class="feature-values">Order: ${details.ordered_values.join(' → ')}</div>
+        </div>
+    `;
+    box.appendChild(select);
+    container.querySelector('.feature-section-content').appendChild(box);
+}
+
+// Function to get all feature values
+window.getFeatureValues = function() {
+    const values = {};
+    
+    if (featureDescriptor.numeric) {
+        Object.keys(featureDescriptor.numeric).forEach(feature => {
+            const input = document.getElementById(`feature-${feature}`);
+            values[feature] = parseFloat(input.value);
+        });
+    }
+    
+    if (featureDescriptor.categorical) {
+        Object.keys(featureDescriptor.categorical).forEach(feature => {
+            const select = document.getElementById(`feature-${feature}`);
+            values[feature] = select.value;
+        });
+    }
+    
+    if (featureDescriptor.ordinal) {
+        Object.keys(featureDescriptor.ordinal).forEach(feature => {
+            const select = document.getElementById(`feature-${feature}`);
+            values[feature] = select.value;
+        });
+    }
+    
+    return values;
+}
+
+window.resetFeatures = function() {
+    if (featureDescriptor.numeric) {
+        Object.entries(featureDescriptor.numeric).forEach(([feature, details]) => {
+            const input = document.getElementById(`feature-${feature}`);
+            input.value = details.mean || details.median || '';
+            input.classList.remove('invalid');
+        });
+    }
+    
+    if (featureDescriptor.categorical) {
+        Object.keys(featureDescriptor.categorical).forEach(feature => {
+            const select = document.getElementById(`feature-${feature}`);
+            select.selectedIndex = 0;
+        });
+    }
+    
+    if (featureDescriptor.ordinal) {
+        Object.keys(featureDescriptor.ordinal).forEach(feature => {
+            const select = document.getElementById(`feature-${feature}`);
+            select.selectedIndex = 0;
+        });
+    }
 }
 
 // Function to initialize both visualizations

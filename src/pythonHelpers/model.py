@@ -57,4 +57,4 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
         dataset=dataset,
         target_name=target_name,
         classifier=classifier
-    )
+    ), dataset.descriptor

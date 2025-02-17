@@ -25,6 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+bbox = None
+descriptor = None
 class TrainingRequest(BaseModel):
     dataset: str
     classifier: str
@@ -48,7 +50,14 @@ async def get_dataset_info(dataset_name: str):
 @app.post("/api/train-model")
 async def train_model(request: TrainingRequest):
     """Train a model using specified dataset and classifier"""
-    return train_model_with_lore(request.dataset, request.classifier, request.parameters)
+    global bbox
+    global descriptor
+    bbox, descriptor = train_model_with_lore(request.dataset, request.classifier, request.parameters)
+    return {
+        "status": "success",
+        "message": "Model trained successfully",
+        "descriptor": descriptor,
+    }
 
 @app.get("/api/tree_data")
 async def get_tree_data():
