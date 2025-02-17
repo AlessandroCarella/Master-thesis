@@ -38,6 +38,8 @@ export function createFeatureInputs(descriptor) {
     });
 
     renderFeatureSections(descriptor, sections);
+
+    setDefaultFeatureValues(descriptor);
 }
 
 function renderFeatureSections(descriptor, sections) {
@@ -49,19 +51,10 @@ function renderFeatureSections(descriptor, sections) {
         sections.numeric.style.display = "none";
     }
 
-    if (
-        descriptor.categorical &&
-        Object.keys(descriptor.categorical).length > 0
-    ) {
-        Object.entries(descriptor.categorical).forEach(
-            ([featureName, details]) => {
-                createCategoricalInput(
-                    sections.categorical,
-                    featureName,
-                    details
-                );
-            }
-        );
+    if (descriptor.categorical && Object.keys(descriptor.categorical).length > 0) {
+        Object.entries(descriptor.categorical).forEach(([featureName, details]) => {
+            createCategoricalInput(sections.categorical, featureName, details);
+        });
     } else {
         sections.categorical.style.display = "none";
     }
@@ -72,6 +65,41 @@ function renderFeatureSections(descriptor, sections) {
         });
     } else {
         sections.ordinal.style.display = "none";
+    }
+}
+
+function setDefaultFeatureValues(descriptor) {
+    if (descriptor.numeric) {
+        Object.entries(descriptor.numeric).forEach(([feature, details]) => {
+            const input = document.getElementById(`feature-${feature}`);
+            input.value = details.median || "";
+        });
+    }
+
+    if (descriptor.categorical) {
+        Object.entries(descriptor.categorical).forEach(([feature, details]) => {
+            const select = document.getElementById(`feature-${feature}`);
+            const modeValue = getMode(details.distinct_values);
+            
+            Array.from(select.options).forEach((option, index) => {
+                if (option.value === modeValue) {
+                    select.selectedIndex = index;
+                }
+            });
+        });
+    }
+
+    if (descriptor.ordinal) {
+        Object.entries(descriptor.ordinal).forEach(([feature, details]) => {
+            const select = document.getElementById(`feature-${feature}`);
+            const modeValue = getMode(details.ordered_values);
+            
+            Array.from(select.options).forEach((option, index) => {
+                if (option.value === modeValue) {
+                    select.selectedIndex = index;
+                }
+            });
+        });
     }
 }
 
@@ -121,42 +149,8 @@ function getMode(values) {
 export function resetFeatures() {
     const state = getState();
     if (!state?.featureDescriptor) return;
-
-    const descriptor = state.featureDescriptor;
-
-    if (descriptor.numeric) {
-        Object.entries(descriptor.numeric).forEach(([feature, details]) => {
-            const input = document.getElementById(`feature-${feature}`);
-            input.value = details.median || "";
-            input.classList.remove("invalid");
-        });
-    }
-
-    if (descriptor.categorical) {
-        Object.entries(descriptor.categorical).forEach(([feature, details]) => {
-            const select = document.getElementById(`feature-${feature}`);
-            const modeValue = getMode(details.distinct_values);
-
-            Array.from(select.options).forEach((option, index) => {
-                if (option.value === modeValue) {
-                    select.selectedIndex = index;
-                }
-            });
-        });
-    }
-
-    if (descriptor.ordinal) {
-        Object.entries(descriptor.ordinal).forEach(([feature, details]) => {
-            const select = document.getElementById(`feature-${feature}`);
-            const modeValue = getMode(details.ordered_values);
-
-            Array.from(select.options).forEach((option, index) => {
-                if (option.value === modeValue) {
-                    select.selectedIndex = index;
-                }
-            });
-        });
-    }
+    
+    setDefaultFeatureValues(state.featureDescriptor);
 }
 
 export {
