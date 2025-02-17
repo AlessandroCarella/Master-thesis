@@ -37,34 +37,24 @@ def create_classifier(classifier_name: str, parameters: Dict[str, Any]):
 
 def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: Dict[str, Any]):
     """Train a model using LORE"""
-    try:
-        # Load and prepare dataset
-        X, y, feature_names, target_names = load_dataset(dataset_name)
-        
-        # Prepare data for LORE
-        data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
-        target_name = 'target'
-        data_dict[target_name] = [target_names[i] for i in y]
-        
-        # Create LORE dataset
-        dataset = TabularDataset.from_dict(data_dict, 'target')
-        dataset.df.dropna(inplace=True)
-        
-        # Create and train classifier
-        classifier = create_classifier(classifier_name, parameters)
-        
-        # Train model using LORE
-        global bbox
-        bbox = tutorial_train_model_generalized(
-            dataset=dataset,
-            target_name=target_name,
-            classifier=classifier
-        )
-        
-        return {
-            "status": "success",
-            "message": "Model trained successfully",
-        }
-        
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    # Load and prepare dataset
+    X, y, feature_names, target_names = load_dataset(dataset_name)
+    
+    # Prepare data for LORE
+    data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
+    target_name = 'target'
+    data_dict[target_name] = [target_names[i] for i in y]
+    
+    # Create LORE dataset
+    dataset = TabularDataset.from_dict(data_dict, 'target')
+    dataset.df.dropna(inplace=True)
+    
+    # Create and train classifier
+    classifier = create_classifier(classifier_name, parameters)
+    
+    # Train model using LORE
+    return tutorial_train_model_generalized(
+        dataset=dataset,
+        target_name=target_name,
+        classifier=classifier
+    )
