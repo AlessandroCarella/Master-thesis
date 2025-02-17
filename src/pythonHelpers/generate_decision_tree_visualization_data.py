@@ -53,11 +53,8 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
     List[TreeNode]
         List of TreeNode objects containing the tree structure
     """
-    if isinstance(tree_classifier, DecisionTreeClassifier): #account for LORE DecisionTreeSurrogate class
-        tree = tree_classifier.tree_
-    else:
-        tree = tree_classifier
-
+    tree = tree_classifier.tree_
+    
     nodes = []
 
     for node_id in range(tree.node_count):
@@ -101,7 +98,7 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
 
     return nodes
 
-def save_tree_to_json(nodes, filename: str, indent: int = 4):
+def generate_decision_tree_visualization_data(nodes):
     """
     Save the tree structure to a JSON file
     
@@ -117,6 +114,4 @@ def save_tree_to_json(nodes, filename: str, indent: int = 4):
     # Convert TreeNodes to dictionaries
     nodes_dict = [asdict(node) for node in nodes]
     
-    # Save to file with indentation
-    with open(filename, 'w') as f:
-        json.dump(nodes_dict, f, indent=indent)
+    return nodes_dict

@@ -18,7 +18,7 @@ import {
 
 // State management
 export const appState = {
-    selectedDataset: null,
+    dataset_name: null,
     selectedClassifier: null,
     parameters: {},
     featureDescriptor: null
@@ -54,7 +54,7 @@ async function fetchClassifiers() {
 
 // Handle dataset selection
 window.selectDataset = async function (datasetName) {
-    appState.selectedDataset = datasetName;
+    appState.dataset_name = datasetName;
     
     const info = await fetch(`http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`);
     const datasetInfo = await info.json();
@@ -89,7 +89,7 @@ window.selectClassifier = async function (classifierName) {
 
 window.startTraining = async function () {
     const trainingData = {
-        dataset: appState.selectedDataset,
+        dataset_name: appState.dataset_name,
         classifier: appState.selectedClassifier,
         parameters: appState.parameters
     };
@@ -108,7 +108,7 @@ window.startTraining = async function () {
         }
 
         const result = await response.json();
-        appState.featureDescriptor = result.descriptor;  // Store descriptor in state
+        appState.featureDescriptor = result.descriptor;
         createFeatureInputs(result.descriptor);
         document.getElementById("featureButtonContainer").style.display = "block";
         
@@ -116,6 +116,37 @@ window.startTraining = async function () {
         console.error("Training failed:", error);
     }
 }
+
+window.explainInstance = async function () {
+    const instanceData = getFeatureValues(); // Fetch current feature values
+    const datasetName = appState.dataset_name;
+    
+    const requestData = {
+        instance: instanceData,
+        dataset_name: datasetName,
+        neighbouroodSize: 50,  // Example value, adjust as needed
+        PCAstep: 0.1 // Example value, adjust as needed
+    };
+
+    try {
+        const response = await fetch("http://127.0.0.1:8000/api/explain", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestData),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Explanation Result:", result);
+    } catch (error) {
+        console.error("Failed to explain instance:", error);
+    }
+};
 
 // Expose necessary functions to window
 window.updateParameter = updateParameter;

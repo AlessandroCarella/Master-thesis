@@ -38,8 +38,11 @@ def create_classifier(classifier_name: str, parameters: Dict[str, Any]):
 def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: Dict[str, Any]):
     """Train a model using LORE"""
     # Load and prepare dataset
-    X, y, feature_names, target_names = load_dataset(dataset_name)
+    dataset, feature_names, target_names = load_dataset(dataset_name)
     
+    X = dataset.data
+    y = dataset.target
+
     # Prepare data for LORE
     data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
     target_name = 'target'
@@ -57,4 +60,4 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
         dataset=dataset,
         target_name=target_name,
         classifier=classifier
-    ), dataset.descriptor
+    ), dataset

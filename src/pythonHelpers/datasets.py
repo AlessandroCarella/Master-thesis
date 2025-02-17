@@ -43,4 +43,4 @@ def load_dataset(dataset_name: str):
     feature_names = list(dataset.feature_names)
     target_names = list(dataset.target_names)
     
-    return dataset.data, dataset.target, feature_names, target_names
+    return dataset, feature_names, target_names

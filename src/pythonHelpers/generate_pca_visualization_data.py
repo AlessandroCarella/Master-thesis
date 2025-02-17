@@ -194,7 +194,7 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def generate_pca_visualization_data(data_file, feature_names, target_names, X, y, pretrained_tree, step=0.1):
+def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0.1):
     """
     Generate PCA visualization data and decision boundaries for a pre-trained decision tree.
     
@@ -255,6 +255,4 @@ def generate_pca_visualization_data(data_file, feature_names, target_names, X, y
         "yAxisLabel": pc2_label,
     }
     
-    # Save to file
-    with open(data_file, "w") as f:
-        json.dump(visualization_data, f, indent=4)
+    return visualization_data
