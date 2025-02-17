@@ -17,58 +17,37 @@
     </head>
     <body>
         <div class="container">
-            <!-- New Dataset Selection Section -->
-            <div class="dataset-selection" id="datasetSelection">
-                <h2>Select Dataset</h2>
-                <div class="dataset-carousel" id="datasetCarousel">
-                    <div class="dataset-box">
-                        <span class="feature-name">Iris</span>
-                        <button onclick="selectDataset('iris')">Select</button>
+                <!-- Dataset Selection Section -->
+                <div class="section" id="datasetSection">
+                    <h2>Select Dataset</h2>
+                    <div class="dataset-grid" id="datasetGrid">
+                        <!-- Datasets will be dynamically added here -->
                     </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
+                    <div class="dataset-info" id="datasetInfo">
+                        <!-- Dataset information will be shown here -->
                     </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
+                </div>
+
+                <!-- Classifier Selection Section (initially hidden) -->
+                <div class="section" id="classifierSection" style="display: none;">
+                    <h2>Select Classifier</h2>
+                    <div class="classifier-grid" id="classifierGrid">
+                        <!-- Classifiers will be dynamically added here -->
                     </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
+                </div>
+
+                <!-- Parameter Configuration Section (initially hidden) -->
+                <div class="section" id="parameterSection" style="display: none;">
+                    <h2>Configure Parameters</h2>
+                    <div class="parameter-form" id="parameterForm">
+                        <!-- Parameters will be dynamically added here -->
                     </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
-                    <div class="dataset-box">
-                        <span class="feature-name">Abalone</span>
-                        <button onclick="selectDataset('abalone')">Select</button>
-                    </div>
+                    <button class="submit-btn" onclick="startTraining()">Train Model</button>
+                </div>
+
+                <!-- Original visualization sections (hidden initially) -->
+                <div class="svg-container" id="svg-container" style="display: none;">
+                    <!-- Original visualization content -->
                 </div>
             </div>
             
