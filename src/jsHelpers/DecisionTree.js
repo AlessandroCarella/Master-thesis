@@ -409,14 +409,14 @@ function handleClick(event, d, contentGroup, treeData, metrics) {
                 );
 
             link.style("stroke", "red") // Highlight path to root
-                .style("stroke-width", `${metrics.linkStrokeWidth * 1.5}px`);
+                .style("stroke-width", `${metrics.linkStrokeWidth}px`);
             currentNode = currentNode.parent;
         }
 
         d3.select(event.currentTarget)
             .select("circle")
             .style("stroke", "red") // Highlight clicked node
-            .style("stroke-width", `${metrics.nodeBorderStrokeWidth * 1.5}px`);
+            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
     }
 }
 

@@ -14,7 +14,6 @@ import {
 import { initializeVisualizations } from './jsHelpers/visualizations.js';
 import { updateParameter } from './jsHelpers/stateManagement.js';
 
-
 /********************************************
  *            GLOBAL STATE
  ********************************************/
@@ -25,6 +24,33 @@ export const appState = {
     featureDescriptor: null
 };
 
+/********************************************
+ *              UI RESET
+ ********************************************/
+function resetUI() {
+    // Hide classifier section
+    document.getElementById("classifierSection").style.display = "none";
+    
+    // Hide and reset parameter section
+    document.getElementById("parameterSection").style.display = "none";
+    document.getElementById("parameterForm").innerHTML = "";
+    
+    // Hide and reset feature inputs
+    document.getElementById("featureButtonContainer").style.display = "none";
+    document.getElementById("featureCarousel").innerHTML = "";
+    
+    // Hide visualization container
+    document.querySelector('.svg-container').style.display = 'none';
+    
+    // Reset visualization elements
+    document.getElementById("pca-plot").innerHTML = "";
+    document.getElementById("visualization").innerHTML = "";
+    
+    // Reset state
+    appState.selectedClassifier = null;
+    appState.parameters = {};
+    appState.featureDescriptor = null;
+}
 
 /********************************************
  *              API CALLS
@@ -45,12 +71,15 @@ async function fetchClassifiers() {
     return await response.json();
 }
 
-
 /********************************************
  *          EVENT HANDLERS
  ********************************************/
 // Handle dataset selection
 window.selectDataset = async function (datasetName) {
+    // Reset UI first
+    resetUI();
+    
+    // Update state with new dataset
     appState.dataset_name = datasetName;
     
     try {
