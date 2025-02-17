@@ -109,7 +109,7 @@ function getVisualizationSettings() {
             baseLinkAndNodeBorderStrokeWidth: 3,
             minLinkAndNodeBorderStrokeWidth: 1,
             maxLinkAndNodeBorderStrokeWidth: 8,
-            maxZoom: 50,
+            maxZoom: 20,
         },
     };
 }
