@@ -1,6 +1,4 @@
-export {
-    createPCAscatterPlot,
-};
+export { createPCAscatterPlot };
 
 // Create tooltip
 function createTooltip() {
@@ -13,8 +11,11 @@ function createTooltip() {
         .style("background-color", "white")
         .style("border", "1px solid #ddd")
         .style("border-radius", "4px")
-        .style("padding", "8px")
-        .style("pointer-events", "none");
+        .style("padding", "12px")
+        .style("pointer-events", "none")
+        .style("max-width", "300px")
+        .style("font-size", "12px")
+        .style("line-height", "1.4");
 }
 
 // Create the zoom behavior
@@ -41,16 +42,16 @@ function createAxes(g, x, y, margin, width, height) {
         .attr("class", "x-axis")
         .attr("transform", `translate(0,${height - margin.bottom})`)
         .call(d3.axisBottom(x).ticks(10))
-        .call((g) => g.select(".domain").remove())  // Remove axis line
-        .call((g) => g.selectAll(".tick line").remove());  // Remove tick lines
+        .call((g) => g.select(".domain").remove()) // Remove axis line
+        .call((g) => g.selectAll(".tick line").remove()); // Remove tick lines
 
     // Y-axis
     g.append("g")
         .attr("class", "y-axis")
         .attr("transform", `translate(${margin.left},0)`)
         .call(d3.axisLeft(y).ticks(10))
-        .call((g) => g.select(".domain").remove())  // Remove axis line
-        .call((g) => g.selectAll(".tick line").remove());  // Remove tick lines
+        .call((g) => g.select(".domain").remove()) // Remove axis line
+        .call((g) => g.selectAll(".tick line").remove()); // Remove tick lines
 }
 
 // Create the Voronoi regions for the decision boundaries
@@ -97,15 +98,31 @@ function createPoints(g, data, x, y, color, tooltip) {
         });
 }
 
-// Show tooltip on hover
+// Show tooltip on hover with original data
 function showTooltip(event, d, i, data, tooltip) {
     const index = data.pcaData.indexOf(d);
     const className = data.targets[index];
-    tooltip.transition().duration(200).style("opacity", 0.9);
+    const originalData = data.originalData[index];
+
+    // Create tooltip content
+    let tooltipContent = "<strong>Decoded Values:</strong><br>";
+    
+    // Add each feature and its value
+    Object.entries(originalData).forEach(([feature, value]) => {
+        tooltipContent += `${feature}: ${
+            typeof value === "number" ? value.toFixed(3) : value
+        }<br>`;
+    });
+    
+    tooltipContent += `<strong>Class: ${className}</strong>`;
+
     tooltip
-        .html(`Class: ${className}`)
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 28 + "px");
+        .html(tooltipContent)
+        .style("left", event.pageX + 15 + "px")
+        .style("top", event.pageY - 28 + "px")
+        .transition()
+        .duration(200)
+        .style("opacity", 0.95);
 }
 
 // Hide tooltip
@@ -127,7 +144,12 @@ function togglePointColor(node, d, data, color) {
     } else {
         // Restore previous node's color if another node is clicked
         if (lastClickedNode) {
-            d3.select(lastClickedNode).style("fill", color(data.targets[data.pcaData.indexOf(lastClickedNode.__data__)]));
+            d3.select(lastClickedNode).style(
+                "fill",
+                color(
+                    data.targets[data.pcaData.indexOf(lastClickedNode.__data__)]
+                )
+            );
         }
 
         // Store original color and turn this node red
@@ -139,7 +161,13 @@ function togglePointColor(node, d, data, color) {
 // Create the PCA scatter plot
 function createPCAscatterPlot(data, container) {
     // Validate input data
-    if (!data || !data.pcaData || !data.targets || !data.decisionBoundary) {
+    if (
+        !data ||
+        !data.pcaData ||
+        !data.targets ||
+        !data.decisionBoundary ||
+        !data.originalData
+    ) {
         console.error("Invalid PCA data structure:", data);
         return;
     }
@@ -155,7 +183,7 @@ function createPCAscatterPlot(data, container) {
     document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
     // Clear the existing plot before creating a new one
-    d3.select(container).select("svg").remove();  // Remove the existing SVG
+    d3.select(container).select("svg").remove(); // Remove the existing SVG
 
     const svg = d3
         .select(container)

@@ -53,7 +53,7 @@ def generate_decision_boundary_grid(X_pca, step=0.1):
     )
     return xx, yy, (x_min, x_max, y_min, y_max)
 
-def filter_points_by_class_kmeans(points, labels, threshold=500, threshold_multiplier=4, random_state=42):
+def filter_points_by_class_kmeans(points, original_data, labels, threshold=500, threshold_multiplier=4, random_state=42):
     """
     Filter points using K-means clustering to reduce data density.
     
@@ -61,6 +61,8 @@ def filter_points_by_class_kmeans(points, labels, threshold=500, threshold_multi
     -----------
     points : array-like
         Input points to filter
+    original_data : array-like
+        Original feature data corresponding to points
     labels : array-like
         Class labels for points
     threshold : int, default=500
@@ -73,15 +75,17 @@ def filter_points_by_class_kmeans(points, labels, threshold=500, threshold_multi
     Returns:
     --------
     tuple
-        (filtered_points, filtered_labels)
+        (filtered_points, filtered_original_data, filtered_labels)
     """
     filtered_points = []
+    filtered_original = []
     filtered_labels = []
     unique_classes = np.unique(labels)
 
     for cls in unique_classes:
         class_indices = np.where(labels == cls)[0]
         class_points = points[class_indices]
+        class_original = original_data[class_indices]
         n_points = len(class_points)
 
         if n_points > threshold:
@@ -95,19 +99,26 @@ def filter_points_by_class_kmeans(points, labels, threshold=500, threshold_multi
             centroids = kmeans.cluster_centers_
 
             selected_points = []
+            selected_original = []
             for centroid in centroids:
                 distances = np.linalg.norm(class_points - centroid, axis=1)
                 closest_index = np.argmin(distances)
                 selected_points.append(class_points[closest_index])
+                selected_original.append(class_original[closest_index])
 
             selected_points = np.array(selected_points)
+            selected_original = np.array(selected_original)
         else:
             selected_points = class_points
+            selected_original = class_original
 
         filtered_points.append(selected_points)
+        filtered_original.append(selected_original)
         filtered_labels.extend([cls] * len(selected_points))
 
-    return np.vstack(filtered_points), np.array(filtered_labels)
+    return (np.vstack(filtered_points), 
+            np.vstack(filtered_original), 
+            np.array(filtered_labels))
 
 def create_voronoi_regions(xx, yy, Z):
     """
@@ -200,12 +211,8 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
     
     Parameters:
     -----------
-    data_file : str
-        Path to output JSON file
     feature_names : list
         List of feature names
-    target_names : list
-        List of target class names
     X : array-like
         Input features
     y : array-like
@@ -214,6 +221,11 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
         Pre-trained decision tree classifier on original (non-PCA) data
     step : float, default=0.1
         Step size for decision boundary grid
+        
+    Returns:
+    --------
+    dict
+        Visualization data including PCA coordinates, original data, and decision boundaries
     """
     # Transform data
     X_pca, pca, scaler = preprocess_data(X)
@@ -229,9 +241,9 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
     # Get predictions using the pre-trained tree
     Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
     
-    # Filter PCA points
-    filtered_pca_data, filtered_labels = filter_points_by_class_kmeans(
-        X_pca, y, threshold=2000, threshold_multiplier=5
+    # Filter PCA points and original data
+    filtered_pca_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(
+        X_pca, X, y, threshold=2000, threshold_multiplier=5
     )
     
     # Create Voronoi regions
@@ -241,9 +253,16 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
     pc1_label = format_pc_label(pca.components_[0], feature_names, 0)
     pc2_label = format_pc_label(pca.components_[1], feature_names, 1)
     
+    # Convert original data to lists of pd.Series
+    original_series_list = [
+        pd.Series(row, index=feature_names).to_dict()
+        for row in filtered_original_data
+    ]
+    
     # Prepare visualization data
     visualization_data = {
         "pcaData": filtered_pca_data.tolist(),
+        "originalData": original_series_list,
         "targets": filtered_labels.tolist(),
         "decisionBoundary": {
             "regions": [list(p.exterior.coords) for p in merged_regions],

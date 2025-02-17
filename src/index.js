@@ -208,6 +208,8 @@ window.explainInstance = async function () {
         }
 
         const result = await response.json();
+
+        console.log(result)
         
         // Show the visualization container
         document.querySelector('.svg-container').style.display = 'block';
