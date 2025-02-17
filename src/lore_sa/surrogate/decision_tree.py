@@ -24,13 +24,6 @@ class DecisionTreeSurrogate(Surrogate):
     def __init__(self, kind=None, preprocessing=None):
         super().__init__(kind, preprocessing)
         self.dt = None
-
-    def get_tree_structure(self):
-        if self.dt is None:
-            print("The decision tree has not been trained yet.")
-            return
-        
-        return self.dt.tree_
     
     def get_dt(self):
         return self.dt

@@ -39,30 +39,6 @@
                     <button class="training-btn" onclick="startTraining()">Train Model</button>
                 </div>
 
-                <!-- Original visualization sections (hidden initially) -->
-                <div class="svg-container" id="svg-container" style="display: none;">
-                    <div class="svg-side-by-side">
-                        <div class="visualization-container">
-                            <h2>Neighborhood PCA</h2>
-                            <div id="pca-plot"></div>
-                            <div id="x-axis-label"></div>
-                            <div id="y-axis-label"></div>
-                        </div>
-                        <div class="visualization-container">
-                            <h2>Surrogate Model</h2>
-                            <div id="visualization"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="header" id="header" style="display: none;">
-                <h1>Instance Explainer</h1>
-                <button class="show-dataset-btn" onclick="toggleDataset()">
-                    View Dataset
-                </button>
-            </div>
-
             <div class="feature-button-container" id="featureButtonContainer" style="display: none;">
                 <div class="feature-carousel" id="featureCarousel">
                     <!-- Features will be dynamically added here -->
@@ -77,6 +53,22 @@
                     </button>
                 </div>
             </div>
+
+            <div class="svg-container" id="svg-container" style="display: none;">
+                <div class="svg-side-by-side">
+                    <div class="visualization-container">
+                        <h2>Neighborhood PCA</h2>
+                        <div id="pca-plot"></div>
+                        <div id="x-axis-label"></div>
+                        <div id="y-axis-label"></div>
+                    </div>
+                    <div class="visualization-container">
+                        <h2>Surrogate Model</h2>
+                        <div id="visualization"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
 
         <script src="https://d3js.org/d3.v6.min.js"></script>
