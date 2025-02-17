@@ -1,14 +1,13 @@
 # data_helpers.py
 import pandas as pd
 import numpy as np
-from sklearn.datasets import load_iris, load_wine, load_breast_cancer, load_diabetes
+from sklearn.datasets import load_iris, load_wine, load_breast_cancer
 
 # Available datasets
 DATASETS = {
     'iris': load_iris,
     'wine': load_wine,
     'breast_cancer': load_breast_cancer,
-    'diabetes': load_diabetes
 }
 
 def get_available_datasets():
@@ -23,15 +22,12 @@ def get_dataset_information(dataset_name: str):
     try:
         dataset = DATASETS[dataset_name]()
         
-        feature_names = list(dataset.feature_names) if hasattr(dataset, 'feature_names') else []
-        target_names = list(dataset.target_names) if hasattr(dataset, 'target_names') else []
-        
         return {
             "name": dataset_name,
             "n_samples": dataset.data.shape[0],
             "n_features": dataset.data.shape[1],
-            "feature_names": feature_names,
-            "target_names": target_names,
+            "feature_names": list(dataset.feature_names),
+            "target_names": list(dataset.target_names),
             "description": dataset.DESCR if hasattr(dataset, 'DESCR') else "No description available"
         }
         
