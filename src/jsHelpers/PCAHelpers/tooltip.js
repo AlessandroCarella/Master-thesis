@@ -48,7 +48,7 @@ export function showTooltip(event, d, data, tooltip) {
         .style("top", event.pageY - 28 + "px")
         .transition()
         .duration(200)
-        .style("opacity", 0.95);
+        .style("opacity", 1);
 }
 
 export function hideTooltip(tooltip) {

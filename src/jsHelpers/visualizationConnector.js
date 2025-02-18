@@ -31,7 +31,7 @@ const colorScheme = {
     opacity: {
         active: 1.0,
         inactive: 1,
-        hover: 0.8,
+        hover: 1,
     },
 };
 
