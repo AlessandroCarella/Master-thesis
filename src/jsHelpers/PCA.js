@@ -73,91 +73,9 @@ function drawVoronoi(g, data, x, y, colorMap) {
     });
 }
 
-// Function to find the leaf node in the decision tree that a point belongs to
-function findLeafNodeForPoint(point, treeData, originalFeatures) {
-    let currentNode = treeData;
-
-    while (currentNode && !currentNode.data.is_leaf) {
-        const featureName = currentNode.data.feature_name;
-        const threshold = currentNode.data.threshold;
-        const featureValue = originalFeatures[featureName];
-
-        if (featureValue <= threshold) {
-            currentNode = currentNode.children[0]; // Go left
-        } else {
-            currentNode = currentNode.children[1]; // Go right
-        }
-    }
-
-    return currentNode;
-}
-
-// Function to highlight the decision path in the tree
-function highlightDecisionPath(point, data, treeVisualization) {
-    if (!treeVisualization || !treeVisualization.contentGroup) return;
-
-    // First, reset all highlights
-    treeVisualization.contentGroup
-        .selectAll(".link")
-        .style("stroke", "#ccc")
-        .style(
-            "stroke-width",
-            `${treeVisualization.metrics.linkStrokeWidth}px`
-        );
-
-    treeVisualization.contentGroup
-        .selectAll(".node circle")
-        .style("stroke", "#ccc")
-        .style(
-            "stroke-width",
-            `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
-        );
-
-    // Find the corresponding leaf node
-    const leafNode = findLeafNodeForPoint(
-        point,
-        treeVisualization.treeData,
-        data.originalData[data.pcaData.indexOf(point)]
-    );
-
-    if (leafNode) {
-        // Highlight the path from leaf to root
-        let currentNode = leafNode;
-        while (currentNode.parent) {
-            // Highlight the link
-            treeVisualization.contentGroup
-                .selectAll(".link")
-                .filter(
-                    (linkData) =>
-                        linkData.source === currentNode.parent &&
-                        linkData.target === currentNode
-                )
-                .style("stroke", "red")
-                .style(
-                    "stroke-width",
-                    `${treeVisualization.metrics.linkStrokeWidth}px`
-                );
-
-            // Highlight the node
-            treeVisualization.contentGroup
-                .selectAll(".node")
-                .filter((d) => d === currentNode)
-                .select("circle")
-                .style("stroke", "red")
-                .style(
-                    "stroke-width",
-                    `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
-                );
-
-            currentNode = currentNode.parent;
-        }
-    }
-}
-
 // Create points with event handlers
 function createPoints(g, data, x, y, colorMap, tooltip, treeVisualization) {
     const symbolGenerator = d3.symbol().size(100);
-    let lastClickedPoint = null;
 
     const points = g
         .selectAll("path.point")
@@ -238,86 +156,102 @@ function hideTooltip(tooltip) {
 function resetTreeHighlights(treeVisualization) {
     if (!treeVisualization || !treeVisualization.contentGroup) return;
 
+    // Reset link styles
     treeVisualization.contentGroup
         .selectAll(".link")
-        .style("stroke", "#ccc")
-        .style(
-            "stroke-width",
-            `${treeVisualization.metrics.linkStrokeWidth}px`
-        );
+        .style("stroke", colorScheme.ui.linkStroke)
+        .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth}px`);
 
+    // Reset node styles
     treeVisualization.contentGroup
         .selectAll(".node circle")
-        .style("stroke", "#ccc")
-        .style(
-            "stroke-width",
-            `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
-        );
+        .style("stroke", colorScheme.ui.nodeStroke)
+        .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth}px`);
 }
 
 function highlightTreePath(path, treeVisualization) {
-    // Reset previous highlights
+    // Reset any previous highlights
     resetTreeHighlights(treeVisualization);
 
-    // Highlight the path
+    // Highlight the links in the path
     for (let i = 0; i < path.length - 1; i++) {
+        const currentNode = path[i];
+        const nextNode = path[i + 1];
+
         treeVisualization.contentGroup
             .selectAll(".link")
-            .filter(
-                (linkData) =>
-                    linkData.source === path[i] &&
-                    linkData.target === path[i + 1]
+            .filter(linkData => 
+                linkData.source === currentNode && 
+                linkData.target === nextNode
             )
-            .style("stroke", "red")
-            .style(
-                "stroke-width",
-                `${treeVisualization.metrics.linkStrokeWidth}px`
-            );
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth * 1.5}px`);
     }
 
-    // Highlight the leaf node
-    if (path.length > 0) {
+    // Highlight all nodes in the path
+    path.forEach(node => {
         treeVisualization.contentGroup
             .selectAll(".node")
-            .filter((d) => d === path[path.length - 1])
+            .filter(d => d === node)
             .select("circle")
-            .style("stroke", "red")
-            .style(
-                "stroke-width",
-                `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
-            );
-    }
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth * 1.5}px`);
+    });
 }
 
-let lastClickedNode = null; // Declare globally
-// Toggle point color on click
-function togglePointColor(node, d, data, colorMap, treeVisualization) {
-    const index = data.pcaData.indexOf(d);
-    const originalFeatures = data.originalData[index];
+function findTreePath(features, root) {
+    let path = [];
+    let currentNode = root.treeData.descendants()[0]; // Start at root
 
-    if (lastClickedPoint) {
-        d3.select(lastClickedPoint).style(
-            "fill",
-            color(data.targets[data.pcaData.indexOf(lastClickedPoint.__data__)])
-        );
+    while (currentNode) {
+        path.push(currentNode);
+        
+        // If we've reached a leaf node, stop
+        if (currentNode.data.is_leaf) {
+            break;
+        }
+
+        // Get the feature value for the current split
+        const featureValue = features[currentNode.data.feature_name];
+        
+        // Decide which child to traverse to
+        if (featureValue <= currentNode.data.threshold) {
+            currentNode = currentNode.children?.[0] || null; // Left child
+        } else {
+            currentNode = currentNode.children?.[1] || null; // Right child
+        }
     }
 
-    if (lastClickedPoint === node) {
-        lastClickedPoint = null;
-        if (treeVisualization) {
-            resetTreeHighlights(treeVisualization);
-        }
+    return path;
+}
+
+// Toggle point color on click
+function togglePointColor(node, d, data, colorMap, treeVisualization) {
+    // Reset all points to their original colors first
+    d3.selectAll("path.point")
+        .style("fill", (d, i) => colorMap[data.targets[i]])
+        .style("opacity", colorScheme.opacity.hover);
+
+    const index = data.pcaData.indexOf(d);
+    const originalFeatures = data.originalData[index];
+    
+    // If clicking the same point, reset everything and exit
+    if (window.lastClickedPoint === node) {
+        window.lastClickedPoint = null;
+        resetTreeHighlights(treeVisualization);
         return;
     }
 
-    lastClickedPoint = node;
-    d3.select(node).style("fill", colorScheme.ui.highlight);
+    // Update the last clicked point and highlight only this point
+    window.lastClickedPoint = node;
+    d3.select(node)
+        .style("fill", colorScheme.ui.highlight)
+        .style("opacity", colorScheme.opacity.active);
 
+    // Find and highlight the corresponding path in the decision tree
     if (treeVisualization && treeVisualization.treeData) {
-        highlightTreePath(
-            findTreePath(originalFeatures, treeVisualization),
-            treeVisualization
-        );
+        const path = findTreePath(originalFeatures, treeVisualization);
+        highlightTreePath(path, treeVisualization);
     }
 }
 

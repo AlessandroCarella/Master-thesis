@@ -327,35 +327,6 @@ function addNodes(
     return nodes;
 }
 
-// Function to generate a color map for node classes
-function generateClassColorMap(rawTreeData) {
-    const predefinedColors = [
-        "#8dd3c7",
-        "#ffffb3",
-        "#bebada",
-        "#fb8072",
-        "#80b1d3",
-        "#fdb462",
-        "#b3de69",
-        "#fccde5",
-        "#d9d9d9",
-        "#bc80bd",
-        "#ccebc5",
-        "#ffed6f",
-    ];
-    const classColorMap = {};
-    const uniqueClasses = [...new Set(rawTreeData.map((d) => d.class_label))];
-
-    uniqueClasses.forEach((classLabel, index) => {
-        classColorMap[classLabel] =
-            index < predefinedColors.length
-                ? predefinedColors[index]
-                : "#" + Math.floor(Math.random() * 16777215).toString(16);
-    });
-
-    return classColorMap;
-}
-
 // Function to handle mouseover event on nodes
 function handleMouseOver(event, d, tooltip, metrics) {
     const content = [
@@ -399,85 +370,6 @@ function handleMouseOut(event, tooltip, metrics) {
         .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("opacity", colorScheme.opacity.hover);
-}
-
-// Function to handle click event on nodes
-function handleClick(event, d, contentGroup, treeData, metrics) {
-    event.stopPropagation(); // Stop event propagation
-
-    // Reset all visualizations
-    d3.selectAll(".link").style("stroke", "#ccc");
-    if (pcaVisualization && pcaVisualization.points) {
-        pcaVisualization.points.style("fill", (d, i) =>
-            getNodeColor(pcaVisualization.data.targets[i])
-        );
-    }
-
-    // If clicked node is a leaf, highlight its path and corresponding PCA points
-    if (d.data.is_leaf) {
-        // Highlight path to root in decision tree
-        let currentNode = d;
-        while (currentNode.parent) {
-            let link = contentGroup
-                .selectAll(".link")
-                .data(treeData.links())
-                .filter(
-                    (linkData) =>
-                        linkData.source === currentNode.parent &&
-                        linkData.target === currentNode
-                );
-
-            link.style("stroke", "red").style(
-                "stroke-width",
-                `${metrics.linkStrokeWidth}px`
-            );
-            currentNode = currentNode.parent;
-        }
-
-        // Highlight node
-        d3.select(event.currentTarget)
-            .select("circle")
-            .style("stroke", "red")
-            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
-
-        // Highlight corresponding points in PCA plot
-        if (pcaVisualization && pcaVisualization.points) {
-            highlightPointsForLeaf(d, pcaVisualization);
-        }
-    }
-}
-
-// Function to determine if a point belongs to a leaf node's decision path
-function pointBelongsToLeaf(point, originalData, leafNode) {
-    let currentNode = leafNode;
-    while (currentNode.parent) {
-        const parentData = currentNode.parent.data;
-        if (!parentData.feature_name) continue;
-
-        const featureValue = originalData[parentData.feature_name];
-        const isLeftChild = currentNode === currentNode.parent.children[0];
-
-        if (isLeftChild && featureValue > parentData.threshold) return false;
-        if (!isLeftChild && featureValue <= parentData.threshold) return false;
-
-        currentNode = currentNode.parent;
-    }
-    return true;
-}
-
-// Function to highlight points that belong to the selected leaf node
-function highlightPointsForLeaf(leafNode, pcaVisualization) {
-    pcaVisualization.points
-        .style("fill", (d, i) => {
-            const originalData = pcaVisualization.data.originalData[i];
-            return pointBelongsToLeaf(d, originalData, leafNode)
-                ? "red"
-                : getNodeColor(pcaVisualization.data.targets[i]);
-        })
-        .style("opacity", (d, i) => {
-            const originalData = pcaVisualization.data.originalData[i];
-            return pointBelongsToLeaf(d, originalData, leafNode) ? 1 : 0.3;
-        });
 }
 
 // Function to compute the initial transform
