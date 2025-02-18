@@ -1,5 +1,5 @@
 export { createPCAscatterPlot };
-import { setPCAVisualization, colorScheme, generateColorMap } from './visualizationConnector.js';
+import { setPCAVisualization, colorScheme, generateColorMap, getGlobalColorMap, setGlobalColorMap } from './visualizationConnector.js';
 
 // Create tooltip
 function createTooltip() {
@@ -190,7 +190,7 @@ function highlightTreePath(path, treeVisualization) {
                 linkData.target === nextNode
             )
             .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth * 1.5}px`);
+            .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth}px`);
     }
 
     // Highlight all nodes in the path
@@ -200,7 +200,7 @@ function highlightTreePath(path, treeVisualization) {
             .filter(d => d === node)
             .select("circle")
             .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth * 1.5}px`);
+            .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth}px`);
     });
 }
 
@@ -309,7 +309,7 @@ function createPCAscatterPlot(data, container, treeVis) {
 
     // Use consistent color scheme
     const uniqueClasses = Array.from(new Set(data.targets));
-    const colorMap = generateColorMap(uniqueClasses);
+    const colorMap = getGlobalColorMap() || setGlobalColorMap(uniqueClasses);
 
     // Draw Voronoi regions with updated colors
     drawVoronoi(g, data, x, y, colorMap);

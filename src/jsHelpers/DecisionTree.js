@@ -5,6 +5,8 @@ import {
     colorScheme,
     generateColorMap,
     getNodeColor,
+    getGlobalColorMap,
+    setGlobalColorMap 
 } from "./visualizationConnector.js";
 
 // Function to create a hierarchy from the flat data
@@ -60,8 +62,8 @@ function createVisualization(rawTreeData) {
     }
 
     // Generate color map from unique class labels
-    const uniqueClasses = [...new Set(rawTreeData.map((d) => d.class_label))];
-    const colorMap = generateColorMap(uniqueClasses);
+    const uniqueClasses = [...new Set(rawTreeData.map(d => d.class_label))].filter(Boolean);
+    const colorMap = getGlobalColorMap() || setGlobalColorMap(uniqueClasses);
 
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
@@ -330,7 +332,6 @@ function addNodes(
 // Function to handle mouseover event on nodes
 function handleMouseOver(event, d, tooltip, metrics) {
     const content = [
-        `<strong>Node ID:</strong> ${d.data.node_id}`,
         d.data.class_label !== null
             ? `<strong>Class:</strong> ${d.data.class_label}`
             : "",

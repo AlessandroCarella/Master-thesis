@@ -37,13 +37,21 @@ const colorScheme = {
 
 // Generate and maintain consistent color mapping
 function generateColorMap(classes) {
+    if (!Array.isArray(classes)) {
+        console.error('Classes must be an array');
+        return {};
+    }
+    
+    // Sort classes to ensure consistent ordering
+    const sortedClasses = [...classes].sort();
     const colorMap = {};
-    classes.forEach((classLabel, index) => {
-        colorMap[classLabel] =
-            index < colorScheme.classColors.length
-                ? colorScheme.classColors[index]
-                : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+    
+    sortedClasses.forEach((classLabel, index) => {
+        colorMap[classLabel] = index < colorScheme.classColors.length
+            ? colorScheme.classColors[index]
+            : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
     });
+    
     return colorMap;
 }
 
@@ -166,6 +174,18 @@ function handleTreeNodeClick(event, d, contentGroup, treeData, metrics) {
     }
 }
 
+// Add a new function to store the global color map
+let globalColorMap = null;
+
+function setGlobalColorMap(classes) {
+    globalColorMap = generateColorMap(classes);
+    return globalColorMap;
+}
+
+function getGlobalColorMap() {
+    return globalColorMap;
+}
+
 // State management functions
 function setPCAVisualization(vis) {
     pcaVisualization = vis;
@@ -193,6 +213,8 @@ export {
     handleTreeNodeClick,
     resetHighlights,
     generateColorMap,
+    setGlobalColorMap,
+    getGlobalColorMap,
     getNodeColor,
     colorScheme,
 };
