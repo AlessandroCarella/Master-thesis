@@ -1,13 +1,17 @@
-export {
-    createVisualization,
-};
-import { handleTreeNodeClick, setTreeVisualization } from './visualizationConnector.js';
+export { createVisualization };
+import {
+    handleTreeNodeClick,
+    setTreeVisualization,
+    colorScheme,
+    generateColorMap,
+    getNodeColor,
+} from "./visualizationConnector.js";
 
 // Function to create a hierarchy from the flat data
 function createHierarchy(data) {
     // Guard against undefined or null data
     if (!data || !Array.isArray(data)) {
-        console.error('Invalid data provided to createHierarchy:', data);
+        console.error("Invalid data provided to createHierarchy:", data);
         return null;
     }
 
@@ -20,7 +24,7 @@ function createHierarchy(data) {
     // Assume the root node has ID 0
     const root = nodesById[0];
     if (!root) {
-        console.error('No root node found in data');
+        console.error("No root node found in data");
         return null;
     }
 
@@ -39,20 +43,25 @@ function createHierarchy(data) {
 
 // Function to create the visualization using D3.js
 function createVisualization(rawTreeData) {
-    // Guard against undefined or null data
     if (!rawTreeData) {
-        console.error('No tree data provided to createVisualization');
+        console.error("No tree data provided to createVisualization");
         return;
     }
 
     const SETTINGS = getVisualizationSettings();
     const hierarchyRoot = createHierarchy(rawTreeData);
-    
+
+    // Guard against failed hierarchy creation
+
     // Guard against failed hierarchy creation
     if (!hierarchyRoot) {
-        console.error('Failed to create hierarchy from tree data');
+        console.error("Failed to create hierarchy from tree data");
         return;
     }
+
+    // Generate color map from unique class labels
+    const uniqueClasses = [...new Set(rawTreeData.map((d) => d.class_label))];
+    const colorMap = generateColorMap(uniqueClasses);
 
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
@@ -67,7 +76,7 @@ function createVisualization(rawTreeData) {
 
     addBackgroundLayer(contentGroup, SETTINGS, metrics);
     addLinks(contentGroup, treeData, metrics, SETTINGS);
-    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeData);
+    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap);
 
     const initialTransform = calculateInitialTransform(treeData, SETTINGS);
     const zoom = initializeZoom(
@@ -238,7 +247,8 @@ function createContentGroup(svg, SETTINGS) {
 
 // Function to create a tooltip for displaying node information
 function createTooltip() {
-    return d3.select("body")
+    return d3
+        .select("body")
         .append("div")
         .attr("class", "decision-tree-tooltip")
         .style("visibility", "hidden"); // Set initial visibility to hidden
@@ -258,14 +268,14 @@ function addBackgroundLayer(contentGroup, SETTINGS, metrics) {
 function addLinks(contentGroup, treeData, metrics, SETTINGS) {
     contentGroup
         .selectAll(".link")
-        .data(treeData.links()) // Bind data for links
+        .data(treeData.links())
         .enter()
         .append("path")
         .attr("class", "link")
-        .style("stroke-width", `${metrics.linkStrokeWidth}px`) // Use the new stroke width property
-        .attr("d", (d) => createSplitPath(d, SETTINGS)) // Define path
-        .style("fill", "none") // No fill
-        .style("stroke", "#ccc"); // Set stroke color
+        .style("stroke-width", `${metrics.linkStrokeWidth}px`)
+        .attr("d", (d) => createSplitPath(d, SETTINGS))
+        .style("fill", "none")
+        .style("stroke", colorScheme.ui.linkStroke);
 }
 
 // Function to create a path for links
@@ -282,100 +292,37 @@ function createSplitPath({ source, target }, SETTINGS) {
 }
 
 // Function to add nodes to the visualization
-function addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeData) {
+function addNodes(
+    contentGroup,
+    treeData,
+    metrics,
+    SETTINGS,
+    tooltip,
+    colorMap
+) {
     const nodes = contentGroup
         .selectAll(".node")
         .data(treeData.descendants())
         .join("g")
         .attr("class", "node")
-        .attr("transform", d => `translate(${d.x},${d.y})`);
-
-    const classColorMap = generateClassColorMap(rawTreeData);
+        .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
     nodes
         .append("circle")
-        .attr("r", d => calculateNodeRadius(d, metrics))
-        .style("fill", d => getNodeColor(d, classColorMap))
+        .attr("r", (d) => calculateNodeRadius(d, metrics))
+        .style("fill", (d) => getNodeColor(d, colorMap))
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("stroke", "#ccc")
-        .on("mouseover", (event, d) => handleMouseOver(event, d, tooltip, metrics))
+        .style("stroke", colorScheme.ui.nodeStroke)
+        .style("opacity", colorScheme.opacity.hover)
+        .on("mouseover", (event, d) =>
+            handleMouseOver(event, d, tooltip, metrics)
+        )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
-        .on("mouseout", function() { handleMouseOut(this, tooltip, metrics); });
+        .on("mouseout", (event) => handleMouseOut(event, tooltip, metrics));
 
-    nodes.on("click", (event, d) => {
-        console.log('Tree node clicked:', {
-            nodeData: d.data,
-            isLeaf: d.data.is_leaf,
-            hasParent: !!d.parent
-        });
-    
-        // Reset previous highlights in the tree
-        contentGroup.selectAll(".link")
-            .style("stroke", "#ccc")
-            .style("stroke-width", `${metrics.linkStrokeWidth}px`);
-            
-        contentGroup.selectAll(".node circle")
-            .style("stroke", "#ccc")
-            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
-    
-        if (d.data.is_leaf) {
-            console.log('Processing leaf node');
-            // Highlight the path to root
-            let currentNode = d;
-            const pathNodes = [];
-            while (currentNode.parent) {
-                pathNodes.push(currentNode);
-                
-                contentGroup
-                    .selectAll(".link")
-                    .filter(link => 
-                        link.source === currentNode.parent && 
-                        link.target === currentNode
-                    )
-                    .style("stroke", "red")
-                    .style("stroke-width", `${metrics.linkStrokeWidth}px`);
-                
-                currentNode = currentNode.parent;
-            }
-            pathNodes.push(currentNode);
-    
-            // Highlight the leaf node
-            d3.select(event.currentTarget)
-                .select("circle")
-                .style("stroke", "red")
-                .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
-    
-            // Highlight corresponding PCA points
-            if (window.pcaVisualization && window.pcaVisualization.points) {
-                console.log('PCA visualization found, highlighting corresponding points');
-                
-                // Reset all points to their original colors first
-                window.pcaVisualization.points
-                    .style("fill", (point, i) => {
-                        const color = d3.scaleOrdinal(d3.schemeCategory10);
-                        return color(window.pcaVisualization.data.targets[i]);
-                    })
-                    .style("opacity", 0.8);
-
-                // Then highlight the points that belong to this leaf
-                window.pcaVisualization.points
-                    .style("fill", (point, i) => {
-                        const originalData = window.pcaVisualization.data.originalData[i];
-                        const belongs = pointBelongsToLeaf(point, originalData, d);
-                        if (belongs) {
-                            return "red";
-                        } else {
-                            const color = d3.scaleOrdinal(d3.schemeCategory10);
-                            return color(window.pcaVisualization.data.targets[i]);
-                        }
-                    })
-                    .style("opacity", (point, i) => {
-                        const originalData = window.pcaVisualization.data.originalData[i];
-                        return pointBelongsToLeaf(point, originalData, d) ? 1 : 0.3;
-                    });
-            }
-        }
-    });
+    nodes.on("click", (event, d) =>
+        handleTreeNodeClick(event, d, contentGroup, treeData, metrics)
+    );
 
     return nodes;
 }
@@ -409,13 +356,6 @@ function generateClassColorMap(rawTreeData) {
     return classColorMap;
 }
 
-// Function to get the color of a node
-function getNodeColor(d, classColorMap) {
-    return d.data.is_leaf
-        ? classColorMap[d.data.class_label] || "purple"
-        : "purple";
-}
-
 // Function to handle mouseover event on nodes
 function handleMouseOver(event, d, tooltip, metrics) {
     const content = [
@@ -440,8 +380,9 @@ function handleMouseOver(event, d, tooltip, metrics) {
         .style("top", event.pageY - 10 + "px");
 
     d3.select(event.currentTarget)
-        .style("stroke", "#000")
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
+        .style("stroke", colorScheme.ui.highlight)
+        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+        .style("opacity", colorScheme.opacity.active);
 }
 
 // Function to handle mousemove event for tooltip
@@ -452,22 +393,24 @@ function handleMouseMove(event, tooltip) {
 }
 
 // Function to handle mouseout event on nodes
-function handleMouseOut(node, tooltip, metrics) {
-    tooltip.style("visibility", "hidden"); // Hide tooltip
-    d3.select(node)
-        .style("stroke", "#ccc") // Reset node stroke
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
+function handleMouseOut(event, tooltip, metrics) {
+    tooltip.style("visibility", "hidden");
+    d3.select(event.currentTarget)
+        .style("stroke", colorScheme.ui.nodeStroke)
+        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+        .style("opacity", colorScheme.opacity.hover);
 }
 
 // Function to handle click event on nodes
 function handleClick(event, d, contentGroup, treeData, metrics) {
     event.stopPropagation(); // Stop event propagation
-    
+
     // Reset all visualizations
     d3.selectAll(".link").style("stroke", "#ccc");
     if (pcaVisualization && pcaVisualization.points) {
-        pcaVisualization.points.style("fill", (d, i) => 
-            getNodeColor(pcaVisualization.data.targets[i]));
+        pcaVisualization.points.style("fill", (d, i) =>
+            getNodeColor(pcaVisualization.data.targets[i])
+        );
     }
 
     // If clicked node is a leaf, highlight its path and corresponding PCA points
@@ -484,8 +427,10 @@ function handleClick(event, d, contentGroup, treeData, metrics) {
                         linkData.target === currentNode
                 );
 
-            link.style("stroke", "red")
-                .style("stroke-width", `${metrics.linkStrokeWidth}px`);
+            link.style("stroke", "red").style(
+                "stroke-width",
+                `${metrics.linkStrokeWidth}px`
+            );
             currentNode = currentNode.parent;
         }
 
@@ -508,13 +453,13 @@ function pointBelongsToLeaf(point, originalData, leafNode) {
     while (currentNode.parent) {
         const parentData = currentNode.parent.data;
         if (!parentData.feature_name) continue;
-        
+
         const featureValue = originalData[parentData.feature_name];
         const isLeftChild = currentNode === currentNode.parent.children[0];
-        
+
         if (isLeftChild && featureValue > parentData.threshold) return false;
         if (!isLeftChild && featureValue <= parentData.threshold) return false;
-        
+
         currentNode = currentNode.parent;
     }
     return true;
@@ -525,8 +470,9 @@ function highlightPointsForLeaf(leafNode, pcaVisualization) {
     pcaVisualization.points
         .style("fill", (d, i) => {
             const originalData = pcaVisualization.data.originalData[i];
-            return pointBelongsToLeaf(d, originalData, leafNode) ? "red" : 
-                   getNodeColor(pcaVisualization.data.targets[i]);
+            return pointBelongsToLeaf(d, originalData, leafNode)
+                ? "red"
+                : getNodeColor(pcaVisualization.data.targets[i]);
         })
         .style("opacity", (d, i) => {
             const originalData = pcaVisualization.data.originalData[i];
@@ -563,4 +509,3 @@ function calculateInitialTransform(treeData, SETTINGS) {
     transform.k = k;
     return transform;
 }
-

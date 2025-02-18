@@ -1,5 +1,5 @@
 export { createPCAscatterPlot };
-import { setPCAVisualization } from './visualizationConnector.js';
+import { setPCAVisualization, colorScheme, generateColorMap } from './visualizationConnector.js';
 
 // Create tooltip
 function createTooltip() {
@@ -56,7 +56,7 @@ function createAxes(g, x, y, margin, width, height) {
 }
 
 // Create the Voronoi regions for the decision boundaries
-function drawVoronoi(g, data, x, y, color) {
+function drawVoronoi(g, data, x, y, colorMap) {
     const voronoiGroup = g.append("g").attr("class", "voronoi-regions");
 
     data.decisionBoundary.regions.forEach((polygon, i) => {
@@ -66,8 +66,8 @@ function drawVoronoi(g, data, x, y, color) {
                 "points",
                 polygon.map((d) => `${x(d[0])},${y(d[1])}`).join(" ")
             )
-            .attr("fill", color(data.decisionBoundary.regionClasses[i]))
-            .attr("stroke", "white")
+            .attr("fill", colorMap[data.decisionBoundary.regionClasses[i]])
+            .attr("stroke", colorScheme.ui.linkStroke)
             .attr("stroke-width", 0.5)
             .attr("opacity", 0.3);
     });
@@ -76,42 +76,50 @@ function drawVoronoi(g, data, x, y, color) {
 // Function to find the leaf node in the decision tree that a point belongs to
 function findLeafNodeForPoint(point, treeData, originalFeatures) {
     let currentNode = treeData;
-    
+
     while (currentNode && !currentNode.data.is_leaf) {
         const featureName = currentNode.data.feature_name;
         const threshold = currentNode.data.threshold;
         const featureValue = originalFeatures[featureName];
-        
+
         if (featureValue <= threshold) {
             currentNode = currentNode.children[0]; // Go left
         } else {
             currentNode = currentNode.children[1]; // Go right
         }
     }
-    
+
     return currentNode;
 }
 
 // Function to highlight the decision path in the tree
 function highlightDecisionPath(point, data, treeVisualization) {
     if (!treeVisualization || !treeVisualization.contentGroup) return;
-    
+
     // First, reset all highlights
-    treeVisualization.contentGroup.selectAll(".link")
+    treeVisualization.contentGroup
+        .selectAll(".link")
         .style("stroke", "#ccc")
-        .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth}px`);
-    
-    treeVisualization.contentGroup.selectAll(".node circle")
+        .style(
+            "stroke-width",
+            `${treeVisualization.metrics.linkStrokeWidth}px`
+        );
+
+    treeVisualization.contentGroup
+        .selectAll(".node circle")
         .style("stroke", "#ccc")
-        .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth}px`);
-    
+        .style(
+            "stroke-width",
+            `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
+        );
+
     // Find the corresponding leaf node
     const leafNode = findLeafNodeForPoint(
         point,
         treeVisualization.treeData,
         data.originalData[data.pcaData.indexOf(point)]
     );
-    
+
     if (leafNode) {
         // Highlight the path from leaf to root
         let currentNode = leafNode;
@@ -119,46 +127,64 @@ function highlightDecisionPath(point, data, treeVisualization) {
             // Highlight the link
             treeVisualization.contentGroup
                 .selectAll(".link")
-                .filter(linkData => 
-                    linkData.source === currentNode.parent && 
-                    linkData.target === currentNode
+                .filter(
+                    (linkData) =>
+                        linkData.source === currentNode.parent &&
+                        linkData.target === currentNode
                 )
                 .style("stroke", "red")
-                .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth}px`);
-            
+                .style(
+                    "stroke-width",
+                    `${treeVisualization.metrics.linkStrokeWidth}px`
+                );
+
             // Highlight the node
             treeVisualization.contentGroup
                 .selectAll(".node")
-                .filter(d => d === currentNode)
+                .filter((d) => d === currentNode)
                 .select("circle")
                 .style("stroke", "red")
-                .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth}px`);
-            
+                .style(
+                    "stroke-width",
+                    `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
+                );
+
             currentNode = currentNode.parent;
         }
     }
 }
 
 // Create points with event handlers
-function createPoints(g, data, x, y, colorScale, tooltip, treeVisualization) {
+function createPoints(g, data, x, y, colorMap, tooltip, treeVisualization) {
     const symbolGenerator = d3.symbol().size(100);
     let lastClickedPoint = null;
 
-    const points = g.selectAll("path.point")
+    const points = g
+        .selectAll("path.point")
         .data(data.pcaData)
         .enter()
         .append("path")
         .attr("class", "point")
-        .attr("transform", d => `translate(${x(d[0])},${y(d[1])})`)
+        .attr("transform", (d) => `translate(${x(d[0])},${y(d[1])})`)
         .attr("d", symbolGenerator.type(d3.symbolCircle))
-        .style("fill", (d, i) => colorScale(data.targets[i]))
-        .style("stroke", "#fff")
+        .style("fill", (d, i) => colorMap[data.targets[i]])
+        .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", 1)
-        .style("opacity", 0.8)
-        .on("mouseover", (event, d) => showTooltip(event, d, data, tooltip))
-        .on("mouseout", () => hideTooltip(tooltip))
-        .on("click", function(event, d) {
-            togglePointColor(this, d, data, colorScale, treeVisualization);
+        .style("opacity", colorScheme.opacity.hover)
+        .on("mouseover", (event, d) => {
+            showTooltip(event, d, data, tooltip);
+            d3.select(event.currentTarget)
+                .style("opacity", colorScheme.opacity.active)
+                .style("stroke", colorScheme.ui.highlight);
+        })
+        .on("mouseout", (event) => {
+            hideTooltip(tooltip);
+            d3.select(event.currentTarget)
+                .style("opacity", colorScheme.opacity.hover)
+                .style("stroke", colorScheme.ui.nodeStroke);
+        })
+        .on("click", function (event, d) {
+            togglePointColor(this, d, data, colorMap, treeVisualization);
         });
 
     return points;
@@ -167,12 +193,16 @@ function createPoints(g, data, x, y, colorScale, tooltip, treeVisualization) {
 // Show tooltip on hover with original data
 function showTooltip(event, d, data, tooltip) {
     // Get the index of the point in pcaData
-    const pointIndex = event.target.__data__ ? data.pcaData.findIndex(p => 
-        p[0] === event.target.__data__[0] && p[1] === event.target.__data__[1]
-    ) : -1;
+    const pointIndex = event.target.__data__
+        ? data.pcaData.findIndex(
+              (p) =>
+                  p[0] === event.target.__data__[0] &&
+                  p[1] === event.target.__data__[1]
+          )
+        : -1;
 
     if (pointIndex === -1) {
-        console.warn('Could not find matching point data');
+        console.warn("Could not find matching point data");
         return;
     }
 
@@ -181,14 +211,14 @@ function showTooltip(event, d, data, tooltip) {
 
     // Create tooltip content
     let tooltipContent = "<strong>Decoded Values:</strong><br>";
-    
+
     // Add each feature and its value
     Object.entries(originalData).forEach(([feature, value]) => {
         tooltipContent += `${feature}: ${
             typeof value === "number" ? value.toFixed(3) : value
         }<br>`;
     });
-    
+
     tooltipContent += `<strong>Class: ${className}</strong>`;
 
     tooltip
@@ -207,14 +237,22 @@ function hideTooltip(tooltip) {
 
 function resetTreeHighlights(treeVisualization) {
     if (!treeVisualization || !treeVisualization.contentGroup) return;
-    
-    treeVisualization.contentGroup.selectAll(".link")
+
+    treeVisualization.contentGroup
+        .selectAll(".link")
         .style("stroke", "#ccc")
-        .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth}px`);
-    
-    treeVisualization.contentGroup.selectAll(".node circle")
+        .style(
+            "stroke-width",
+            `${treeVisualization.metrics.linkStrokeWidth}px`
+        );
+
+    treeVisualization.contentGroup
+        .selectAll(".node circle")
         .style("stroke", "#ccc")
-        .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth}px`);
+        .style(
+            "stroke-width",
+            `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
+        );
 }
 
 function highlightTreePath(path, treeVisualization) {
@@ -225,101 +263,66 @@ function highlightTreePath(path, treeVisualization) {
     for (let i = 0; i < path.length - 1; i++) {
         treeVisualization.contentGroup
             .selectAll(".link")
-            .filter(linkData => 
-                linkData.source === path[i] && 
-                linkData.target === path[i + 1]
+            .filter(
+                (linkData) =>
+                    linkData.source === path[i] &&
+                    linkData.target === path[i + 1]
             )
             .style("stroke", "red")
-            .style("stroke-width", `${treeVisualization.metrics.linkStrokeWidth}px`);
+            .style(
+                "stroke-width",
+                `${treeVisualization.metrics.linkStrokeWidth}px`
+            );
     }
 
     // Highlight the leaf node
     if (path.length > 0) {
         treeVisualization.contentGroup
             .selectAll(".node")
-            .filter(d => d === path[path.length - 1])
+            .filter((d) => d === path[path.length - 1])
             .select("circle")
             .style("stroke", "red")
-            .style("stroke-width", `${treeVisualization.metrics.nodeBorderStrokeWidth}px`);
+            .style(
+                "stroke-width",
+                `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
+            );
     }
 }
 
 let lastClickedNode = null; // Declare globally
 // Toggle point color on click
-function togglePointColor(node, d, data, color, treeVisualization) {
-    console.log('togglePointColor called with:', {
-        node,
-        point: d,
-        hasTreeVis: !!treeVisualization,
-        treeData: treeVisualization?.treeData ? 'exists' : 'missing'
-    });
-
+function togglePointColor(node, d, data, colorMap, treeVisualization) {
     const index = data.pcaData.indexOf(d);
     const originalFeatures = data.originalData[index];
-    
-    console.log('Original features for clicked point:', originalFeatures);
-    
-    // Reset previous highlights
-    if (lastClickedNode) {
-        console.log('Resetting previous highlighted point');
-        d3.select(lastClickedNode).style("fill", color(
-            data.targets[data.pcaData.indexOf(lastClickedNode.__data__)]
-        ));
+
+    if (lastClickedPoint) {
+        d3.select(lastClickedPoint).style(
+            "fill",
+            color(data.targets[data.pcaData.indexOf(lastClickedPoint.__data__)])
+        );
     }
 
-    // If clicking the same point, reset everything
-    if (lastClickedNode === node) {
-        console.log('Clicked same point, resetting visualization');
-        lastClickedNode = null;
+    if (lastClickedPoint === node) {
+        lastClickedPoint = null;
         if (treeVisualization) {
             resetTreeHighlights(treeVisualization);
         }
         return;
     }
 
-    // Highlight new point
-    console.log('Highlighting new point');
-    lastClickedNode = node;
-    d3.select(node).style("fill", "red");
+    lastClickedPoint = node;
+    d3.select(node).style("fill", colorScheme.ui.highlight);
 
-    // Find and highlight tree path
     if (treeVisualization && treeVisualization.treeData) {
-        console.log('Finding path through tree');
-        let currentNode = treeVisualization.treeData;
-        const path = [];
-
-        // Find the path through the tree
-        while (currentNode && !currentNode.data.is_leaf) {
-            console.log('Traversing node:', {
-                feature: currentNode.data.feature_name,
-                threshold: currentNode.data.threshold,
-                featureValue: originalFeatures[currentNode.data.feature_name]
-            });
-            
-            path.push(currentNode);
-            const featureValue = originalFeatures[currentNode.data.feature_name];
-            currentNode = featureValue <= currentNode.data.threshold ? 
-                currentNode.children[0] : currentNode.children[1];
-        }
-        if (currentNode) {
-            console.log('Found leaf node:', currentNode.data);
-            path.push(currentNode);
-        }
-
-        // Highlight the path
-        console.log('Highlighting path with length:', path.length);
-        highlightTreePath(path, treeVisualization);
-    } else {
-        console.log('Tree visualization not available:', {
-            treeVis: !!treeVisualization,
-            treeData: treeVisualization?.treeData
-        });
+        highlightTreePath(
+            findTreePath(originalFeatures, treeVisualization),
+            treeVisualization
+        );
     }
 }
 
 // Create the PCA scatter plot
 function createPCAscatterPlot(data, container, treeVis) {
-    // Validate input data
     if (
         !data ||
         !data.pcaData ||
@@ -331,10 +334,7 @@ function createPCAscatterPlot(data, container, treeVis) {
         return;
     }
 
-    console.log('Creating PCA scatter plot with tree visualization:', treeVis);
     const treeVisualization = treeVis || window.treeVisualization;
-    console.log('Final tree visualization reference:', treeVisualization);
-
     const visualization = { data, points: null };
     setPCAVisualization(visualization);
 
@@ -344,11 +344,9 @@ function createPCAscatterPlot(data, container, treeVis) {
 
     const tooltip = createTooltip();
 
-    // Set the X-axis and Y-axis labels outside the SVG
     document.getElementById("x-axis-label").textContent = data.xAxisLabel;
     document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
-    // Clear the existing plot before creating a new one
     d3.select(container).select("svg").remove();
 
     const svg = d3
@@ -358,8 +356,6 @@ function createPCAscatterPlot(data, container, treeVis) {
         .attr("height", height);
 
     const g = svg.append("g");
-
-    // Create zoom behavior
     createZoom(svg, g, margin, width, height);
 
     const x = d3
@@ -372,21 +368,22 @@ function createPCAscatterPlot(data, container, treeVis) {
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
 
-    // Create color scale
+    // Use consistent color scheme
     const uniqueClasses = Array.from(new Set(data.targets));
-    const colorScale = d3
-        .scaleOrdinal()
-        .domain(uniqueClasses)
-        .range(d3.schemeCategory10);
+    const colorMap = generateColorMap(uniqueClasses);
 
-    // Draw Voronoi regions
-    drawVoronoi(g, data, x, y, colorScale);
-
-    // Create axes
+    // Draw Voronoi regions with updated colors
+    drawVoronoi(g, data, x, y, colorMap);
     createAxes(g, x, y, margin, width, height);
-
-    // Create points
-    visualization.points = createPoints(g, data, x, y, colorScale, tooltip, treeVisualization);
+    visualization.points = createPoints(
+        g,
+        data,
+        x,
+        y,
+        colorMap,
+        tooltip,
+        treeVisualization
+    );
 
     return visualization;
 }

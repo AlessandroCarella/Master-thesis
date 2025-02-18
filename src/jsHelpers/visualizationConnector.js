@@ -4,118 +4,179 @@
 let pcaVisualization = null;
 let treeVisualization = null;
 
-function getNodeColor(targetClass, colorMap) {
-    // If we don't have a color map, fallback to a default color
-    if (!colorMap) {
-        return "#purple";
-    }
-    return colorMap[targetClass] || "#purple";
+// Consistent color scheme for both visualizations
+const colorScheme = {
+    // Predefined colors for class labels
+    classColors: [
+        "#8dd3c7",
+        "#ffffb3",
+        "#bebada",
+        "#fb8072",
+        "#80b1d3",
+        "#fdb462",
+        "#b3de69",
+        "#fccde5",
+        "#d9d9d9",
+        "#bc80bd",
+    ],
+    // UI element colors
+    ui: {
+        highlight: "#ff4444",
+        default: "#cccccc",
+        nodeStroke: "#666666",
+        linkStroke: "#999999",
+        background: "#ffffff",
+    },
+    // Opacity settings
+    opacity: {
+        active: 1.0,
+        inactive: 1,
+        hover: 0.8,
+    },
+};
+
+// Generate and maintain consistent color mapping
+function generateColorMap(classes) {
+    const colorMap = {};
+    classes.forEach((classLabel, index) => {
+        colorMap[classLabel] =
+            index < colorScheme.classColors.length
+                ? colorScheme.classColors[index]
+                : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+    });
+    return colorMap;
 }
 
-// Function to reset all highlights
+// Get color for a node based on its class
+function getNodeColor(node, colorMap) {
+    if (!node) return colorScheme.ui.default;
+
+    // For leaf nodes, use class color
+    if (node.data && node.data.is_leaf) {
+        return colorMap[node.data.class_label] || colorScheme.ui.default;
+    }
+    // For decision nodes, use default color
+    return colorScheme.ui.default;
+}
+
+// Reset all highlights across visualizations
 function resetHighlights() {
     // Reset decision tree highlights
-    if (document.querySelector("#visualization")) {
-        d3.selectAll(".link").style("stroke", "#ccc");
-        d3.selectAll(".node circle")
-            .style("stroke", "#ccc")
-            .style("stroke-width", (d, i, nodes) => {
-                const node = d3.select(nodes[i]).node().__data__;
-                return node.data.metrics?.nodeBorderStrokeWidth + 'px' || '3px';
-            });
+    if (treeVisualization && treeVisualization.contentGroup) {
+        treeVisualization.contentGroup
+            .selectAll(".link")
+            .style("stroke", colorScheme.ui.linkStroke)
+            .style(
+                "stroke-width",
+                `${treeVisualization.metrics.linkStrokeWidth}px`
+            );
+
+        treeVisualization.contentGroup
+            .selectAll(".node circle")
+            .style("stroke", colorScheme.ui.nodeStroke)
+            .style(
+                "stroke-width",
+                `${treeVisualization.metrics.nodeBorderStrokeWidth}px`
+            );
     }
 
     // Reset PCA plot highlights
     if (pcaVisualization && pcaVisualization.points) {
+        const colorMap = generateColorMap([
+            ...new Set(pcaVisualization.data.targets),
+        ]);
         pcaVisualization.points
-            .style("fill", (d, i) => getNodeColor(pcaVisualization.data.targets[i]))
-            .style("opacity", 0.8);
+            .style("fill", (d, i) => colorMap[pcaVisualization.data.targets[i]])
+            .style("opacity", colorScheme.opacity.hover);
     }
 }
 
-// Function to determine if a point belongs to a leaf node's decision path
+// Determine if a point belongs to a leaf node's decision path
 function pointBelongsToLeaf(point, originalData, leafNode) {
     let currentNode = leafNode;
     while (currentNode.parent) {
         const parentData = currentNode.parent.data;
         if (!parentData.feature_name) continue;
-        
+
         const featureValue = originalData[parentData.feature_name];
         const isLeftChild = currentNode === currentNode.parent.children[0];
-        
+
         if (isLeftChild && featureValue > parentData.threshold) return false;
         if (!isLeftChild && featureValue <= parentData.threshold) return false;
-        
+
         currentNode = currentNode.parent;
     }
     return true;
 }
 
-// Function to highlight points in PCA plot based on selected leaf node
+// Highlight points in PCA plot for selected leaf node
 function highlightPointsForLeaf(leafNode) {
     if (!pcaVisualization || !pcaVisualization.points) return;
+
+    const colorMap = generateColorMap([
+        ...new Set(pcaVisualization.data.targets),
+    ]);
 
     pcaVisualization.points
         .style("fill", (d, i) => {
             const originalData = pcaVisualization.data.originalData[i];
-            return pointBelongsToLeaf(d, originalData, leafNode) ? "red" : 
-                   getNodeColor(pcaVisualization.data.targets[i]);
+            return pointBelongsToLeaf(d, originalData, leafNode)
+                ? colorScheme.ui.highlight
+                : colorMap[pcaVisualization.data.targets[i]];
         })
         .style("opacity", (d, i) => {
             const originalData = pcaVisualization.data.originalData[i];
-            return pointBelongsToLeaf(d, originalData, leafNode) ? 1 : 0.3;
+            return pointBelongsToLeaf(d, originalData, leafNode)
+                ? colorScheme.opacity.active
+                : colorScheme.opacity.inactive;
         });
 }
 
-// Enhanced node click handler for decision tree
+// Enhanced tree node click handler
 function handleTreeNodeClick(event, d, contentGroup, treeData, metrics) {
     event.stopPropagation();
-    
-    // Reset all highlights
+
     resetHighlights();
 
-    // If clicked node is a leaf, highlight its path and corresponding PCA points
     if (d.data.is_leaf) {
-        // Highlight path to root in decision tree
+        // Highlight path to root
         let currentNode = d;
         while (currentNode.parent) {
-            let link = contentGroup
+            contentGroup
                 .selectAll(".link")
-                .data(treeData.links())
-                .filter(linkData => 
-                    linkData.source === currentNode.parent && 
-                    linkData.target === currentNode
-                );
-
-            link.style("stroke", "red")
+                .filter(
+                    (linkData) =>
+                        linkData.source === currentNode.parent &&
+                        linkData.target === currentNode
+                )
+                .style("stroke", colorScheme.ui.highlight)
                 .style("stroke-width", `${metrics.linkStrokeWidth}px`);
+
             currentNode = currentNode.parent;
         }
 
-        // Highlight node
+        // Highlight selected node
         d3.select(event.currentTarget)
             .select("circle")
-            .style("stroke", "red")
+            .style("stroke", colorScheme.ui.highlight)
             .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`);
 
-        // Highlight corresponding points in PCA plot
+        // Highlight corresponding PCA points
         highlightPointsForLeaf(d);
     }
 }
 
+// State management functions
 function setPCAVisualization(vis) {
-    console.log('Setting PCA visualization:', vis);
     pcaVisualization = vis;
-    window.pcaVisualization = vis; // Also set on window for global access
+    window.pcaVisualization = vis;
 }
 
 function setTreeVisualization(vis) {
-    console.log('Setting Tree visualization:', vis);
     treeVisualization = vis;
-    window.treeVisualization = vis; // Also set on window for global access
+    window.treeVisualization = vis;
 }
 
-// Add getter functions
 function getPCAVisualization() {
     return pcaVisualization;
 }
@@ -130,5 +191,8 @@ export {
     getPCAVisualization,
     getTreeVisualization,
     handleTreeNodeClick,
-    resetHighlights
+    resetHighlights,
+    generateColorMap,
+    getNodeColor,
+    colorScheme,
 };
