@@ -1,6 +1,7 @@
-# model_helpers.py
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from lore_sa.dataset import TabularDataset
 from typing import Dict, Any
 
@@ -21,6 +22,23 @@ CLASSIFIERS = {
         'max_iter': 100,
         'penalty': 'l2',
         'random_state':42,
+    },
+    'SVC': {
+        'C': 1.0,
+        'kernel': 'rbf',
+        'gamma': 'scale',
+        'random_state':42,
+    },
+    'KNeighborsClassifier': {
+        'n_neighbors': 5,
+        'weights': 'uniform',
+        'algorithm': 'auto',
+    },
+    'GradientBoostingClassifier': {
+        'n_estimators': 100,
+        'learning_rate': 0.1,
+        'max_depth': 3,
+        'random_state':42,
     }
 }
 
@@ -34,6 +52,12 @@ def create_classifier(classifier_name: str, parameters: Dict[str, Any]):
         return RandomForestClassifier(**parameters)
     elif classifier_name == "LogisticRegression":
         return LogisticRegression(**parameters)
+    elif classifier_name == "SVC":
+        return SVC(**parameters)
+    elif classifier_name == "KNeighborsClassifier":
+        return KNeighborsClassifier(**parameters)
+    elif classifier_name == "GradientBoostingClassifier":
+        return GradientBoostingClassifier(**parameters)
     else:
         raise ValueError(f"Unsupported classifier: {classifier_name}")
 

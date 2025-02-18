@@ -62,8 +62,6 @@ function drawVoronoi(g, data, x, y, colorMap) {
     data.decisionBoundary.regions.forEach((polygon, i) => {
         const regionClass = data.decisionBoundary.regionClasses[i];
         const regionColor = colorMap[regionClass];
-        console.log(regionClass, regionColor)
-        console.log(colorMap)
         
         voronoiGroup
             .append("polygon")
