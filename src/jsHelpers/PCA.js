@@ -140,9 +140,7 @@ function highlightDecisionPath(point, data, treeVisualization) {
 }
 
 // Create points with event handlers
-function createPoints(g, data, x, y, color, tooltip, treeVisualization) {
-    console.log('Creating points with tree visualization:', !!treeVisualization);
-    
+function createPoints(g, data, x, y, colorScale, tooltip, treeVisualization) {
     const symbolGenerator = d3.symbol().size(100);
     let lastClickedPoint = null;
 
@@ -153,15 +151,14 @@ function createPoints(g, data, x, y, color, tooltip, treeVisualization) {
         .attr("class", "point")
         .attr("transform", d => `translate(${x(d[0])},${y(d[1])})`)
         .attr("d", symbolGenerator.type(d3.symbolCircle))
-        .style("fill", (d, i) => color(data.targets[i]))
+        .style("fill", (d, i) => colorScale(data.targets[i]))
         .style("stroke", "#fff")
         .style("stroke-width", 1)
         .style("opacity", 0.8)
         .on("mouseover", (event, d) => showTooltip(event, d, data, tooltip))
         .on("mouseout", () => hideTooltip(tooltip))
         .on("click", function(event, d) {
-            console.log('Point clicked:', d);
-            togglePointColor(this, d, data, color, treeVisualization);
+            togglePointColor(this, d, data, colorScale, treeVisualization);
         });
 
     return points;
@@ -335,7 +332,7 @@ function createPCAscatterPlot(data, container, treeVis) {
     }
 
     console.log('Creating PCA scatter plot with tree visualization:', treeVis);
-    const treeVisualization = treeVis || window.treeVisualization; // Try both sources
+    const treeVisualization = treeVis || window.treeVisualization;
     console.log('Final tree visualization reference:', treeVisualization);
 
     const visualization = { data, points: null };
@@ -352,7 +349,7 @@ function createPCAscatterPlot(data, container, treeVis) {
     document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
     // Clear the existing plot before creating a new one
-    d3.select(container).select("svg").remove(); // Remove the existing SVG
+    d3.select(container).select("svg").remove();
 
     const svg = d3
         .select(container)
@@ -377,19 +374,19 @@ function createPCAscatterPlot(data, container, treeVis) {
 
     // Create color scale
     const uniqueClasses = Array.from(new Set(data.targets));
-    const color = d3
+    const colorScale = d3
         .scaleOrdinal()
         .domain(uniqueClasses)
         .range(d3.schemeCategory10);
 
     // Draw Voronoi regions
-    drawVoronoi(g, data, x, y, color);
+    drawVoronoi(g, data, x, y, colorScale);
 
     // Create axes
     createAxes(g, x, y, margin, width, height);
 
     // Create points
-    visualization.points = createPoints(g, data, x, y, color, tooltip, treeVisualization);
+    visualization.points = createPoints(g, data, x, y, colorScale, tooltip, treeVisualization);
 
     return visualization;
 }

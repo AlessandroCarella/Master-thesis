@@ -302,7 +302,6 @@ function addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeDat
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", function() { handleMouseOut(this, tooltip, metrics); });
 
-    // Add click handler to the node group instead of the circle
     nodes.on("click", (event, d) => {
         console.log('Tree node clicked:', {
             nodeData: d.data,
@@ -310,7 +309,7 @@ function addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeDat
             hasParent: !!d.parent
         });
     
-        // Reset previous highlights
+        // Reset previous highlights in the tree
         contentGroup.selectAll(".link")
             .style("stroke", "#ccc")
             .style("stroke-width", `${metrics.linkStrokeWidth}px`);
@@ -327,11 +326,6 @@ function addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeDat
             while (currentNode.parent) {
                 pathNodes.push(currentNode);
                 
-                console.log('Highlighting link to parent:', {
-                    parentFeature: currentNode.parent.data.feature_name,
-                    parentThreshold: currentNode.parent.data.threshold
-                });
-    
                 contentGroup
                     .selectAll(".link")
                     .filter(link => 
@@ -344,7 +338,6 @@ function addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeDat
                 currentNode = currentNode.parent;
             }
             pathNodes.push(currentNode);
-            console.log('Complete path from leaf to root:', pathNodes.map(n => n.data));
     
             // Highlight the leaf node
             d3.select(event.currentTarget)
@@ -355,29 +348,36 @@ function addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, rawTreeDat
             // Highlight corresponding PCA points
             if (window.pcaVisualization && window.pcaVisualization.points) {
                 console.log('PCA visualization found, highlighting corresponding points');
+                
+                // Reset all points to their original colors first
+                window.pcaVisualization.points
+                    .style("fill", (point, i) => {
+                        const color = d3.scaleOrdinal(d3.schemeCategory10);
+                        return color(window.pcaVisualization.data.targets[i]);
+                    })
+                    .style("opacity", 0.8);
+
+                // Then highlight the points that belong to this leaf
                 window.pcaVisualization.points
                     .style("fill", (point, i) => {
                         const originalData = window.pcaVisualization.data.originalData[i];
                         const belongs = pointBelongsToLeaf(point, originalData, d);
-                        console.log('Checking point:', {
-                            pointIndex: i,
-                            belongsToLeaf: belongs,
-                            originalData
-                        });
-                        return belongs ? "red" : getNodeColor(window.pcaVisualization.data.targets[i], classColorMap);
+                        if (belongs) {
+                            return "red";
+                        } else {
+                            const color = d3.scaleOrdinal(d3.schemeCategory10);
+                            return color(window.pcaVisualization.data.targets[i]);
+                        }
                     })
                     .style("opacity", (point, i) => {
                         const originalData = window.pcaVisualization.data.originalData[i];
                         return pointBelongsToLeaf(point, originalData, d) ? 1 : 0.3;
                     });
-            } else {
-                console.log('PCA visualization not found:', {
-                    pcaVis: !!window.pcaVisualization,
-                    points: window.pcaVisualization?.points
-                });
             }
         }
     });
+
+    return nodes;
 }
 
 // Function to generate a color map for node classes
