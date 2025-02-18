@@ -1,50 +1,27 @@
-export { createVisualization };
 import {
-    handleTreeNodeClick,
     setTreeVisualization,
-    colorScheme,
-    generateColorMap,
-    getNodeColor,
     getGlobalColorMap,
-    setGlobalColorMap 
+    setGlobalColorMap,
 } from "./visualizationConnector.js";
+import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
+import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
+import {
+    calculateMetrics,
+    createTreeLayout,
+    calculateInitialTransform,
+} from "./DecisionTreeHelpers/metrics.js";
+import {
+    clearExistingSVG,
+    createSVGContainer,
+    createContentGroup,
+    createTooltip,
+    addBackgroundLayer,
+} from "./DecisionTreeHelpers/svg.js";
+import { addLinks } from "./DecisionTreeHelpers/link.js";
+import { addNodes } from "./DecisionTreeHelpers/node.js";
+import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 
-// Function to create a hierarchy from the flat data
-function createHierarchy(data) {
-    // Guard against undefined or null data
-    if (!data || !Array.isArray(data)) {
-        console.error("Invalid data provided to createHierarchy:", data);
-        return null;
-    }
-
-    const nodesById = {};
-    // Create a map of nodes by their ID
-    data.forEach((node) => {
-        nodesById[node.node_id] = { ...node, children: [] };
-    });
-
-    // Assume the root node has ID 0
-    const root = nodesById[0];
-    if (!root) {
-        console.error("No root node found in data");
-        return null;
-    }
-
-    // Assign children to each node based on left and right child IDs
-    data.forEach((node) => {
-        if (node.left_child !== null) {
-            nodesById[node.node_id].children.push(nodesById[node.left_child]);
-        }
-        if (node.right_child !== null) {
-            nodesById[node.node_id].children.push(nodesById[node.right_child]);
-        }
-    });
-
-    return root;
-}
-
-// Function to create the visualization using D3.js
-function createVisualization(rawTreeData) {
+export function createVisualization(rawTreeData) {
     if (!rawTreeData) {
         console.error("No tree data provided to createVisualization");
         return;
@@ -53,16 +30,14 @@ function createVisualization(rawTreeData) {
     const SETTINGS = getVisualizationSettings();
     const hierarchyRoot = createHierarchy(rawTreeData);
 
-    // Guard against failed hierarchy creation
-
-    // Guard against failed hierarchy creation
     if (!hierarchyRoot) {
         console.error("Failed to create hierarchy from tree data");
         return;
     }
 
-    // Generate color map from unique class labels
-    const uniqueClasses = [...new Set(rawTreeData.map(d => d.class_label))].filter(Boolean);
+    const uniqueClasses = [
+        ...new Set(rawTreeData.map((d) => d.class_label)),
+    ].filter(Boolean);
     const colorMap = getGlobalColorMap() || setGlobalColorMap(uniqueClasses);
 
     const root = d3.hierarchy(hierarchyRoot);
@@ -93,312 +68,4 @@ function createVisualization(rawTreeData) {
 
     setTreeVisualization({ contentGroup, treeData, metrics });
     window.treeVisualization = { contentGroup, treeData, metrics };
-}
-
-// Function to get visualization settings
-function getVisualizationSettings() {
-    const margin = { top: 90, right: 90, bottom: 90, left: 90 };
-    const width = 800;
-    const height = 800;
-    return {
-        margin,
-        size: {
-            width,
-            height,
-            innerWidth: width - margin.left - margin.right,
-            innerHeight: height - margin.top - margin.bottom,
-        },
-        tree: {
-            splitAngle: 0,
-            minSplitWidth: 10,
-            minSplitHeight: 10,
-            levelHeightScale: 100,
-            get radianAngle() {
-                return (this.splitAngle * Math.PI) / 180;
-            },
-        },
-        node: {
-            baseRadius: 12,
-            minRadius: 4,
-            maxRadius: 20,
-            baseLinkAndNodeBorderStrokeWidth: 3,
-            minLinkAndNodeBorderStrokeWidth: 1,
-            maxLinkAndNodeBorderStrokeWidth: 8,
-            maxZoom: 20,
-        },
-    };
-}
-
-// Function to calculate metrics for the tree layout
-function calculateMetrics(root, SETTINGS) {
-    const levelCounts = {};
-    root.descendants().forEach((node) => {
-        levelCounts[node.depth] = (levelCounts[node.depth] || 0) + 1;
-    });
-    const maxDepth = Math.max(...root.descendants().map((d) => d.depth));
-    const totalNodes = root.descendants().length;
-
-    function calculateLogScale(totalNodes, baseValue, minValue, maxValue) {
-        let scale = Math.sqrt(totalNodes / 30);
-        return Math.min(maxValue, Math.max(minValue, baseValue * scale));
-    }
-
-    return {
-        totalNodes,
-        maxDepth,
-        get nodeRadius() {
-            return calculateLogScale(
-                this.totalNodes,
-                SETTINGS.node.baseRadius,
-                SETTINGS.node.minRadius,
-                SETTINGS.node.maxRadius
-            );
-        },
-        get depthSpacing() {
-            return SETTINGS.size.innerHeight / (maxDepth + 1);
-        },
-        get treeWidth() {
-            return this.depthSpacing * (maxDepth + 1);
-        },
-        get linkStrokeWidth() {
-            return calculateLogScale(
-                this.totalNodes,
-                SETTINGS.node.baseLinkAndNodeBorderStrokeWidth,
-                SETTINGS.node.minLinkAndNodeBorderStrokeWidth,
-                SETTINGS.node.maxLinkAndNodeBorderStrokeWidth
-            );
-        },
-        get nodeBorderStrokeWidth() {
-            return this.linkStrokeWidth;
-        },
-    };
-}
-
-// Function to calculate separation between nodes
-function calculateSeparation(a, b, metrics, SETTINGS, root) {
-    // Separation of nodes
-    return SETTINGS.tree.minSplitWidth * 2;
-}
-
-// Function to create the tree layout
-function createTreeLayout(metrics, SETTINGS, root) {
-    // More moderate horizontal spacing
-    const horizontalSpacing =
-        root.descendants().length * SETTINGS.tree.minSplitWidth;
-    const verticalSpacing =
-        root.descendants().length * SETTINGS.tree.minSplitHeight;
-    return d3
-        .tree()
-        .size([horizontalSpacing, verticalSpacing])
-        .separation((a, b) =>
-            calculateSeparation(a, b, metrics, SETTINGS, root)
-        );
-}
-
-// Function to calculate the radius of a node
-function calculateNodeRadius(d, metrics) {
-    return metrics.nodeRadius; // Default radius
-}
-
-// Function to initialize zoom functionality
-function initializeZoom(svg, contentGroup, SETTINGS, metrics, minZoom) {
-    const zoom = d3
-        .zoom()
-        .scaleExtent([minZoom, SETTINGS.node.maxZoom])
-        .on("zoom", function (event) {
-            contentGroup.attr("transform", event.transform);
-        });
-
-    svg.call(zoom);
-    return zoom;
-}
-
-// Function to clear existing SVG elements
-function clearExistingSVG() {
-    d3.select("#visualization svg").remove(); // Remove existing SVG
-}
-
-// Function to create the SVG container
-function createSVGContainer(SETTINGS) {
-    return d3
-        .select("#visualization")
-        .append("svg")
-        .attr(
-            "width",
-            SETTINGS.size.innerWidth +
-                SETTINGS.margin.left +
-                SETTINGS.margin.right
-        ) // Set width
-        .attr(
-            "height",
-            SETTINGS.size.innerHeight +
-                SETTINGS.margin.top +
-                SETTINGS.margin.bottom
-        ); // Set height
-}
-
-// Function to create a group for content within the SVG
-function createContentGroup(svg, SETTINGS) {
-    return svg
-        .append("g")
-        .attr(
-            "transform",
-            `translate(${SETTINGS.margin.left},${SETTINGS.margin.top})`
-        ); // Translate group by margins
-}
-
-// Function to create a tooltip for displaying node information
-function createTooltip() {
-    return d3
-        .select("body")
-        .append("div")
-        .attr("class", "decision-tree-tooltip")
-        .style("visibility", "hidden"); // Set initial visibility to hidden
-}
-
-// Function to add a background layer to the visualization
-function addBackgroundLayer(contentGroup, SETTINGS, metrics) {
-    contentGroup
-        .append("rect")
-        .attr("width", Math.max(SETTINGS.size.innerWidth, metrics.treeWidth)) // Set width
-        .attr("height", SETTINGS.size.innerHeight * 3) // Set height
-        .style("fill", "transparent") // Set fill to transparent
-        .style("pointer-events", "all"); // Allow pointer events
-}
-
-// Function to add links between nodes
-function addLinks(contentGroup, treeData, metrics, SETTINGS) {
-    contentGroup
-        .selectAll(".link")
-        .data(treeData.links())
-        .enter()
-        .append("path")
-        .attr("class", "link")
-        .style("stroke-width", `${metrics.linkStrokeWidth}px`)
-        .attr("d", (d) => createSplitPath(d, SETTINGS))
-        .style("fill", "none")
-        .style("stroke", colorScheme.ui.linkStroke);
-}
-
-// Function to create a path for links
-function createSplitPath({ source, target }, SETTINGS) {
-    const { x: sourceX, y: sourceY } = source;
-    const { x: targetX, y: targetY } = target;
-    const midY = (sourceY + targetY) / 2;
-    const controlX = sourceX + (targetX - sourceX) / 2;
-    const controlY =
-        midY -
-        Math.abs(targetX - sourceX) * Math.tan(SETTINGS.tree.radianAngle / 2);
-
-    return `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`;
-}
-
-// Function to add nodes to the visualization
-function addNodes(
-    contentGroup,
-    treeData,
-    metrics,
-    SETTINGS,
-    tooltip,
-    colorMap
-) {
-    const nodes = contentGroup
-        .selectAll(".node")
-        .data(treeData.descendants())
-        .join("g")
-        .attr("class", "node")
-        .attr("transform", (d) => `translate(${d.x},${d.y})`);
-
-    nodes
-        .append("circle")
-        .attr("r", (d) => calculateNodeRadius(d, metrics))
-        .style("fill", (d) => getNodeColor(d, colorMap))
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("stroke", colorScheme.ui.nodeStroke)
-        .style("opacity", colorScheme.opacity.hover)
-        .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, metrics)
-        )
-        .on("mousemove", (event) => handleMouseMove(event, tooltip))
-        .on("mouseout", (event) => handleMouseOut(event, tooltip, metrics));
-
-    nodes.on("click", (event, d) =>
-        handleTreeNodeClick(event, d, contentGroup, treeData, metrics)
-    );
-
-    return nodes;
-}
-
-// Function to handle mouseover event on nodes
-function handleMouseOver(event, d, tooltip, metrics) {
-    const content = [
-        d.data.class_label !== null
-            ? `<strong>Class:</strong> ${d.data.class_label}`
-            : "",
-        d.data.feature_name !== null
-            ? `<strong>Split: </strong>${
-                  d.data.feature_name
-              } > ${d.data.threshold.toFixed(2)}`
-            : "",
-    ]
-        .filter(Boolean)
-        .join("<br>");
-
-    tooltip
-        .html(content)
-        .style("class", "decision-tree-tooltip")
-        .style("visibility", "visible")
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-
-    d3.select(event.currentTarget)
-        .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.active);
-}
-
-// Function to handle mousemove event for tooltip
-function handleMouseMove(event, tooltip) {
-    tooltip
-        .style("left", event.pageX + 10 + "px") // Update tooltip position
-        .style("top", event.pageY - 10 + "px");
-}
-
-// Function to handle mouseout event on nodes
-function handleMouseOut(event, tooltip, metrics) {
-    tooltip.style("visibility", "hidden");
-    d3.select(event.currentTarget)
-        .style("stroke", colorScheme.ui.nodeStroke)
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.hover);
-}
-
-// Function to compute the initial transform
-function calculateInitialTransform(treeData, SETTINGS) {
-    const allNodes = treeData.descendants();
-    const [minX, maxX] = d3.extent(allNodes, (d) => d.x);
-    const [minY, maxY] = d3.extent(allNodes, (d) => d.y);
-
-    const treeWidth = maxX - minX;
-    const treeHeight = maxY - minY;
-
-    const scaleX = SETTINGS.size.innerWidth / treeWidth;
-    const scaleY = SETTINGS.size.innerHeight / treeHeight;
-    const k = Math.min(scaleX, scaleY);
-
-    const translateX =
-        (SETTINGS.size.innerWidth - treeWidth * k) / 2 -
-        minX * k +
-        SETTINGS.margin.left;
-    const translateY =
-        (SETTINGS.size.innerHeight - treeHeight * k) / 2 -
-        minY * k +
-        SETTINGS.margin.top;
-
-    // Return the transform and also attach 'k' for later use in zoom initialization
-    const transform = d3.zoomIdentity
-        .translate(translateX, translateY)
-        .scale(k);
-    transform.k = k;
-    return transform;
 }

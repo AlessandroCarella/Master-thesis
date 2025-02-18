@@ -8,43 +8,49 @@
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
         />
-        <link rel="stylesheet" href="styles/base.css">
-        <link rel="stylesheet" href="styles/carousel.css">
-        <link rel="stylesheet" href="styles/forms.css">
-        <link rel="stylesheet" href="styles/buttons.css">
-        <link rel="stylesheet" href="styles/visualizations.css">
+        <link rel="stylesheet" href="styles/base.css" />
+        <link rel="stylesheet" href="styles/carousel.css" />
+        <link rel="stylesheet" href="styles/forms.css" />
+        <link rel="stylesheet" href="styles/buttons.css" />
+        <link rel="stylesheet" href="styles/visualizations.css" />
     </head>
     <body>
         <div class="container">
-                <!-- Dataset Selection Section -->
-                <div class="section" id="datasetSection">
-                    <h2>Select Dataset</h2>
-                    <div class="carousel-grid" id="datasetGrid">
-                        <!-- Datasets will be dynamically added here -->
-                    </div>
-                    <div class="dataset-info" id="datasetInfo">
-                        <!-- Dataset information will be shown here -->
-                    </div>
+            <!-- Dataset Selection Section -->
+            <div class="section" id="datasetSection">
+                <h2>Select Dataset</h2>
+                <div class="carousel-grid" id="datasetGrid">
+                    <!-- Datasets will be dynamically added here -->
                 </div>
-
-                <!-- Classifier Selection Section (initially hidden) -->
-                <div class="section" id="classifierSection" style="display: none;">
-                    <h2>Select Classifier</h2>
-                    <div class="carousel-grid" id="classifierGrid">
-                        <!-- Classifiers will be dynamically added here -->
-                    </div>
+                <div class="dataset-info" id="datasetInfo">
+                    <!-- Dataset information will be shown here -->
                 </div>
+            </div>
 
-                <!-- Parameter Configuration Section (initially hidden) -->
-                <div class="section" id="parameterSection" style="display: none;">
-                    <h2>Configure Parameters</h2>
-                    <div class="parameter-form" id="parameterForm">
-                        <!-- Parameters will be dynamically added here -->
-                    </div>
-                    <button class="training-btn btn" onclick="startTraining()">Train Model</button>
+            <!-- Classifier Selection Section (initially hidden) -->
+            <div class="section" id="classifierSection" style="display: none">
+                <h2>Select Classifier</h2>
+                <div class="carousel-grid" id="classifierGrid">
+                    <!-- Classifiers will be dynamically added here -->
                 </div>
+            </div>
 
-            <div class="feature-button-container" id="featureButtonContainer" style="display: none;">
+            <!-- Parameter Configuration Section (initially hidden) -->
+            <div class="section" id="parameterSection" style="display: none">
+                <h2>Configure Parameters</h2>
+                <div class="parameter-form" id="parameterForm">
+                    <!-- Parameters will be dynamically added here -->
+                </div>
+                <button class="training-btn btn" onclick="startTraining()">
+                    Train Model
+                </button>
+            </div>
+
+            <div
+                class="feature-button-container"
+                id="featureButtonContainer"
+                style="display: none"
+            >
                 <div class="feature-carousel" id="featureCarousel">
                     <!-- Features will be dynamically added here -->
                 </div>
@@ -59,7 +65,7 @@
                 </div>
             </div>
 
-            <div class="svg-container" id="svg-container" style="display: none;">
+            <div class="svg-container" id="svg-container" style="display: none">
                 <div class="svg-side-by-side">
                     <div class="visualization-container">
                         <h2>Neighborhood PCA</h2>
@@ -73,7 +79,6 @@
                     </div>
                 </div>
             </div>
-        </div>
         </div>
 
         <script src="https://d3js.org/d3.v6.min.js"></script>

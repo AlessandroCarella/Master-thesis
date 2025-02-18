@@ -1,19 +1,19 @@
 /********************************************
  *               IMPORTS
  ********************************************/
-import { 
+import {
     populateDatasetGrid,
     populateClassifierGrid,
     populateParameterForm,
     createFeatureInputs,
     getFeatureValues,
     resetFeatures,
-    initializeUI
-} from './jsHelpers/UI.js';
+    initializeUI,
+} from "./jsHelpers/UI.js";
 
-import { initializeVisualizations } from './jsHelpers/visualizations.js';
-import { updateParameter } from './jsHelpers/stateManagement.js';
-import { setGlobalColorMap } from './jsHelpers/visualizationConnector.js';
+import { initializeVisualizations } from "./jsHelpers/visualizations.js";
+import { updateParameter } from "./jsHelpers/stateManagement.js";
+import { setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
 
 /********************************************
  *            GLOBAL STATE
@@ -22,7 +22,7 @@ export const appState = {
     dataset_name: null,
     selectedClassifier: null,
     parameters: {},
-    featureDescriptor: null
+    featureDescriptor: null,
 };
 
 /********************************************
@@ -31,56 +31,55 @@ export const appState = {
 function resetUIDatasetSelection() {
     // Hide classifier section
     document.getElementById("classifierSection").style.display = "none";
-    
+
     // Hide and reset parameter section
     document.getElementById("parameterSection").style.display = "none";
     document.getElementById("parameterForm").innerHTML = "";
-    
+
     // Hide and reset feature inputs
     document.getElementById("featureButtonContainer").style.display = "none";
     document.getElementById("featureCarousel").innerHTML = "";
-    
+
     // Hide visualization container
-    document.querySelector('.svg-container').style.display = 'none';
-    
+    document.querySelector(".svg-container").style.display = "none";
+
     // Reset visualization elements
     document.getElementById("pca-plot").innerHTML = "";
     document.getElementById("visualization").innerHTML = "";
-    
+
     // Reset state
     appState.selectedClassifier = null;
     appState.parameters = {};
     appState.featureDescriptor = null;
-    
+
     // Reset the global color map
     setGlobalColorMap(null);
 }
 
 function resetUISelectClassifier() {
-
     // // Hide and reset parameter section
     // document.getElementById("parameterSection").style.display = "none";
     // document.getElementById("parameterForm").innerHTML = "";
-    
+
     // Hide and reset feature inputs
     document.getElementById("featureButtonContainer").style.display = "none";
     document.getElementById("featureCarousel").innerHTML = "";
-    
+
     // Hide visualization container
-    document.querySelector('.svg-container').style.display = 'none';
-    
+    document.querySelector(".svg-container").style.display = "none";
+
     // Reset visualization elements
     document.getElementById("pca-plot").innerHTML = "";
     document.getElementById("visualization").innerHTML = "";
-    
+
     // Reset state
     appState.featureDescriptor = null;
 }
 
 function resetUIstartTraining() {
     // Hide visualization container
-    document.querySelector('.svg-container').style.display = 'none';
-    
+    document.querySelector(".svg-container").style.display = "none";
+
     // Reset visualization elements
     document.getElementById("pca-plot").innerHTML = "";
     document.getElementById("visualization").innerHTML = "";
@@ -112,26 +111,28 @@ async function fetchClassifiers() {
 window.selectDataset = async function (datasetName) {
     // Reset UI first
     resetUIDatasetSelection();
-    
+
     // Update state with new dataset
     appState.dataset_name = datasetName;
-    
+
     try {
-        const infoResponse = await fetch(`http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`);
+        const infoResponse = await fetch(
+            `http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`
+        );
         const datasetInfo = await infoResponse.json();
-        
+
         // Initialize color map with target classes
         if (datasetInfo.target_names && datasetInfo.target_names.length > 0) {
             setGlobalColorMap(datasetInfo.target_names);
         }
-    
+
         document.getElementById("datasetInfo").innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
             <p>Samples: ${datasetInfo.n_samples}</p>
             <p>Features: ${datasetInfo.feature_names}</p>
             <p>Target: ${datasetInfo.target_names}</p>
         `;
-    
+
         const classifiers = await fetchClassifiers();
         populateClassifierGrid(classifiers);
         document.getElementById("classifierSection").style.display = "block";
@@ -145,17 +146,19 @@ window.selectClassifier = async function (classifierName) {
     resetUISelectClassifier();
     appState.selectedClassifier = classifierName;
     appState.parameters = {};
-    
+
     try {
-        const response = await fetch("http://127.0.0.1:8000/api/get-classifiers");
+        const response = await fetch(
+            "http://127.0.0.1:8000/api/get-classifiers"
+        );
         const data = await response.json();
         const parameters = data.classifiers[classifierName];
-    
+
         // Initialize state parameters with default values
         Object.entries(parameters).forEach(([param, defaultValue]) => {
             appState.parameters[param] = defaultValue;
         });
-    
+
         populateParameterForm(parameters);
         document.getElementById("parameterSection").style.display = "block";
     } catch (error) {
@@ -170,14 +173,14 @@ window.startTraining = async function () {
     const trainingData = {
         dataset_name: appState.dataset_name,
         classifier: appState.selectedClassifier,
-        parameters: appState.parameters
+        parameters: appState.parameters,
     };
 
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/train-model', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(trainingData)
+        const response = await fetch("http://127.0.0.1:8000/api/train-model", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(trainingData),
         });
 
         if (!response.ok) {
@@ -187,7 +190,8 @@ window.startTraining = async function () {
         const result = await response.json();
         appState.featureDescriptor = result.descriptor;
         createFeatureInputs(result.descriptor);
-        document.getElementById("featureButtonContainer").style.display = "block";
+        document.getElementById("featureButtonContainer").style.display =
+            "block";
     } catch (error) {
         console.error("Training failed:", error);
     }
@@ -197,19 +201,19 @@ window.startTraining = async function () {
 window.explainInstance = async function () {
     const instanceData = getFeatureValues();
     const datasetName = appState.dataset_name;
-    
+
     const requestData = {
         instance: instanceData,
         dataset_name: datasetName,
         neighbourhood_size: 100,
-        PCAstep: 0.1
+        PCAstep: 0.1,
     };
 
     try {
         const response = await fetch("http://127.0.0.1:8000/api/explain", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(requestData),
         });
 
         if (!response.ok) {
@@ -217,20 +221,19 @@ window.explainInstance = async function () {
         }
 
         const result = await response.json();
-        
+
         // Show the visualization container
-        document.querySelector('.svg-container').style.display = 'block';
-        
+        document.querySelector(".svg-container").style.display = "block";
+
         // Initialize visualizations with the new data
         initializeVisualizations({
             decisionTreeVisualizationData: result.decisionTreeVisualizationData,
-            PCAvisualizationData: result.PCAvisualizationData
+            PCAvisualizationData: result.PCAvisualizationData,
         });
     } catch (error) {
         console.error("Failed to explain instance:", error);
     }
 };
-
 
 /********************************************
  *     EXPOSED FUNCTIONS & INITIALIZATION
@@ -241,9 +244,9 @@ window.getFeatureValues = getFeatureValues;
 window.resetFeatures = resetFeatures;
 
 // Initialize the UI and load datasets on window load
-window.onload = async function() {
+window.onload = async function () {
     try {
-        initializeUI(appState);  // Initialize UI with current state
+        initializeUI(appState); // Initialize UI with current state
         const datasets = await fetchDatasets();
         populateDatasetGrid(datasets);
     } catch (error) {

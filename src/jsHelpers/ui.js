@@ -1,14 +1,14 @@
 import {
     populateDatasetGrid,
     populateClassifierGrid,
-    populateParameterForm
-} from './UIHelpers/grids.js';
+    populateParameterForm,
+} from "./UIHelpers/grids.js";
 import {
     createSection,
     createNumericInput,
     createCategoricalInput,
-    createOrdinalInput
-} from './UIHelpers/inputs.js';
+    createOrdinalInput,
+} from "./UIHelpers/inputs.js";
 
 let state = null;
 
@@ -51,10 +51,19 @@ function renderFeatureSections(descriptor, sections) {
         sections.numeric.style.display = "none";
     }
 
-    if (descriptor.categorical && Object.keys(descriptor.categorical).length > 0) {
-        Object.entries(descriptor.categorical).forEach(([featureName, details]) => {
-            createCategoricalInput(sections.categorical, featureName, details);
-        });
+    if (
+        descriptor.categorical &&
+        Object.keys(descriptor.categorical).length > 0
+    ) {
+        Object.entries(descriptor.categorical).forEach(
+            ([featureName, details]) => {
+                createCategoricalInput(
+                    sections.categorical,
+                    featureName,
+                    details
+                );
+            }
+        );
     } else {
         sections.categorical.style.display = "none";
     }
@@ -80,7 +89,7 @@ function setDefaultFeatureValues(descriptor) {
         Object.entries(descriptor.categorical).forEach(([feature, details]) => {
             const select = document.getElementById(`feature-${feature}`);
             const modeValue = getMode(details.distinct_values);
-            
+
             Array.from(select.options).forEach((option, index) => {
                 if (option.value === modeValue) {
                     select.selectedIndex = index;
@@ -93,7 +102,7 @@ function setDefaultFeatureValues(descriptor) {
         Object.entries(descriptor.ordinal).forEach(([feature, details]) => {
             const select = document.getElementById(`feature-${feature}`);
             const modeValue = getMode(details.ordered_values);
-            
+
             Array.from(select.options).forEach((option, index) => {
                 if (option.value === modeValue) {
                     select.selectedIndex = index;
@@ -149,12 +158,8 @@ function getMode(values) {
 export function resetFeatures() {
     const state = getState();
     if (!state?.featureDescriptor) return;
-    
+
     setDefaultFeatureValues(state.featureDescriptor);
 }
 
-export {
-    populateDatasetGrid,
-    populateClassifierGrid,
-    populateParameterForm
-};
+export { populateDatasetGrid, populateClassifierGrid, populateParameterForm };

@@ -1,6 +1,6 @@
 // Update visualizations.js
-import { createVisualization } from './DecisionTree.js';
-import { createPCAscatterPlot } from './PCA.js';
+import { createVisualization } from "./DecisionTree.js";
+import { createPCAscatterPlot } from "./PCA.js";
 
 export function initializeVisualizations(data) {
     if (!data) {

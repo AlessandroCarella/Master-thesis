@@ -1,6 +1,4 @@
-export {
-    toggleDataset
-};
+export { toggleDataset };
 
 async function fetchDataset() {
     try {
@@ -18,7 +16,7 @@ async function fetchDataset() {
 
 async function displayDataset(dataset) {
     const tableDiv = document.getElementById("datasetTable");
-    
+
     if (!dataset || !dataset.length) {
         tableDiv.innerHTML = "<p>No data available</p>";
         return;

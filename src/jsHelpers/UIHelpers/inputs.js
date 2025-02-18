@@ -121,5 +121,5 @@ export {
     createNumericInput,
     createCategoricalInput,
     createOrdinalInput,
-    createSelectElement
+    createSelectElement,
 };

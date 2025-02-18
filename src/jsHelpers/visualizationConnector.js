@@ -38,20 +38,21 @@ const colorScheme = {
 // Generate and maintain consistent color mapping
 function generateColorMap(classes) {
     if (!Array.isArray(classes) || classes.length === 0) {
-        console.error('Invalid classes array provided to generateColorMap');
+        console.error("Invalid classes array provided to generateColorMap");
         return {};
     }
-    
+
     // Sort classes to ensure consistent ordering
     const sortedClasses = [...new Set(classes)].sort();
     const colorMap = {};
-    
+
     sortedClasses.forEach((classLabel, index) => {
-        colorMap[classLabel] = index < colorScheme.classColors.length
-            ? colorScheme.classColors[index]
-            : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+        colorMap[classLabel] =
+            index < colorScheme.classColors.length
+                ? colorScheme.classColors[index]
+                : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
     });
-    
+
     return colorMap;
 }
 
