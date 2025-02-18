@@ -37,13 +37,13 @@ const colorScheme = {
 
 // Generate and maintain consistent color mapping
 function generateColorMap(classes) {
-    if (!Array.isArray(classes)) {
-        console.error('Classes must be an array');
+    if (!Array.isArray(classes) || classes.length === 0) {
+        console.error('Invalid classes array provided to generateColorMap');
         return {};
     }
     
     // Sort classes to ensure consistent ordering
-    const sortedClasses = [...classes].sort();
+    const sortedClasses = [...new Set(classes)].sort();
     const colorMap = {};
     
     sortedClasses.forEach((classLabel, index) => {
@@ -178,7 +178,11 @@ function handleTreeNodeClick(event, d, contentGroup, treeData, metrics) {
 let globalColorMap = null;
 
 function setGlobalColorMap(classes) {
-    globalColorMap = generateColorMap(classes);
+    if (Array.isArray(classes) && classes.length > 0) {
+        globalColorMap = generateColorMap(classes);
+    } else {
+        globalColorMap = null;
+    }
     return globalColorMap;
 }
 

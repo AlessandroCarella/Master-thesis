@@ -13,6 +13,7 @@ import {
 
 import { initializeVisualizations } from './jsHelpers/visualizations.js';
 import { updateParameter } from './jsHelpers/stateManagement.js';
+import { setGlobalColorMap } from './jsHelpers/visualizationConnector.js';
 
 /********************************************
  *            GLOBAL STATE
@@ -50,6 +51,9 @@ function resetUIDatasetSelection() {
     appState.selectedClassifier = null;
     appState.parameters = {};
     appState.featureDescriptor = null;
+    
+    // Reset the global color map
+    setGlobalColorMap(null);
 }
 
 function resetUISelectClassifier() {
@@ -115,6 +119,11 @@ window.selectDataset = async function (datasetName) {
     try {
         const infoResponse = await fetch(`http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`);
         const datasetInfo = await infoResponse.json();
+        
+        // Initialize color map with target classes
+        if (datasetInfo.target_names && datasetInfo.target_names.length > 0) {
+            setGlobalColorMap(datasetInfo.target_names);
+        }
     
         document.getElementById("datasetInfo").innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
