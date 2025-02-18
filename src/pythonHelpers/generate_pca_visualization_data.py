@@ -120,7 +120,7 @@ def filter_points_by_class_kmeans(points, original_data, labels, threshold=500, 
             np.vstack(filtered_original), 
             np.array(filtered_labels))
 
-def create_voronoi_regions(xx, yy, Z):
+def create_voronoi_regions(xx, yy, Z, class_names):
     """
     Create Voronoi regions for decision boundaries.
     
@@ -132,11 +132,13 @@ def create_voronoi_regions(xx, yy, Z):
         Y coordinates of the grid
     Z : array-like
         Predicted classes for the grid points
+    class_names : list
+        List of class names corresponding to numeric indices
         
     Returns:
     --------
     tuple
-        (merged_regions, merged_classes)
+        (merged_regions, merged_classes) where merged_classes contains actual class names
     """
     G = nx.Graph()
     vor = Voronoi(np.c_[xx.ravel(), yy.ravel()])
@@ -153,8 +155,10 @@ def create_voronoi_regions(xx, yy, Z):
         if not -1 in region and len(region) > 0:
             polygon = Polygon([vertices[i] for i in region])
             region_polygons.append(polygon)
-            region_class_map[region_index] = Z.ravel()[point_index]
-            region_class_list.append(Z.ravel()[point_index])
+            # Map the numeric class to the actual class name
+            class_idx = Z.ravel()[point_index]
+            region_class_map[region_index] = class_names[class_idx]
+            region_class_list.append(class_names[class_idx])
             region_index_map[region_index] = polygon_idx
             G.add_node(region_index)
             polygon_idx += 1
@@ -227,6 +231,9 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
     dict
         Visualization data including PCA coordinates, original data, and decision boundaries
     """
+    # Get unique class names
+    class_names = [str(class_) for class_ in np.unique(y)]
+    
     # Transform data
     X_pca, pca, scaler = preprocess_data(X)
     
@@ -246,8 +253,8 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
         X_pca, X, y, threshold=2000, threshold_multiplier=5
     )
     
-    # Create Voronoi regions
-    merged_regions, merged_classes = create_voronoi_regions(xx, yy, Z)
+    # Create Voronoi regions with class names
+    merged_regions, merged_classes = create_voronoi_regions(xx, yy, Z, class_names)
     
     # Format PC labels
     pc1_label = format_pc_label(pca.components_[0], feature_names, 0)
@@ -266,7 +273,7 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
         "targets": filtered_labels.tolist(),
         "decisionBoundary": {
             "regions": [list(p.exterior.coords) for p in merged_regions],
-            "regionClasses": [int(c) for c in merged_classes],
+            "regionClasses": merged_classes,  # Now contains actual class names
             "xRange": [float(x_min), float(x_max)],
             "yRange": [float(y_min), float(y_max)],
         },
