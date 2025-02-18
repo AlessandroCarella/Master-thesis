@@ -1,5 +1,11 @@
-import { handleTreeNodeClick } from "../visualizationConnector.js";
-import { colorScheme, getNodeColor } from "../visualizationConnector.js";
+import {
+    colorScheme,
+    getNodeColor,
+    getPCAVisualization,
+    getTreeVisualization,
+    handleTreeNodeClick,
+    getSelectedNode,
+} from "../visualizationConnector.js";
 import { calculateNodeRadius } from "./metrics.js";
 
 export function addNodes(
@@ -28,16 +34,25 @@ export function addNodes(
             handleMouseOver(event, d, tooltip, metrics)
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
-        .on("mouseout", (event) => handleMouseOut(event, tooltip, metrics));
+        .on("mouseout", (event, d) =>
+            handleMouseOut(event, d, tooltip, metrics)
+        );
 
     nodes.on("click", (event, d) =>
-        handleTreeNodeClick(event, d, contentGroup, treeData, metrics)
+        handleTreeNodeClick(
+            event,
+            d,
+            contentGroup,
+            getTreeVisualization(),
+            getPCAVisualization(),
+            metrics
+        )
     );
 
     return nodes;
 }
 
-function handleMouseOver(event, d, tooltip, metrics) {
+export function handleMouseOver(event, d, tooltip, metrics) {
     const content = [
         d.data.class_label !== null
             ? `<strong>Class:</strong> ${d.data.class_label}`
@@ -58,22 +73,28 @@ function handleMouseOver(event, d, tooltip, metrics) {
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
 
-    d3.select(event.currentTarget)
-        .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.active);
+    if (d !== getSelectedNode()) {
+        d3.select(event.currentTarget)
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+            .style("opacity", colorScheme.opacity.active);
+    }
 }
 
-function handleMouseMove(event, tooltip) {
+export function handleMouseMove(event, tooltip) {
     tooltip
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
 }
 
-function handleMouseOut(event, tooltip, metrics) {
+export function handleMouseOut(event, d, tooltip, metrics) {
     tooltip.style("visibility", "hidden");
-    d3.select(event.currentTarget)
-        .style("stroke", colorScheme.ui.nodeStroke)
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.hover);
+
+    // Only reset styles if this isn't the selected node
+    if (d !== getSelectedNode()) {
+        d3.select(event.currentTarget)
+            .style("stroke", colorScheme.ui.nodeStroke)
+            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+            .style("opacity", colorScheme.opacity.hover);
+    }
 }
