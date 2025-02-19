@@ -67,21 +67,12 @@ export function handleTreeNodeClick(
 
     resetHighlights(treeVis, pcaVis);
     selectedNode = d;
-
-    // Highlight the clicked node
-    highlightNode(contentGroup, d, metrics);
-
+    
     if (d.data.is_leaf) {
+        // Highlight the clicked node
+        highlightNode(contentGroup, d, metrics);
         // For leaf nodes: highlight the path to the root and corresponding PCA points
         highlightPathToRoot(contentGroup, d, metrics);
         highlightPointsForLeaf(d, pcaVis);
-    } else {
-        // For decision nodes: highlight paths to each descendant leaf
-        if (d.children) {
-            d.children.forEach((child) => {
-                highlightPath(contentGroup, d, child, metrics);
-                highlightDescendants(contentGroup, child, metrics, pcaVis);
-            });
-        }
     }
 }
