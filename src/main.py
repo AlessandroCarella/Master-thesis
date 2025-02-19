@@ -40,34 +40,6 @@ dataset_name = None
 feature_names = None
 target_names = None
 
-class TrainingRequest(BaseModel):
-    """
-    Pydantic model for training requests.
-
-    Attributes:
-        dataset_name (str): The name of the dataset to be used.
-        classifier (str): The classifier to train.
-        parameters (Dict[str, Any]): Additional parameters for the classifier.
-    """
-    dataset_name: str
-    classifier: str
-    parameters: Dict[str, Any]
-
-class InstanceRequest(BaseModel):
-    """
-    Pydantic model for instance explanation requests.
-
-    Attributes:
-        instance (Dict[str, Any]): The instance features provided as a dictionary.
-        dataset_name (str): The name of the dataset.
-        neighbourhood_size (int): The size of the neighbourhood for LIME-like explanations.
-        PCAstep (float): The step size for PCA visualization.
-    """
-    instance: Dict[str, Any]
-    dataset_name: str
-    neighbourhood_size: int
-    PCAstep: float
-
 @app.get("/api/get-datasets")
 async def get_datasets():
     """
@@ -111,6 +83,20 @@ async def get_dataset_info(dataset_name_info: str):
 
     return dataset_info
 
+
+class TrainingRequest(BaseModel):
+    """
+    Pydantic model for training requests.
+
+    Attributes:
+        dataset_name (str): The name of the dataset to be used.
+        classifier (str): The classifier to train.
+        parameters (Dict[str, Any]): Additional parameters for the classifier.
+    """
+    dataset_name: str
+    classifier: str
+    parameters: Dict[str, Any]
+
 @app.post("/api/train-model")
 async def post_train_model(request: TrainingRequest):
     """
@@ -135,6 +121,21 @@ async def post_train_model(request: TrainingRequest):
         "message": "Model trained successfully",
         "descriptor": descriptor,
     }
+
+class InstanceRequest(BaseModel):
+    """
+    Pydantic model for instance explanation requests.
+
+    Attributes:
+        instance (Dict[str, Any]): The instance features provided as a dictionary.
+        dataset_name (str): The name of the dataset.
+        neighbourhood_size (int): The size of the neighbourhood for LIME-like explanations.
+        PCAstep (float): The step size for PCA visualization.
+    """
+    instance: Dict[str, Any]
+    dataset_name: str
+    neighbourhood_size: int
+    PCAstep: float
 
 @app.post("/api/explain")
 async def post_explain_instance(request: InstanceRequest):
