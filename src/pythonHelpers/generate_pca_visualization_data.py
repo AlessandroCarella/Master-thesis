@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-import json
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon
 from shapely.ops import unary_union

@@ -2,8 +2,6 @@ from sklearn.tree import DecisionTreeClassifier
 from dataclasses import dataclass
 from typing import List, Optional
 from dataclasses import asdict
-import json
-from sklearn.tree._tree import Tree 
 
 @dataclass
 class TreeNode:

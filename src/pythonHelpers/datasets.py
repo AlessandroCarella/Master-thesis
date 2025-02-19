@@ -1,6 +1,3 @@
-# data_helpers.py
-import pandas as pd
-import numpy as np
 from sklearn.datasets import load_iris, load_wine, load_breast_cancer
 
 # Available datasets
