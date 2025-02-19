@@ -20,7 +20,9 @@ export function createPoints(
         .append("path")
         .attr("class", "point")
         .attr("transform", (d) => `translate(${x(d[0])},${y(d[1])})`)
-        .attr("d", symbolGenerator.type(d3.symbolCircle))
+        .attr("d", (d, i) =>
+            symbolGenerator.type(i === 0 ? d3.symbolStar : d3.symbolCircle)()
+        )
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", 1)
@@ -40,6 +42,9 @@ export function createPoints(
         .on("click", function (event, d) {
             togglePointColor(this, d, data, colorMap, treeVisualization);
         });
+
+    // Bring the original instance on the top of all others
+    points.filter((d, i) => i === 0).raise();
 
     return points;
 }

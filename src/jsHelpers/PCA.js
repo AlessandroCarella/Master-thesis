@@ -65,6 +65,7 @@ export function createPCAscatterPlot(data, container, treeVis) {
     // Draw Voronoi regions with updated colors
     drawVoronoi(g, data, x, y, colorMap);
     createAxes(g, x, y, margin, width, height);
+
     visualization.points = createPoints(
         g,
         data,

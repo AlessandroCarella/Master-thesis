@@ -4,6 +4,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 import pandas as pd
+import numpy as np
 
 from lore_sa.bbox import sklearn_classifier_bbox
 from lore_sa.dataset import TabularDataset
@@ -131,11 +132,34 @@ def train_model_generalized(dataset: TabularDataset, target_name: str, classifie
 
 
 def create_neighbourhood_with_lore(instance: pd.Series, dataset: TabularDataset, bbox, neighbourhood_size=100):
+    def remove_duplicates(neighbourhood):
+        """Remove duplicate rows from the neighbourhood."""
+        unique_neighbourhood = []
+        seen = set()
+        for row in neighbourhood:
+            row_tuple = tuple(row)
+            if row_tuple not in seen:
+                unique_neighbourhood.append(row)
+                seen.add(row_tuple)
+        return np.array(unique_neighbourhood, dtype=neighbourhood.dtype)
+
+
+    def ensure_instance_in_neighbourhood(instance, neighbourhood):
+        """Ensure the instance is present at the beginning of the neighbourhood."""
+        instance_idx = np.where((neighbourhood == instance).all(axis=1))[0]
+        if instance_idx.size == 0:
+            neighbourhood = np.vstack([instance, neighbourhood])
+        elif instance_idx[0] != 0:
+            neighbourhood = np.delete(neighbourhood, instance_idx[0], axis=0)
+            neighbourhood = np.vstack([instance, neighbourhood])
+        return neighbourhood
+    
     """
     Generate a neighbourhood of instances around a given instance using LORE (Local Rule-based Explanation).
 
     This function encodes the input instance, generates a neighbourhood in the encoded space,
-    decodes the neighbourhood back to the original space, obtains predictions from the black-box model,
+    removes duplicates, ensures the instance is at the beginning of the neighbourhood, decodes
+    the neighbourhood back to the original space, obtains predictions from the black-box model,
     and encodes the target predictions.
 
     Parameters:
@@ -163,8 +187,14 @@ def create_neighbourhood_with_lore(instance: pd.Series, dataset: TabularDataset,
     # Generate the neighbourhood in the encoded space
     neighbourhood = gen.generate(z, neighbourhood_size, dataset.descriptor, tabular_enc)
     
+    neighbourhood = remove_duplicates(neighbourhood)
+    
+    neighbourhood = ensure_instance_in_neighbourhood (instance, neighbourhood)
+
     # Decode the generated neighbourhood back to the original feature space
     neighb_train_X = tabular_enc.decode(neighbourhood)
+
+    neighb_train_X = ensure_instance_in_neighbourhood (instance, neighb_train_X)    
     
     # Get predictions from the black-box model on the decoded neighbourhood instances
     neighb_train_y = bbox.predict(neighb_train_X)

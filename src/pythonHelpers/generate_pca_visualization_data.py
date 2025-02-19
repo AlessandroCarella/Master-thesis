@@ -54,8 +54,11 @@ def generate_decision_boundary_grid(X_pca, step=0.1):
 
 def filter_points_by_class_kmeans(points, original_data, labels, threshold=500, threshold_multiplier=4, random_state=42):
     """
-    Filter points using K-means clustering to reduce data density.
+    Filter points using K-means clustering to reduce data density, while preserving the original order.
     
+    Instead of stacking by class (which reorders the data), we collect the original indices for each class,
+    perform the filtering, and then sort the indices to restore the original ordering.
+        
     Parameters:
     -----------
     points : array-like
@@ -76,48 +79,41 @@ def filter_points_by_class_kmeans(points, original_data, labels, threshold=500, 
     tuple
         (filtered_points, filtered_original_data, filtered_labels)
     """
-    filtered_points = []
-    filtered_original = []
-    filtered_labels = []
+    selected_indices = []
     unique_classes = np.unique(labels)
-
+    
     for cls in unique_classes:
+        # Get the indices in the original order for this class.
         class_indices = np.where(labels == cls)[0]
         class_points = points[class_indices]
-        class_original = original_data[class_indices]
         n_points = len(class_points)
-
+        
         if n_points > threshold:
             sample_size = min(threshold * threshold_multiplier, n_points)
             rng = np.random.RandomState(random_state)
-            sampled_indices = rng.choice(n_points, size=sample_size, replace=False)
-            sampled_points = class_points[sampled_indices]
-
+            sampled_indices_local = rng.choice(n_points, size=sample_size, replace=False)
+            sampled_points = class_points[sampled_indices_local]
+            
             kmeans = KMeans(n_clusters=threshold, random_state=random_state, n_init=10)
             kmeans.fit(sampled_points)
             centroids = kmeans.cluster_centers_
-
-            selected_points = []
-            selected_original = []
+            
+            # For each centroid, choose the point closest to it
             for centroid in centroids:
                 distances = np.linalg.norm(class_points - centroid, axis=1)
-                closest_index = np.argmin(distances)
-                selected_points.append(class_points[closest_index])
-                selected_original.append(class_original[closest_index])
-
-            selected_points = np.array(selected_points)
-            selected_original = np.array(selected_original)
+                closest_local_index = np.argmin(distances)
+                # Map back to the original index
+                selected_indices.append(class_indices[closest_local_index])
         else:
-            selected_points = class_points
-            selected_original = class_original
-
-        filtered_points.append(selected_points)
-        filtered_original.append(selected_original)
-        filtered_labels.extend([cls] * len(selected_points))
-
-    return (np.vstack(filtered_points), 
-            np.vstack(filtered_original), 
-            np.array(filtered_labels))
+            selected_indices.extend(class_indices.tolist())
+    
+    # Sort the indices to maintain original order
+    selected_indices = np.sort(selected_indices)
+    
+    filtered_points = points[selected_indices]
+    filtered_original = original_data[selected_indices]
+    filtered_labels = labels[selected_indices]
+    return filtered_points, filtered_original, filtered_labels
 
 def create_voronoi_regions(xx, yy, Z, class_names):
     """
