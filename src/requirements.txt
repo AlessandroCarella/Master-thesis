@@ -1,0 +1,14 @@
+arff==0.9
+bitarray==3.0.0
+deap==1.4.2
+fastapi==0.115.8
+liac_arff==2.5.0
+networkx==3.2.1
+numpy #==2.2.3
+pandas==2.2.3
+pydantic==2.10.6
+scikit_learn==1.3.2
+scikit_multilearn==0.2.0
+scipy==1.13.1 
+Shapely==2.0.7
+uvicorn==0.34.0
