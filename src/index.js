@@ -11,7 +11,7 @@ import {
     getFeatureValues,
     resetFeatures,
     initializeUI,
-} from "./jsHelpers/UI.js";
+} from "./jsHelpers/ui.js";
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter } from "./jsHelpers/stateManagement.js";
@@ -197,7 +197,9 @@ window.startTraining = async function () {
         createFeatureInputs(result.descriptor);
 
         // Create and show surrogate parameters
-        populateSurrogateForm(featureContainer);
+        const surrogateContainer =
+            document.getElementById("surrogateContainer");
+        populateSurrogateForm(surrogateContainer);
 
         document.getElementById("featureButtonContainer").style.display =
             "block";

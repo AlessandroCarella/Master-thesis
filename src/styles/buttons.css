@@ -33,19 +33,39 @@
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
-    margin-top: 1.5rem;
+    margin: 0.75rem;
 }
 
+/* Updated color for training button */
 .training-btn {
     composes: btn btn-primary;
     width: 100%;
     margin-top: 1rem;
+    background-color: #80b1d3; /* Blue */
 }
 
+.training-btn:hover {
+    background-color: #1d4fd8b7;
+}
+
+/* Updated color for reset button */
 .reset-btn {
     composes: btn btn-secondary;
+    background-color: #fb8072; /* Red */
+    color: white;
+    border: none;
 }
 
+.reset-btn:hover {
+    background-color: #dc2626;
+}
+
+/* Updated color for submit/explain button */
 .submit-btn {
     composes: btn btn-primary;
+    background-color: #b3de69; /* Green */
+}
+
+.submit-btn:hover {
+    background-color: #16a34a;
 }

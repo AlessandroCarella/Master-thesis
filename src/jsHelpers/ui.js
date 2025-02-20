@@ -165,9 +165,18 @@ export function resetFeatures() {
 
 export function getSurrogateParameters() {
     return {
-        neighbourhood_size: parseFloat(document.getElementById('surrogate-neighbourhood_size').value),
-        PCAstep: parseFloat(document.getElementById('surrogate-pca_step').value)
+        neighbourhood_size: parseFloat(
+            document.getElementById("surrogate-neighbourhood_size").value
+        ),
+        PCAstep: parseFloat(
+            document.getElementById("surrogate-pca_step").value
+        ),
     };
 }
 
-export { populateDatasetGrid, populateClassifierGrid, populateParameterForm, populateSurrogateForm };
+export {
+    populateDatasetGrid,
+    populateClassifierGrid,
+    populateParameterForm,
+    populateSurrogateForm,
+};

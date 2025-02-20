@@ -1,4 +1,4 @@
-import { createSection, createSurrogateInput } from "./inputs.js"; 
+import { createSection, createSurrogateInput } from "./inputs.js";
 
 function populateDatasetGrid(data) {
     const grid = document.getElementById("datasetGrid");
@@ -8,7 +8,15 @@ function populateDatasetGrid(data) {
         const card = document.createElement("div");
         card.className = "carousel-card";
         card.innerHTML = `<h3>${dataset}</h3>`;
-        card.onclick = () => selectDataset(dataset); // Set onclick on the entire card
+        card.onclick = () => {
+            // Remove selected class from all cards
+            grid.querySelectorAll(".carousel-card").forEach((card) => {
+                card.classList.remove("selected");
+            });
+            // Add selected class to clicked card
+            card.classList.add("selected");
+            selectDataset(dataset);
+        };
         grid.appendChild(card);
     });
 }
@@ -21,7 +29,15 @@ function populateClassifierGrid(data) {
         const card = document.createElement("div");
         card.className = "carousel-card";
         card.innerHTML = `<h3>${classifier}</h3>`;
-        card.onclick = () => selectClassifier(classifier); // Set onclick on the entire card
+        card.onclick = () => {
+            // Remove selected class from all cards
+            grid.querySelectorAll(".carousel-card").forEach((card) => {
+                card.classList.remove("selected");
+            });
+            // Add selected class to clicked card
+            card.classList.add("selected");
+            selectClassifier(classifier);
+        };
         grid.appendChild(card);
     });
 }
@@ -45,23 +61,26 @@ function populateParameterForm(parameters) {
 
 function populateSurrogateForm(container) {
     const surrogateParameters = {
-        'neighbourhood_size': {
-            label: 'Neighbourhood Size',
+        neighbourhood_size: {
+            label: "Neighbourhood Size",
             min: 10,
             max: 1000,
             default: 100,
-            step: 10
+            step: 10,
         },
-        'pca_step': {
-            label: 'PCA Step Size',
+        pca_step: {
+            label: "PCA Step Size",
             min: 0.01,
             max: 1,
             default: 0.1,
-            step: 0.01
-        }
+            step: 0.01,
+        },
     };
 
-    const section = createSection("Surrogate Model Parameters", "surrogate-parameters");
+    const section = createSection(
+        "Surrogate Model Parameters",
+        "surrogate-parameters"
+    );
     container.appendChild(section);
 
     Object.entries(surrogateParameters).forEach(([param, details]) => {

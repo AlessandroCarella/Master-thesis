@@ -4,8 +4,9 @@
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     margin-top: 2rem;
-    width: 1920px;
-    height: 950px;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
 }
 
 .svg-side-by-side {
@@ -16,11 +17,12 @@
 
 .visualization-container {
     background-color: #f8fafc;
-    padding: 1rem; /* Reduced padding */
+    padding: 1rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
-    max-width: 1920px;
-    max-height: 900px; /* Added max-height to limit height */
+    width: 100%;
+    max-width: 100%;
+    max-height: auto;
     margin: 0 auto;
 }
 
@@ -45,12 +47,12 @@
 
 .decision-tree-tooltip {
     position: absolute;
-    background-color: rgba(0, 0, 0, 0.7);  /* Dark background */
+    background-color: rgba(0, 0, 0, 0.7); /* Dark background */
     color: white;
-    padding: 15px;  /* Increase padding */
+    padding: 15px; /* Increase padding */
     border-radius: 5px;
-    font-size: 20px;  /* Increase font size */
-    pointer-events: none;  /* Prevent tooltip from blocking other events */
-    white-space: nowrap;  /* Prevent text from wrapping */
-    max-width: 300px;  /* You can also adjust max-width if necessary */
+    font-size: 20px; /* Increase font size */
+    pointer-events: none; /* Prevent tooltip from blocking other events */
+    white-space: nowrap; /* Prevent text from wrapping */
+    max-width: 300px; /* You can also adjust max-width if necessary */
 }
