@@ -1,6 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict, Any
 
@@ -39,6 +40,11 @@ dataset = None
 dataset_name = None
 feature_names = None
 target_names = None
+
+@app.get("/health")
+@app.head("/health")
+async def health_check():
+    return JSONResponse(content={"status": "ok"})
 
 @app.get("/api/get-datasets")
 async def get_datasets():
