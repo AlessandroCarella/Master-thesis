@@ -12,7 +12,7 @@ export function getVisualizationSettings() {
         },
         tree: {
             splitAngle: 0,
-            minSplitWidth: 10,
+            minSplitWidth: 20,
             minSplitHeight: 10,
             levelHeightScale: 100,
             get radianAngle() {
