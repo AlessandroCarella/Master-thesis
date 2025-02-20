@@ -143,15 +143,16 @@ def create_neighbourhood_with_lore(instance: pd.Series, dataset: TabularDataset,
                 seen.add(row_tuple)
         return np.array(unique_neighbourhood, dtype=neighbourhood.dtype)
 
-
     def ensure_instance_in_neighbourhood(instance, neighbourhood):
-        """Ensure the instance is present at the beginning of the neighbourhood."""
+        """Ensure the instance is present at the end of the neighbourhood."""
         instance_idx = np.where((neighbourhood == instance).all(axis=1))[0]
+
         if instance_idx.size == 0:
-            neighbourhood = np.vstack([instance, neighbourhood])
-        elif instance_idx[0] != 0:
+            neighbourhood = np.vstack([neighbourhood, instance])
+        elif instance_idx[0] != len(neighbourhood) - 1:
             neighbourhood = np.delete(neighbourhood, instance_idx[0], axis=0)
-            neighbourhood = np.vstack([instance, neighbourhood])
+            neighbourhood = np.vstack([neighbourhood, instance])
+
         return neighbourhood
     
     """
