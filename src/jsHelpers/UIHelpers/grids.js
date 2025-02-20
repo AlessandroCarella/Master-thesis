@@ -1,4 +1,6 @@
-export function populateDatasetGrid(data) {
+import { createSection, createSurrogateInput } from "./inputs.js"; 
+
+function populateDatasetGrid(data) {
     const grid = document.getElementById("datasetGrid");
     grid.innerHTML = "";
 
@@ -11,7 +13,7 @@ export function populateDatasetGrid(data) {
     });
 }
 
-export function populateClassifierGrid(data) {
+function populateClassifierGrid(data) {
     const grid = document.getElementById("classifierGrid");
     grid.innerHTML = "";
 
@@ -24,7 +26,7 @@ export function populateClassifierGrid(data) {
     });
 }
 
-export function populateParameterForm(parameters) {
+function populateParameterForm(parameters) {
     const form = document.getElementById("parameterForm");
     form.className = "parameter-form";
     form.innerHTML = "";
@@ -40,3 +42,36 @@ export function populateParameterForm(parameters) {
         form.appendChild(input);
     });
 }
+
+function populateSurrogateForm(container) {
+    const surrogateParameters = {
+        'neighbourhood_size': {
+            label: 'Neighbourhood Size',
+            min: 10,
+            max: 1000,
+            default: 100,
+            step: 10
+        },
+        'pca_step': {
+            label: 'PCA Step Size',
+            min: 0.01,
+            max: 1,
+            default: 0.1,
+            step: 0.01
+        }
+    };
+
+    const section = createSection("Surrogate Model Parameters", "surrogate-parameters");
+    container.appendChild(section);
+
+    Object.entries(surrogateParameters).forEach(([param, details]) => {
+        createSurrogateInput(section, param, details);
+    });
+}
+
+export {
+    populateDatasetGrid,
+    populateClassifierGrid,
+    populateParameterForm,
+    populateSurrogateForm,
+};

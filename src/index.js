@@ -5,6 +5,8 @@ import {
     populateDatasetGrid,
     populateClassifierGrid,
     populateParameterForm,
+    populateSurrogateForm,
+    getSurrogateParameters,
     createFeatureInputs,
     getFeatureValues,
     resetFeatures,
@@ -189,7 +191,14 @@ window.startTraining = async function () {
 
         const result = await response.json();
         appState.featureDescriptor = result.descriptor;
+
+        // Create and show feature inputs
+        const featureContainer = document.getElementById("featureCarousel");
         createFeatureInputs(result.descriptor);
+
+        // Create and show surrogate parameters
+        populateSurrogateForm(featureContainer);
+
         document.getElementById("featureButtonContainer").style.display =
             "block";
     } catch (error) {
@@ -200,13 +209,14 @@ window.startTraining = async function () {
 // Explain an instance based on feature values
 window.explainInstance = async function () {
     const instanceData = getFeatureValues();
+    const surrogateParams = getSurrogateParameters();
     const datasetName = appState.dataset_name;
 
     const requestData = {
         instance: instanceData,
         dataset_name: datasetName,
-        neighbourhood_size: 100,
-        PCAstep: 0.1,
+        neighbourhood_size: surrogateParams.neighbourhood_size,
+        PCAstep: surrogateParams.PCAstep,
     };
 
     try {

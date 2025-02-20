@@ -116,10 +116,40 @@ function createSelectElement(featureName, values) {
     return select;
 }
 
+function createSurrogateInput(container, paramName, details) {
+    const box = document.createElement("div");
+    box.className = "feature-box numeric-feature";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = details.step;
+    input.id = `surrogate-${paramName}`;
+    input.min = details.min;
+    input.max = details.max;
+    input.value = details.default;
+
+    const stats = `Min: ${details.min}
+                  Max: ${details.max}
+                  Default: ${details.default}`;
+
+    box.innerHTML = `
+        <div class="feature-label" title="${stats}">
+            ${details.label}
+            <span class="feature-type">Numeric</span>
+            <div class="feature-range">Range: ${details.min} - ${details.max}</div>
+        </div>
+    `;
+    box.appendChild(input);
+
+    addNumericValidation(input, details);
+    container.querySelector(".feature-section-content").appendChild(box);
+}
+
 export {
     createSection,
     createNumericInput,
     createCategoricalInput,
     createOrdinalInput,
     createSelectElement,
+    createSurrogateInput,
 };

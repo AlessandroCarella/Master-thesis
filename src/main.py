@@ -160,6 +160,9 @@ async def post_explain_instance(request: InstanceRequest):
     global target_names
     global dataset_name
 
+    print ("request.PCAstep", request.PCAstep)
+    print ("request.neighbourhood_size", request.neighbourhood_size)
+
     # Convert the instance dictionary to a list of values ordered by feature_names
     instance_values = [request.instance[feature] for feature in feature_names]
 

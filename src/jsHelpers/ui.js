@@ -2,6 +2,7 @@ import {
     populateDatasetGrid,
     populateClassifierGrid,
     populateParameterForm,
+    populateSurrogateForm,
 } from "./UIHelpers/grids.js";
 import {
     createSection,
@@ -162,4 +163,11 @@ export function resetFeatures() {
     setDefaultFeatureValues(state.featureDescriptor);
 }
 
-export { populateDatasetGrid, populateClassifierGrid, populateParameterForm };
+export function getSurrogateParameters() {
+    return {
+        neighbourhood_size: parseFloat(document.getElementById('surrogate-neighbourhood_size').value),
+        PCAstep: parseFloat(document.getElementById('surrogate-pca_step').value)
+    };
+}
+
+export { populateDatasetGrid, populateClassifierGrid, populateParameterForm, populateSurrogateForm };
