@@ -42,6 +42,9 @@ function resetUIDatasetSelection() {
     document.getElementById("featureButtonContainer").style.display = "none";
     document.getElementById("featureCarousel").innerHTML = "";
 
+    // Clear surrogate parameters container
+    document.getElementById("surrogateContainer").innerHTML = "";
+
     // Hide visualization container
     document.querySelector(".svg-container").style.display = "none";
 
@@ -67,6 +70,9 @@ function resetUISelectClassifier() {
     document.getElementById("featureButtonContainer").style.display = "none";
     document.getElementById("featureCarousel").innerHTML = "";
 
+    // Clear surrogate parameters container
+    document.getElementById("surrogateContainer").innerHTML = "";
+
     // Hide visualization container
     document.querySelector(".svg-container").style.display = "none";
 
@@ -79,6 +85,9 @@ function resetUISelectClassifier() {
 }
 
 function resetUIstartTraining() {
+    // Clear surrogate parameters container
+    document.getElementById("surrogateContainer").innerHTML = "";
+
     // Hide visualization container
     document.querySelector(".svg-container").style.display = "none";
 
