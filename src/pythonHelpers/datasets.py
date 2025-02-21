@@ -50,12 +50,14 @@ def get_dataset_information_wine():
 def get_dataset_information_breast_cancer():
     """Get detailed information about the breast cancer dataset"""
     dataset = load_breast_cancer()
+    target_names = list(dataset.target_names)
+    target_names[0], target_names[1] = target_names[1], target_names[0]
     return {
         "name": "breast_cancer",
         "n_samples": dataset.data.shape[0],
         "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
-        "target_names": list(dataset.target_names),
+        "target_names": target_names,
         "description": dataset.DESCR
     }
 
@@ -63,7 +65,7 @@ def get_dataset_information_diabetes():
     """Get detailed information about the diabetes dataset"""
     dataset = load_diabetes()
     # Diabetes dataset doesn't have target names, so we create them
-    target_names = ['non-diabetic', 'diabetic']
+    target_names = ['diabetic', 'non-diabetic']
     return {
         "name": "diabetes",
         "n_samples": dataset.data.shape[0],
@@ -78,7 +80,7 @@ def get_dataset_information_california_housing_2():
     dataset = fetch_california_housing()
     # California housing is a regression dataset, so we'll create binary classification
     # by splitting at the median house value
-    target_names = ['below_median', 'above_median']
+    target_names = ['above_median', 'below_median']
     return {
         "name": "california_housing_2",
         "n_samples": dataset.data.shape[0],
@@ -92,7 +94,7 @@ def get_dataset_information_california_housing_3():
     """Get detailed information about the California housing dataset"""
     dataset = fetch_california_housing()
     # California housing is now a 3-class classification dataset
-    target_names = ['low_price', 'medium_price', 'high_price']
+    target_names = ['high_price', 'low_price', 'medium_price']
     return {
         "name": "california_housing_3",
         "n_samples": dataset.data.shape[0],
@@ -148,7 +150,7 @@ def load_dataset_california_housing_3():
     """Load and preprocess the California housing dataset"""
     dataset = fetch_california_housing()
     feature_names = list(dataset.feature_names)
-    target_names = ['low_price', 'medium_price', 'high_price']
+    target_names = ['medium_price', 'low_price', 'high_price']
     
     # Convert continuous target to 3-class classification based on percentiles
     prices = dataset.target
