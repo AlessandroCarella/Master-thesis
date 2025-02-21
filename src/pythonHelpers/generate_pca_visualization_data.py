@@ -243,7 +243,7 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0.1):
+def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, class_names, step=0.1):
     """
     Generate PCA visualization data and decision boundaries for a pre-trained decision tree.
     
@@ -265,9 +265,6 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
     dict
         Visualization data including PCA coordinates, original data, and decision boundaries
     """
-    # Get unique class names
-    class_names = [str(class_) for class_ in np.unique(y)]
-    
     # Transform data
     X_pca, pca, scaler = preprocess_data(X)
     

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict, Any
+import numpy as np
 
 # Import helper functions from custom modules
 from pythonHelpers.datasets import get_available_datasets, get_dataset_information
@@ -177,6 +178,8 @@ async def post_explain_instance(request: InstanceRequest):
         neighbourhood_size=request.neighbourhood_size,
     )
 
+    target_names = list(np.unique(neighb_train_y))
+
     # Generate a surrogate decision tree model based on the neighbourhood
     dt_surr = get_lore_decision_tree_surrogate(
         neighbour=neighbourood,
@@ -197,6 +200,7 @@ async def post_explain_instance(request: InstanceRequest):
         X=neighb_train_X,
         y=neighb_train_y,
         pretrained_tree=dt_surr,
+        class_names=target_names,
         step=request.PCAstep
     )
     
@@ -204,7 +208,8 @@ async def post_explain_instance(request: InstanceRequest):
         "status": "success",
         "message": "Instance explained",
         "decisionTreeVisualizationData": decisionTreeVisualizationData,
-        "PCAvisualizationData": PCAvisualizationData
+        "PCAvisualizationData": PCAvisualizationData,
+        "uniqueClasses":target_names
     }
 
 if __name__ == "__main__":

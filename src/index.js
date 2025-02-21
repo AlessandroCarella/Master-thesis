@@ -132,11 +132,6 @@ window.selectDataset = async function (datasetName) {
         );
         const datasetInfo = await infoResponse.json();
 
-        // Initialize color map with target classes
-        if (datasetInfo.target_names && datasetInfo.target_names.length > 0) {
-            setGlobalColorMap(datasetInfo.target_names);
-        }
-
         document.getElementById("datasetInfo").innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
             <p>Samples: ${datasetInfo.n_samples}</p>
@@ -242,6 +237,10 @@ window.explainInstance = async function () {
         }
 
         const result = await response.json();
+
+        // Set the global color map using the unique classes present from the dataset
+        // predicted by the surrogate model
+        setGlobalColorMap(result.uniqueClasses)
 
         // Show the visualization container
         document.querySelector(".svg-container").style.display = "block";

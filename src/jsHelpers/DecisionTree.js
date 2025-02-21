@@ -1,7 +1,6 @@
 import {
     setTreeVisualization,
     getGlobalColorMap,
-    setGlobalColorMap,
 } from "./visualizationConnector.js";
 import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
 import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
@@ -35,10 +34,7 @@ export function createVisualization(rawTreeData) {
         return;
     }
 
-    const uniqueClasses = [
-        ...new Set(rawTreeData.map((d) => d.class_label)),
-    ].filter(Boolean);
-    const colorMap = getGlobalColorMap() || setGlobalColorMap(uniqueClasses);
+    const colorMap = getGlobalColorMap()
 
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
