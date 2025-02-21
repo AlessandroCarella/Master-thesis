@@ -202,12 +202,20 @@ async def post_explain_instance(request: InstanceRequest):
         pretrained_tree=dt_surr,
         step=request.PCAstep
     )
+
+    import json
+    def getPCA():
+        with open (r"C:\Users\alex1\Desktop\Master-thesis\LORE exploration\lorePCATest.json") as f:
+            return json.load(f) 
+    def getDT():
+        with open (r"C:\Users\alex1\Desktop\Master-thesis\LORE exploration\loreTreeTest.json") as f:
+            return json.load(f) 
     
     return {
         "status": "success",
         "message": "Instance explained",
-        "decisionTreeVisualizationData": decisionTreeVisualizationData,
-        "PCAvisualizationData": PCAvisualizationData
+        "decisionTreeVisualizationData": getDT(),
+        "PCAvisualizationData": getPCA()
     }
 
 if __name__ == "__main__":

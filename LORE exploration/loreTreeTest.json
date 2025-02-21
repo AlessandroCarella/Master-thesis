@@ -1,0 +1,352 @@
+[
+    {
+        "node_id": 0,
+        "feature_name": "pixel_240",
+        "threshold": 190.68628692626953,
+        "left_child": 1,
+        "right_child": 30,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 100
+    },
+    {
+        "node_id": 1,
+        "feature_name": "pixel_254",
+        "threshold": 100.48958206176758,
+        "left_child": 2,
+        "right_child": 23,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 93
+    },
+    {
+        "node_id": 2,
+        "feature_name": "pixel_465",
+        "threshold": 235.60702514648438,
+        "left_child": 3,
+        "right_child": 22,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 82
+    },
+    {
+        "node_id": 3,
+        "feature_name": "pixel_293",
+        "threshold": 201.35426330566406,
+        "left_child": 4,
+        "right_child": 21,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 81
+    },
+    {
+        "node_id": 4,
+        "feature_name": "pixel_294",
+        "threshold": 47.734182357788086,
+        "left_child": 5,
+        "right_child": 10,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 80
+    },
+    {
+        "node_id": 5,
+        "feature_name": "pixel_635",
+        "threshold": 211.75203704833984,
+        "left_child": 6,
+        "right_child": 9,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 4
+    },
+    {
+        "node_id": 6,
+        "feature_name": "pixel_679",
+        "threshold": 178.37060165405273,
+        "left_child": 7,
+        "right_child": 8,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 2
+    },
+    {
+        "node_id": 7,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 8,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "0",
+        "samples": 1
+    },
+    {
+        "node_id": 9,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "1",
+        "samples": 2
+    },
+    {
+        "node_id": 10,
+        "feature_name": "pixel_403",
+        "threshold": 60.45286560058594,
+        "left_child": 11,
+        "right_child": 12,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 76
+    },
+    {
+        "node_id": 11,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 12,
+        "feature_name": "pixel_773",
+        "threshold": 32.58797550201416,
+        "left_child": 13,
+        "right_child": 16,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 75
+    },
+    {
+        "node_id": 13,
+        "feature_name": "pixel_123",
+        "threshold": 139.1420021057129,
+        "left_child": 14,
+        "right_child": 15,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 2
+    },
+    {
+        "node_id": 14,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 15,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "1",
+        "samples": 1
+    },
+    {
+        "node_id": 16,
+        "feature_name": "pixel_249",
+        "threshold": 236.57467651367188,
+        "left_child": 17,
+        "right_child": 18,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 73
+    },
+    {
+        "node_id": 17,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "1",
+        "samples": 71
+    },
+    {
+        "node_id": 18,
+        "feature_name": "pixel_531",
+        "threshold": 117.06307220458984,
+        "left_child": 19,
+        "right_child": 20,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 2
+    },
+    {
+        "node_id": 19,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 20,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "1",
+        "samples": 1
+    },
+    {
+        "node_id": 21,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 22,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 23,
+        "feature_name": "pixel_590",
+        "threshold": 138.8915252685547,
+        "left_child": 24,
+        "right_child": 29,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 11
+    },
+    {
+        "node_id": 24,
+        "feature_name": "pixel_78",
+        "threshold": 70.01877975463867,
+        "left_child": 25,
+        "right_child": 26,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 8
+    },
+    {
+        "node_id": 25,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 5
+    },
+    {
+        "node_id": 26,
+        "feature_name": "pixel_641",
+        "threshold": 141.22634887695312,
+        "left_child": 27,
+        "right_child": 28,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 3
+    },
+    {
+        "node_id": 27,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "1",
+        "samples": 2
+    },
+    {
+        "node_id": 28,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    },
+    {
+        "node_id": 29,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "1",
+        "samples": 3
+    },
+    {
+        "node_id": 30,
+        "feature_name": "pixel_305",
+        "threshold": 101.91398620605469,
+        "left_child": 31,
+        "right_child": 32,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 7
+    },
+    {
+        "node_id": 31,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "0",
+        "samples": 4
+    },
+    {
+        "node_id": 32,
+        "feature_name": "pixel_144",
+        "threshold": 36.57810592651367,
+        "left_child": 33,
+        "right_child": 34,
+        "is_leaf": false,
+        "class_label": null,
+        "samples": 3
+    },
+    {
+        "node_id": 33,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "4",
+        "samples": 2
+    },
+    {
+        "node_id": 34,
+        "feature_name": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "5",
+        "samples": 1
+    }
+]
