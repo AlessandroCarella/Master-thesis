@@ -1,13 +1,35 @@
-/* Carousel styles for dataset and classifier selection */
 .carousel-container {
+    width: 100%;
     overflow-x: auto;
     padding: 1rem 0;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) var(--border-color);
+    scroll-behavior: smooth;
+}
+
+.carousel-container::-webkit-scrollbar {
+    height: 8px; /* Adjust the height of the scrollbar */
+    border-radius: 100px;
+}
+
+.carousel-container::-webkit-scrollbar-track {
+    background: var(--border-color);
+    border-radius: 100px;
+}
+
+.carousel-container::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 100px;
+    border: 2px solid var(--border-color); /* Optional: Creates a slight padding effect */
+}
+
+.carousel-container::-webkit-scrollbar-thumb:hover {
+    background: darken(var(--primary-color), 10%);
 }
 
 .carousel-grid {
     display: flex;
+    flex-wrap: nowrap;
     gap: 1rem;
     padding: 0.5rem;
 }
@@ -39,22 +61,12 @@
     color: var(--primary-color);
 }
 
-.carousel-card.selected::after {
-    content: "";
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-}
-
 .carousel-card h3 {
     margin-bottom: 1rem;
 }
 
 .dataset-info {
+    display: none; /* Hide by default */
     margin-top: 1.5rem;
     padding: 1.25rem;
     background-color: #f8fafc;

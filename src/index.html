@@ -10,6 +10,7 @@
         />
         <link rel="stylesheet" href="styles/base.css" />
         <link rel="stylesheet" href="styles/carousel.css" />
+        <link rel="stylesheet" href="styles/datasetShow.css" />
         <link rel="stylesheet" href="styles/forms.css" />
         <link rel="stylesheet" href="styles/buttons.css" />
         <link rel="stylesheet" href="styles/visualizations.css" />
@@ -24,6 +25,9 @@
                 </div>
                 <div class="dataset-info" id="datasetInfo">
                     <!-- Dataset information will be shown here -->
+                    <button id="showDatasetBtn" class="show-dataset-btn btn">
+                        Show Dataset
+                    </button>
                 </div>
             </div>
 
@@ -86,6 +90,41 @@
                         <div id="visualization"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Dataset Panel (initially hidden, slides in from right) -->
+        <!-- Dataset Panel (initially hidden, slides in from right) -->
+        <div id="datasetPanel" class="dataset-panel">
+            <div class="panel-header">
+                <button id="closeDatasetPanel" class="btn close-btn">
+                    <svg
+                        class="icon-double-chevron"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                    >
+                        <polyline
+                            points="9 18 15 12 9 6"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        ></polyline>
+                        <polyline
+                            points="15 18 21 12 15 6"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        ></polyline>
+                    </svg>
+                </button>
+                <h3 id="datasetPanelTitle">Dataset</h3>
+            </div>
+            <div class="panel-content">
+                <div id="datasetPanelContent"></div>
             </div>
         </div>
 

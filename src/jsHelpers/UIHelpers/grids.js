@@ -1,8 +1,12 @@
 import { createSection, createSurrogateInput } from "./inputs.js";
 
 function populateDatasetGrid(data) {
-    const grid = document.getElementById("datasetGrid");
-    grid.innerHTML = "";
+    const container = document.getElementById("datasetGrid");
+    container.className = "carousel-container";
+    container.innerHTML = "";
+
+    const grid = document.createElement("div");
+    grid.className = "carousel-grid";
 
     data.datasets.forEach((dataset) => {
         const card = document.createElement("div");
@@ -19,11 +23,17 @@ function populateDatasetGrid(data) {
         };
         grid.appendChild(card);
     });
+
+    container.appendChild(grid);
 }
 
 function populateClassifierGrid(data) {
-    const grid = document.getElementById("classifierGrid");
-    grid.innerHTML = "";
+    const container = document.getElementById("classifierGrid");
+    container.className = "carousel-container";
+    container.innerHTML = "";
+
+    const grid = document.createElement("div");
+    grid.className = "carousel-grid";
 
     Object.keys(data.classifiers).forEach((classifier) => {
         const card = document.createElement("div");
@@ -40,6 +50,8 @@ function populateClassifierGrid(data) {
         };
         grid.appendChild(card);
     });
+
+    container.appendChild(grid);
 }
 
 function populateParameterForm(parameters) {
