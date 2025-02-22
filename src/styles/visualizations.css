@@ -13,6 +13,16 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
+    justify-content: center; /* Center the grid horizontally */
+    align-items: center; /* Align items vertically */
+}
+
+/* When screen width is less than 1800px, stack them vertically */
+@media (max-width: 1800px) {
+    .svg-side-by-side {
+        grid-template-columns: 1fr;
+        justify-items: center; /* Center each item in the grid */
+    }
 }
 
 .visualization-container {
@@ -22,8 +32,14 @@
     border: 1px solid var(--border-color);
     width: 100%;
     max-width: 100%;
-    max-height: auto;
+    height: 100%;
+    max-height: 100%;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center content inside */
+    justify-content: center;
+    text-align: center;
 }
 
 .visualization-container h2 {
@@ -35,6 +51,12 @@
 #visualization {
     width: 100%;
     overflow: hidden;
+}
+
+#pca-plot svg,
+#visualization svg {
+    border: 2px solid var(--border-color); /* Add a visible border */
+    border-radius: var(--radius-md); /* Optional rounded corners */
 }
 
 #x-axis-label,

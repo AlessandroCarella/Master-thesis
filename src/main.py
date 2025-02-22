@@ -4,9 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict, Any
+import numpy as np
+import pandas as pd
 
 # Import helper functions from custom modules
-from pythonHelpers.datasets import get_available_datasets, get_dataset_information
+from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset
 from pythonHelpers.model import get_available_classifiers, train_model_with_lore
 from pythonHelpers.lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
 from pythonHelpers.generate_decision_tree_visualization_data import (
@@ -56,16 +58,6 @@ async def get_datasets():
     """
     return {"datasets": get_available_datasets()}
 
-@app.get("/api/get-classifiers")
-async def get_classifiers():
-    """
-    GET endpoint to retrieve available classifiers and their parameters.
-
-    Returns:
-        dict: A dictionary containing the classifiers and their configuration details.
-    """
-    return {"classifiers": get_available_classifiers()}
-
 @app.get("/api/get-dataset-info/{dataset_name_info}")
 async def get_dataset_info(dataset_name_info: str):
     """
@@ -89,6 +81,37 @@ async def get_dataset_info(dataset_name_info: str):
 
     return dataset_info
 
+@app.get("/api/get-selected-dataset")
+async def get_selected_dataset():
+    """
+    GET endpoint to return the currently selected dataset as JSON.
+    The dataset is loaded using the `load_dataset` function,
+    converted into a pandas DataFrame, and then returned as a list of records.
+    """
+    global dataset_name  # dataset_name is set in get_dataset_info
+    if not dataset_name:
+        return JSONResponse(content={"error": "No dataset selected."}, status_code=400)
+    try:
+        ds, feature_names, _ = load_dataset(dataset_name)
+        # Create a DataFrame from the dataset (assuming ds.data and ds.target exist)
+        df = pd.DataFrame(ds.data, columns=feature_names)
+        if hasattr(ds, "target"):
+            df["target"] = ds.target
+        # Convert DataFrame to a list of records
+        dataset_records = df.to_dict(orient="records")
+        return JSONResponse(content={"dataset": dataset_records})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/api/get-classifiers")
+async def get_classifiers():
+    """
+    GET endpoint to retrieve available classifiers and their parameters.
+
+    Returns:
+        dict: A dictionary containing the classifiers and their configuration details.
+    """
+    return {"classifiers": get_available_classifiers()}
 
 class TrainingRequest(BaseModel):
     """
@@ -166,9 +189,6 @@ async def post_explain_instance(request: InstanceRequest):
     global target_names
     global dataset_name
 
-    print ("request.PCAstep", request.PCAstep)
-    print ("request.neighbourhood_size", request.neighbourhood_size)
-
     # Convert the instance dictionary to a list of values ordered by feature_names
     instance_values = [request.instance[feature] for feature in feature_names]
 
@@ -179,6 +199,8 @@ async def post_explain_instance(request: InstanceRequest):
         dataset=dataset,
         neighbourhood_size=request.neighbourhood_size,
     )
+
+    target_names = list(np.unique(neighb_train_y))
 
     # Generate a surrogate decision tree model based on the neighbourhood
     dt_surr = get_lore_decision_tree_surrogate(
@@ -200,6 +222,7 @@ async def post_explain_instance(request: InstanceRequest):
         X=neighb_train_X,
         y=neighb_train_y,
         pretrained_tree=dt_surr,
+        class_names=target_names,
         step=request.PCAstep
     )
 
@@ -215,7 +238,8 @@ async def post_explain_instance(request: InstanceRequest):
         "status": "success",
         "message": "Instance explained",
         "decisionTreeVisualizationData": getDT(),
-        "PCAvisualizationData": getPCA()
+        "PCAvisualizationData": getPCA(),
+        "uniqueClasses":target_names
     }
 
 if __name__ == "__main__":

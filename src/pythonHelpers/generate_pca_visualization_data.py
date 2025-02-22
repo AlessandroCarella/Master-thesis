@@ -135,51 +135,90 @@ def create_voronoi_regions(xx, yy, Z, class_names):
     tuple
         (merged_regions, merged_classes) where merged_classes contains actual class names
     """
+    # Identify unique class indices present in Z
+    unique_z = np.unique(Z)
+    
+    # Create a mapping from original class indices to a new contiguous range starting from 0
+    # because sometimes some of the classes are missing from the generated neighborhood
+    index_map = {old_idx: new_idx for new_idx, old_idx in enumerate(sorted(unique_z))}
+    
+    # Apply the mapping to remap Z values
+    # This ensures the class indices are normalized (starting from 0 and sequential)
+    Z_remapped = np.array([index_map[z] for z in Z.ravel()]).reshape(Z.shape)
+    
+    # Initialize a graph for tracking adjacency of Voronoi regions
     G = nx.Graph()
+    
+    # Compute the Voronoi diagram from grid coordinates
     vor = Voronoi(np.c_[xx.ravel(), yy.ravel()])
+    
+    # Extract Voronoi regions and vertices
     regions, vertices = vor.regions, vor.vertices
-
-    region_class_map = {}
-    region_polygons = []
-    region_class_list = []
-    region_index_map = {}
-
-    polygon_idx = 0
+    
+    # Dictionaries to store region information
+    region_class_map = {}  # Maps region index to class name
+    region_polygons = []    # Stores the actual polygonal regions
+    region_class_list = []  # Stores the class names corresponding to each region
+    region_index_map = {}   # Maps region index to polygon index
+    
+    polygon_idx = 0  # Index tracker for polygon storage
+    
+    # Iterate through Voronoi regions and assign class labels
     for point_index, region_index in enumerate(vor.point_region):
         region = regions[region_index]
+        
+        # Check for valid region (i.e., does not contain infinite points)
         if not -1 in region and len(region) > 0:
+            # Create a polygon for the region using its vertex indices
             polygon = Polygon([vertices[i] for i in region])
             region_polygons.append(polygon)
-            # Map the numeric class to the actual class name
-            class_idx = Z.ravel()[point_index]
+            
+            # Retrieve the remapped class index from Z_remapped
+            class_idx = int(Z_remapped.ravel()[point_index])
+            
+            # Ensure class index is within valid range
+            if class_idx < 0 or class_idx >= len(class_names):
+                raise ValueError(f"Invalid remapped class index {class_idx} for class_names {class_names}")
+            
+            # Map region index to class name
             region_class_map[region_index] = class_names[class_idx]
             region_class_list.append(class_names[class_idx])
+            
+            # Store mapping between Voronoi region index and our polygon index
             region_index_map[region_index] = polygon_idx
+            
+            # Add region to graph
             G.add_node(region_index)
+            
             polygon_idx += 1
-
-    # Find adjacent regions
+    
+    # Identify adjacent regions with the same class and add edges to graph
     for (p1, p2), ridge_vertices in zip(vor.ridge_points, vor.ridge_vertices):
-        if -1 in ridge_vertices:
+        if -1 in ridge_vertices:  # Ignore ridges extending to infinity
             continue
+        
         r1, r2 = vor.point_region[p1], vor.point_region[p2]
         
+        # Only connect regions if they belong to the same class
         if region_class_map.get(r1) == region_class_map.get(r2):
             G.add_edge(r1, r2)
-
-    # Merge connected regions
+    
+    # Merge connected regions with the same class
     merged_regions = []
     merged_classes = []
-
+    
     for component in nx.connected_components(G):
+        # Merge all polygons in the connected component
         merged_polygon = unary_union([
             region_polygons[region_index_map[i]] 
             for i in component 
             if i in region_index_map
         ])
         merged_regions.append(merged_polygon)
+        
+        # Assign class based on the first region in the component
         merged_classes.append(region_class_map[list(component)[0]])
-
+    
     return merged_regions, merged_classes
 
 def format_pc_label(pc_loadings, feature_names, pc_index):
@@ -204,7 +243,7 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0.1):
+def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, class_names, step=0.1):
     """
     Generate PCA visualization data and decision boundaries for a pre-trained decision tree.
     
@@ -226,9 +265,6 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, step=0
     dict
         Visualization data including PCA coordinates, original data, and decision boundaries
     """
-    # Get unique class names
-    class_names = [str(class_) for class_ in np.unique(y)]
-    
     # Transform data
     X_pca, pca, scaler = preprocess_data(X)
     
