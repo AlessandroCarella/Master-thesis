@@ -4,18 +4,22 @@ from sklearn.datasets import (
     load_breast_cancer, 
     load_diabetes, 
     fetch_california_housing,
+    fetch_openml
 )
 import pandas as pd
 import numpy as np
+import os
+import joblib
 
-# Available datasets
+# Available datasets with kind information
 DATASETS = {
-    'iris': 'iris',
-    'wine': 'wine',
-    'breast_cancer': 'breast_cancer',
-    'diabetes': 'diabetes',
-    'california_housing_2': 'california_housing_2',
-    'california_housing_3': 'california_housing_3',
+    'iris': 'tabular',
+    'mnist': 'image',
+    'wine': 'tabular',
+    'breast_cancer': 'tabular',
+    'diabetes': 'tabular',
+    'california_housing_2': 'tabular',
+    'california_housing_3': 'tabular',
 }
 
 def get_available_datasets():
@@ -104,7 +108,42 @@ def get_dataset_information_california_housing_3():
         "description": dataset.DESCR
     }
 
+def get_dataset_information_mnist():
+    """Get detailed information about the MNIST dataset"""
+    dataset = fetch_openml('mnist_784', version=1)
+    n_samples = dataset.data.shape[0]
+    n_features = dataset.data.shape[1]
+    feature_names = [f'pixel_{i}' for i in range(n_features)]
+    target_names = sorted(list(set(dataset.target)))
+    description = "MNIST handwritten digits dataset."
+    return {
+        "name": "mnist",
+        "n_samples": n_samples,
+        "n_features": n_features,
+        "feature_names": feature_names,
+        "target_names": target_names,
+        "description": description
+    }
+
 # Dataset-specific loading functions
+def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
+    # Ensure cache directory exists
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, f'{dataset_name}.pkl')
+    
+    if os.path.exists(cache_file):
+        # Load the dataset from the cache
+        dataset = joblib.load(cache_file)
+        print(f"Loaded {dataset_name} from cache.")
+    else:
+        # Load the dataset using the provided function
+        dataset = load_function()
+        # Save it for future runs
+        joblib.dump(dataset, cache_file)
+        print(f"Cached {dataset_name} to file.")
+    
+    return dataset
+
 def load_dataset_iris():
     """Load and preprocess the iris dataset"""
     dataset = load_iris()
@@ -164,6 +203,15 @@ def load_dataset_california_housing_3():
     
     return dataset, feature_names, target_names
 
+def load_dataset_mnist():
+    """Load and preprocess the MNIST dataset"""
+    dataset = fetch_openml('mnist_784', version=1)
+    n_features = dataset.data.shape[1]
+    feature_names = [f'pixel_{i}' for i in range(n_features)]
+    # Convert targets to integer type
+    dataset.target = dataset.target.astype(np.int64)
+    target_names = sorted(list(set(dataset.target.astype(str))))
+    return dataset, feature_names, target_names
 
 # Main interface functions
 def get_dataset_information(dataset_name: str):
@@ -180,6 +228,7 @@ def get_dataset_information(dataset_name: str):
             'diabetes': get_dataset_information_diabetes,
             'california_housing_2': get_dataset_information_california_housing_2,
             'california_housing_3': get_dataset_information_california_housing_3,
+            'mnist': get_dataset_information_mnist,
         }
         
         return information_functions[dataset_name]()
@@ -200,6 +249,7 @@ def load_dataset(dataset_name: str):
         'diabetes': load_dataset_diabetes,
         'california_housing_2': load_dataset_california_housing_2,
         'california_housing_3': load_dataset_california_housing_3,
+        'mnist': load_dataset_mnist,
     }
     
-    return loading_functions[dataset_name]()
+    return load_cached_dataset(dataset_name, loading_functions[dataset_name])

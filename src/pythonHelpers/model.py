@@ -4,6 +4,7 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from lore_sa.dataset import TabularDataset
 from typing import Dict, Any
+import numpy as np
 
 from pythonHelpers.datasets import load_dataset
 from pythonHelpers.lore import train_model_generalized
@@ -117,6 +118,9 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
     # Extract feature matrix X and target vector y
     X = dataset.data
     y = dataset.target
+
+    if not isinstance(X, np.ndarray):
+        X = X.to_numpy()
 
     # Prepare a dictionary for LORE where each feature name maps to its data column
     data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
