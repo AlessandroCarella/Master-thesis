@@ -125,25 +125,22 @@ def get_dataset_information_mnist():
         "description": description
     }
 
-# Dataset-specific loading functions
-def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
-    # Ensure cache directory exists
+def load_cached_dataset_information(dataset_name, info_function, cache_dir='cache'):
+    """Load dataset information from cache if available, else compute and cache it"""
     os.makedirs(cache_dir, exist_ok=True)
-    cache_file = os.path.join(cache_dir, f'{dataset_name}.pkl')
+    cache_file = os.path.join(cache_dir, f'{dataset_name}_info.pkl')
     
     if os.path.exists(cache_file):
-        # Load the dataset from the cache
-        dataset = joblib.load(cache_file)
-        print(f"Loaded {dataset_name} from cache.")
+        info = joblib.load(cache_file)
+        print(f"Loaded {dataset_name} information from cache.")
     else:
-        # Load the dataset using the provided function
-        dataset = load_function()
-        # Save it for future runs
-        joblib.dump(dataset, cache_file)
-        print(f"Cached {dataset_name} to file.")
+        info = info_function()
+        joblib.dump(info, cache_file)
+        print(f"Cached {dataset_name} information to file.")
     
-    return dataset
+    return info
 
+# Dataset-specific loading functions
 def load_dataset_iris():
     """Load and preprocess the iris dataset"""
     dataset = load_iris()
@@ -213,9 +210,25 @@ def load_dataset_mnist():
     target_names = sorted(list(set(dataset.target.astype(str))))
     return dataset, feature_names, target_names
 
+# Cache loading for datasets (for actual data)
+def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
+    """Load dataset from cache if available, else compute and cache it"""
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, f'{dataset_name}.pkl')
+    
+    if os.path.exists(cache_file):
+        dataset = joblib.load(cache_file)
+        print(f"Loaded {dataset_name} from cache.")
+    else:
+        dataset = load_function()
+        joblib.dump(dataset, cache_file)
+        print(f"Cached {dataset_name} to file.")
+    
+    return dataset
+
 # Main interface functions
-def get_dataset_information(dataset_name: str):
-    """Get detailed information about a specific dataset"""
+def get_dataset_information(dataset_name: str, cache_dir='cache'):
+    """Get detailed information about a specific dataset with caching support"""
     if dataset_name not in DATASETS:
         return {"error": "Dataset not found"}
     
@@ -231,7 +244,7 @@ def get_dataset_information(dataset_name: str):
             'mnist': get_dataset_information_mnist,
         }
         
-        return information_functions[dataset_name]()
+        return load_cached_dataset_information(dataset_name, information_functions[dataset_name], cache_dir=cache_dir)
         
     except Exception as e:
         return {"error": f"Error loading dataset: {str(e)}"}
