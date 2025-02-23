@@ -37,8 +37,8 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center content inside */
-    justify-content: center;
+    align-items: start; /* Center content inside */
+    justify-content: start;
     text-align: center;
 }
 

@@ -130,8 +130,12 @@ window.selectDataset = async function (datasetName) {
         datasetInfoDiv.innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
             <p>Samples: ${datasetInfo.n_samples}</p>
-            <p>Features: ${datasetInfo.feature_names}</p>
-            <p>Target: ${datasetInfo.target_names}</p>
+            <p>Features: ${JSON.parse(
+                JSON.stringify(datasetInfo.feature_names)
+            ).join(", ")}</p>
+            <p>Target: ${JSON.parse(
+                JSON.stringify(datasetInfo.target_names)
+            ).join(", ")}</p>
             <button id="showDatasetBtn" class="show-dataset-btn btn">Show Dataset</button>
         `;
         datasetInfoDiv.style.display = "block";
