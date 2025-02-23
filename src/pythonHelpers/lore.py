@@ -131,6 +131,51 @@ def train_model_generalized(dataset: TabularDataset, target_name: str, classifie
     return sklearn_classifier_bbox.sklearnBBox(model)
 
 
+def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_name:str, classifier:any, classifier_name:str, cache_dir='cache'):
+    """
+    Load a cached trained classifier if available; otherwise, train it and cache the result.
+    
+    The cache file name is constructed uniquely based on:
+      - The dataset name (from dataset.descriptor['name'] if available)
+      - The target variable name
+      - The classifier's parameters (via joblib.hash)
+      
+    Parameters:
+        dataset (TabularDataset): The dataset object containing the dataframe and descriptor.
+        target_name (str): The name of the target column.
+        classifier (optional): A scikit-learn classifier. If None, defaults to RandomForestClassifier(n_estimators=100, random_state=42).
+        cache_dir (str, optional): Directory where the cached classifier will be stored. Defaults to 'cache'.
+    
+    Returns:
+        object: A black-box classifier object wrapped using sklearn_classifier_bbox.
+    """
+    import os
+    import joblib
+    from sklearn.ensemble import RandomForestClassifier
+
+    # Ensure cache directory exists
+    os.makedirs(cache_dir, exist_ok=True)
+            
+    # Generate a hash of the classifier parameters to ensure uniqueness based on its configuration
+    classifier_params_hash = joblib.hash(classifier.get_params())
+    
+    # Create a unique cache file name
+    cache_file = os.path.join(
+        cache_dir, 
+        f'classifier_{dataset_name}_{target_name}_{classifier_name}_{classifier_params_hash}.pkl'
+    )
+    
+    if os.path.exists(cache_file):
+        classifier_bbox = joblib.load(cache_file)
+        print(f"Loaded classifier for {dataset_name} from cache.")
+    else:
+        classifier_bbox = train_model_generalized(dataset, target_name, classifier)
+        joblib.dump(classifier_bbox, cache_file)
+        print(f"Cached classifier for {dataset_name} to file.")
+        
+    return classifier_bbox
+
+
 def create_neighbourhood_with_lore(instance: pd.Series, dataset: TabularDataset, bbox, neighbourhood_size=100):
     def remove_duplicates(neighbourhood):
         """Remove duplicate rows from the neighbourhood."""

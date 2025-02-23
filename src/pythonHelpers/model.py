@@ -7,7 +7,7 @@ from typing import Dict, Any
 import numpy as np
 
 from pythonHelpers.datasets import load_dataset
-from pythonHelpers.lore import train_model_generalized
+from pythonHelpers.lore import load_cached_classifier
         
 """
 Module for training machine learning classifiers using the LORE framework.
@@ -137,10 +137,12 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
     classifier = create_classifier(classifier_name, parameters)
     
     # Train the model using the LORE generalized training function
-    trained_model = train_model_generalized(
+    trained_model = load_cached_classifier(
         dataset=dataset,
         target_name=target_name,
-        classifier=classifier
+        dataset_name=dataset_name,
+        classifier=classifier,
+        classifier_name=classifier_name
     )
     
     return trained_model, dataset
