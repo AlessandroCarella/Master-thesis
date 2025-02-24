@@ -1,3 +1,4 @@
+import { setDatasetType } from "../visualizationConnector.js";
 import { createSection, createSurrogateInput } from "./inputs.js";
 
 function populateDatasetGrid(data) {
@@ -8,7 +9,7 @@ function populateDatasetGrid(data) {
     const grid = document.createElement("div");
     grid.className = "carousel-grid";
 
-    data.datasets.forEach((dataset) => {
+    Object.keys(data.datasets).forEach((dataset) => {
         const card = document.createElement("div");
         card.className = "carousel-card";
         card.innerHTML = `<h3>${dataset}</h3>`;
@@ -19,6 +20,7 @@ function populateDatasetGrid(data) {
             });
             // Add selected class to clicked card
             card.classList.add("selected");
+            setDatasetType(data.datasets[dataset]);
             selectDataset(dataset);
         };
         grid.appendChild(card);

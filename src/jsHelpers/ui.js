@@ -10,6 +10,7 @@ import {
     createCategoricalInput,
     createOrdinalInput,
 } from "./UIHelpers/inputs.js";
+import { getDatasetType } from "./visualizationConnector.js";
 
 let state = null;
 
@@ -25,22 +26,37 @@ export function createFeatureInputs(descriptor) {
     const carousel = document.getElementById("featureCarousel");
     carousel.innerHTML = "";
 
-    const sections = {
-        numeric: createSection("Numeric Features", "numeric-features"),
-        categorical: createSection(
-            "Categorical Features",
-            "categorical-features"
-        ),
-        ordinal: createSection("Ordinal Features", "ordinal-features"),
-    };
+    // Get dataset type from the visualization connector
+    const datasetType = getDatasetType();
 
-    Object.values(sections).forEach((section) => {
-        carousel.appendChild(section);
-    });
+    // If the dataset is an image type, display a message and hide feature inputs
+    if (datasetType === "image") {
+        const messageElement = document.createElement("div");
+        messageElement.className = "image-dataset-message";
+        messageElement.textContent = "The dataset is made of images";
+        carousel.appendChild(messageElement);
 
-    renderFeatureSections(descriptor, sections);
+        return;
+    }
+    else{
+        // Regular flow for non-image datasets
+        const sections = {
+            numeric: createSection("Numeric Features", "numeric-features"),
+            categorical: createSection(
+                "Categorical Features",
+                "categorical-features"
+            ),
+            ordinal: createSection("Ordinal Features", "ordinal-features"),
+        };
+    
+        Object.values(sections).forEach((section) => {
+            carousel.appendChild(section);
+        });
+    
+        renderFeatureSections(descriptor, sections);
+        setDefaultFeatureValues(descriptor);
+    }
 
-    setDefaultFeatureValues(descriptor);
 }
 
 function renderFeatureSections(descriptor, sections) {
@@ -116,6 +132,13 @@ function setDefaultFeatureValues(descriptor) {
 export function getFeatureValues() {
     const state = getState();
     if (!state?.featureDescriptor) return {};
+
+    // Check if we're dealing with an image dataset
+    const datasetType = getDatasetType();
+    if (datasetType === "image") {
+        // For image datasets, return an empty object or any default values needed
+        return {};
+    }
 
     const descriptor = state.featureDescriptor;
     const values = {};

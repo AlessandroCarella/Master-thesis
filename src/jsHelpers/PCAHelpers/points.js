@@ -1,4 +1,4 @@
-import { colorScheme, getDatasetType } from "../visualizationConnector.js";
+import { colorScheme } from "../visualizationConnector.js";
 import { showTooltip, hideTooltip } from "./tooltip.js";
 import { togglePointColor } from "./tree.js"; // we'll export togglePointColor from treeHelper
 

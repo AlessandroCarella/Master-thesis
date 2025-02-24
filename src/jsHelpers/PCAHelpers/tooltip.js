@@ -49,7 +49,7 @@ function isSquareImage(originalData) {
 function displayImageTooltip(event, tooltip, className, originalData) {
     const imageSize = Math.sqrt(Object.keys(originalData).length);
     const tooltipContent = `
-        <strong>Image (${imageSize}x${imageSize}):</strong><br>
+        <strong>Image (${imageSize}px x ${imageSize}px):</strong><br>
         <canvas id="pixel-canvas" width="${imageSize}" height="${imageSize}" 
                 style="width: 200px; height: 200px; image-rendering: pixelated;"></canvas><br>
         <strong>Class: ${className}</strong>

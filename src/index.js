@@ -15,7 +15,7 @@ import {
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter } from "./jsHelpers/stateManagement.js";
-import { setGlobalColorMap, setDatasetType } from "./jsHelpers/visualizationConnector.js";
+import { setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
 
 /********************************************
  *            GLOBAL STATE
@@ -130,9 +130,15 @@ window.selectDataset = async function (datasetName) {
         datasetInfoDiv.innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
             <p>Samples: ${datasetInfo.n_samples}</p>
-            <p>Features: ${JSON.parse(
-                JSON.stringify(datasetInfo.feature_names)
-            ).join(", ")}</p>
+            Features: 
+            ${
+                Array.isArray(datasetInfo.feature_names)
+                    ? JSON.parse(
+                          JSON.stringify(datasetInfo.feature_names)
+                      ).join(", ")
+                    : datasetInfo.feature_names
+            }
+            </p>
             <p>Target: ${JSON.parse(
                 JSON.stringify(datasetInfo.target_names)
             ).join(", ")}</p>
@@ -193,7 +199,7 @@ window.startTraining = async () => {
         appState.featureDescriptor = response.descriptor;
 
         // Create and show feature inputs
-        createFeatureInputs(response.descriptor);
+        createFeatureInputs(response.descriptor, response.datasetType);
 
         // Create and show surrogate parameters
         const surrogateContainer =
@@ -227,9 +233,6 @@ window.explainInstance = async () => {
 
         // Set the global color map using the unique classes predicted by the surrogate model
         setGlobalColorMap(result.uniqueClasses);
-        
-        // Set the dataset type (new line)
-        setDatasetType(result.datasetType);
 
         // Show the visualization container and initialize visualizations
         document.querySelector(".svg-container").style.display = "block";
@@ -266,7 +269,7 @@ const createTableFromData = (data) => {
 };
 
 // Attach event listeners for the dataset panel buttons
-const attachDatasetPanelEventListeners = () => {
+const attachDatasetPanelEventListeners = (datasets) => {
     const showDatasetBtn = document.getElementById("showDatasetBtn");
     if (showDatasetBtn) {
         showDatasetBtn.addEventListener("click", async () => {
@@ -318,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         initializeUI(appState);
         const datasets = await fetchDatasets();
         populateDatasetGrid(datasets);
-        attachDatasetPanelEventListeners();
+        attachDatasetPanelEventListeners(datasets);
     } catch (error) {
         console.error("Failed to load datasets:", error);
     }

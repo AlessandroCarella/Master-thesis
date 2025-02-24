@@ -24,7 +24,7 @@ DATASETS = {
 
 def get_available_datasets():
     """Return list of available datasets"""
-    return list(DATASETS.keys())
+    return DATASETS
 
 # Dataset-specific information functions
 def get_dataset_information_iris():
@@ -33,10 +33,8 @@ def get_dataset_information_iris():
     return {
         "name": "iris",
         "n_samples": dataset.data.shape[0],
-        "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
         "target_names": list(dataset.target_names),
-        "description": dataset.DESCR
     }
 
 def get_dataset_information_wine():
@@ -45,10 +43,8 @@ def get_dataset_information_wine():
     return {
         "name": "wine",
         "n_samples": dataset.data.shape[0],
-        "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
         "target_names": list(dataset.target_names),
-        "description": dataset.DESCR
     }
 
 def get_dataset_information_breast_cancer():
@@ -59,10 +55,8 @@ def get_dataset_information_breast_cancer():
     return {
         "name": "breast_cancer",
         "n_samples": dataset.data.shape[0],
-        "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "description": dataset.DESCR
     }
 
 def get_dataset_information_diabetes():
@@ -73,10 +67,8 @@ def get_dataset_information_diabetes():
     return {
         "name": "diabetes",
         "n_samples": dataset.data.shape[0],
-        "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "description": dataset.DESCR
     }
 
 def get_dataset_information_california_housing_2():
@@ -88,10 +80,8 @@ def get_dataset_information_california_housing_2():
     return {
         "name": "california_housing_2",
         "n_samples": dataset.data.shape[0],
-        "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "description": dataset.DESCR
     }
 
 def get_dataset_information_california_housing_3():
@@ -102,27 +92,21 @@ def get_dataset_information_california_housing_3():
     return {
         "name": "california_housing_3",
         "n_samples": dataset.data.shape[0],
-        "n_features": dataset.data.shape[1],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "description": dataset.DESCR
     }
 
 def get_dataset_information_mnist():
     """Get detailed information about the MNIST dataset"""
     dataset = fetch_openml('mnist_784', version=1)
     n_samples = dataset.data.shape[0]
-    n_features = dataset.data.shape[1]
-    feature_names = [f'pixel_{i}' for i in range(n_features)]
+    feature_names = "The dataset is made of images, so its features are the pixel values"
     target_names = sorted(list(set(dataset.target)))
-    description = "MNIST handwritten digits dataset."
     return {
         "name": "mnist",
         "n_samples": n_samples,
-        "n_features": n_features,
         "feature_names": feature_names,
         "target_names": target_names,
-        "description": description
     }
 
 def load_cached_dataset_information(dataset_name, info_function, cache_dir='cache'):

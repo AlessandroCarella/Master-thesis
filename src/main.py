@@ -140,10 +140,14 @@ async def post_train_model(request: TrainingRequest):
     global bbox
     global descriptor
     global dataset
+    global dataset_name
 
     # Train the model using the specified dataset, classifier, and parameters
     bbox, dataset = train_model_with_lore(request.dataset_name, request.classifier, request.parameters)
     descriptor = dataset.descriptor
+    
+    # Get the dataset type from the DATASETS dictionary
+    dataset_type = DATASETS[request.dataset_name]
 
     return {
         "status": "success",
