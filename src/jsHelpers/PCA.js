@@ -3,6 +3,7 @@
 import {
     setPCAVisualization,
     getGlobalColorMap,
+    getDatasetType,
 } from "./visualizationConnector.js";
 import { createTooltip } from "./PCAHelpers/tooltip.js";
 import { createZoom } from "./PCAHelpers/zoom.js";
@@ -58,7 +59,7 @@ export function createPCAscatterPlot(data, container, treeVis) {
         .range([height - margin.bottom, margin.top]);
 
     // Use consistent color scheme
-    const colorMap = getGlobalColorMap()
+    const colorMap = getGlobalColorMap();
 
     // Draw Voronoi regions with updated colors
     drawVoronoi(g, data, x, y, colorMap);
@@ -71,7 +72,8 @@ export function createPCAscatterPlot(data, container, treeVis) {
         y,
         colorMap,
         tooltip,
-        treeVisualization
+        treeVisualization,
+        getDatasetType(),
     );
 
     return visualization;

@@ -15,7 +15,7 @@ import {
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter } from "./jsHelpers/stateManagement.js";
-import { setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
+import { setGlobalColorMap, setDatasetType } from "./jsHelpers/visualizationConnector.js";
 
 /********************************************
  *            GLOBAL STATE
@@ -227,6 +227,9 @@ window.explainInstance = async () => {
 
         // Set the global color map using the unique classes predicted by the surrogate model
         setGlobalColorMap(result.uniqueClasses);
+        
+        // Set the dataset type (new line)
+        setDatasetType(result.datasetType);
 
         // Show the visualization container and initialize visualizations
         document.querySelector(".svg-container").style.display = "block";

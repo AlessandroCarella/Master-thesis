@@ -46,6 +46,19 @@ export function setSelectedNode(node) {
     selectedNode = node;
 }
 
+// Store the selected dataset type (tabular or image) 
+let datasetType = null;
+
+// Add a setter function
+export function setDatasetType(type) {
+    datasetType = type;
+}
+
+// Add a getter function
+export function getDatasetType() {
+    return datasetType;
+}
+
 // Main handler for a tree node click event
 // Additional parameters are passed for the required elements (e.g. contentGroup, tree metrics, etc.)
 export function handleTreeNodeClick(

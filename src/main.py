@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 # Import helper functions from custom modules
-from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset
+from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset, DATASETS
 from pythonHelpers.model import get_available_classifiers, train_model_with_lore
 from pythonHelpers.lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
 from pythonHelpers.generate_decision_tree_visualization_data import (
@@ -231,7 +231,8 @@ async def post_explain_instance(request: InstanceRequest):
         "message": "Instance explained",
         "decisionTreeVisualizationData": decisionTreeVisualizationData,
         "PCAvisualizationData": PCAvisualizationData,
-        "uniqueClasses":target_names
+        "uniqueClasses":target_names,
+        "datasetType": DATASETS.get(dataset_name, 'unknown')
     }
 
 if __name__ == "__main__":

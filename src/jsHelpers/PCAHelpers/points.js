@@ -1,4 +1,4 @@
-import { colorScheme } from "../visualizationConnector.js";
+import { colorScheme, getDatasetType } from "../visualizationConnector.js";
 import { showTooltip, hideTooltip } from "./tooltip.js";
 import { togglePointColor } from "./tree.js"; // we'll export togglePointColor from treeHelper
 
@@ -9,7 +9,8 @@ export function createPoints(
     y,
     colorMap,
     tooltip,
-    treeVisualization
+    treeVisualization,
+    datasetType
 ) {
     const symbolGenerator = d3.symbol().size(100);
      // Last elements rendered appear on top of everything else, 
@@ -34,7 +35,7 @@ export function createPoints(
         .style("stroke-width", 1)
         .style("opacity", colorScheme.opacity.hover)
         .on("mouseover", (event, d) => {
-            showTooltip(event, d, data, tooltip);
+            showTooltip(event, d, data, tooltip, datasetType);
             d3.select(event.currentTarget)
                 .style("opacity", colorScheme.opacity.active)
                 .style("stroke", colorScheme.ui.highlight);
