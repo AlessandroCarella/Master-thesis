@@ -35,6 +35,7 @@ def get_dataset_information_iris():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": list(dataset.target_names),
+        "dataset_type": DATASETS["iris"]
     }
 
 def get_dataset_information_wine():
@@ -45,6 +46,7 @@ def get_dataset_information_wine():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": list(dataset.target_names),
+        "dataset_type": DATASETS["wine"]
     }
 
 def get_dataset_information_breast_cancer():
@@ -57,6 +59,7 @@ def get_dataset_information_breast_cancer():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
+        "dataset_type": DATASETS["breast_cancer"]
     }
 
 def get_dataset_information_diabetes():
@@ -69,6 +72,7 @@ def get_dataset_information_diabetes():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
+        "dataset_type": DATASETS["diabetes"]
     }
 
 def get_dataset_information_california_housing_2():
@@ -82,6 +86,7 @@ def get_dataset_information_california_housing_2():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
+        "dataset_type": DATASETS["california_housing_2"]
     }
 
 def get_dataset_information_california_housing_3():
@@ -94,6 +99,7 @@ def get_dataset_information_california_housing_3():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
+        "dataset_type": DATASETS["california_housing_3"]
     }
 
 def get_dataset_information_mnist():
@@ -107,6 +113,8 @@ def get_dataset_information_mnist():
         "n_samples": n_samples,
         "feature_names": feature_names,
         "target_names": target_names,
+        "dataset_type": DATASETS["mnist"],
+        "possible_image_sizes":[(28,28)],
     }
 
 def load_cached_dataset_information(dataset_name, info_function, cache_dir='cache'):

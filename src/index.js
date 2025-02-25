@@ -64,6 +64,8 @@ export const appState = {
     selectedClassifier: null,
     parameters: {},
     featureDescriptor: null,
+    possible_image_sizes: null,
+    datasetType: null,
 };
 
 /********************************************
@@ -83,6 +85,12 @@ window.selectDataset = async function (datasetName) {
     try {
         showDatasetLoading();
         const datasetInfo = await fetchDatasetInfo(datasetName);
+
+        // Store dataset type and possible image sizes in appState
+        appState.datasetType = datasetInfo.dataset_type;
+        appState.possible_image_sizes =
+            datasetInfo.possible_image_sizes || null;
+
         updateDatasetInfoPanel(datasetName, datasetInfo);
 
         const classifiers = await fetchClassifiers();
@@ -200,6 +208,7 @@ window.explainInstance = async () => {
 window.updateParameter = updateParameter;
 window.getFeatureValues = getFeatureValues;
 window.resetFeatures = resetFeatures;
+window.appState = appState;
 
 // Initialize UI and attach event listeners when DOM is loaded.
 document.addEventListener("DOMContentLoaded", async () => {

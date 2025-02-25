@@ -1,17 +1,32 @@
-import { getDatasetType } from "../visualizationConnector.js";
+import { getState } from "../ui.js"; // Import to access appState
 
 let uploadedImage = null;
 
 export function createImageUploadInterface(container) {
-    // Create the image upload container
+    const state = getState();
+    const possibleImageSizes = state.possible_image_sizes || [];
+    
+    const uploadContainer = createUploadContainer(possibleImageSizes);
+    container.appendChild(uploadContainer);
+    
+    initializeEventListeners(uploadContainer, possibleImageSizes);
+}
+
+function createUploadContainer(possibleImageSizes) {
     const uploadContainer = document.createElement("div");
     uploadContainer.className = "image-upload-container";
-    uploadContainer.innerHTML = `
-        <h3>Upload 28×28 pixel image</h3>
+    uploadContainer.innerHTML = generateUploadContainerHTML(possibleImageSizes);
+    return uploadContainer;
+}
+
+function generateUploadContainerHTML(possibleImageSizes) {
+    const sizeRequirementsText = generateSizeRequirementsText(possibleImageSizes);
+    return `
+        <h3>Upload image</h3>
         <div id="dropZone" class="drop-zone">
             <div id="dropZonePrompt" class="drop-zone-prompt">
                 <p>Drag & drop an image here</p>
-                <p>or click to select<br>(must be 28x28 pixels)</p>
+                <p>or click to select<br>${sizeRequirementsText}</p>
                 <input type="file" id="imageInput" accept="image/*" class="file-input">
             </div>
             <div id="previewContainer" class="preview-container" style="display: none;">
@@ -24,225 +39,135 @@ export function createImageUploadInterface(container) {
         <div id="imageError" class="image-error" style="display: none;"></div>
         <div id="uploadStatus" class="upload-status" style="display: none;"></div>
     `;
-
-    container.appendChild(uploadContainer);
-
-    // Get DOM elements
-    const dropZone = document.getElementById("dropZone");
-    const dropZonePrompt = document.getElementById("dropZonePrompt");
-    const imageInput = document.getElementById("imageInput");
-    const imagePreview = document.getElementById("imagePreview");
-    const previewContainer = document.getElementById("previewContainer");
-    const imageDimensions = document.getElementById("imageDimensions");
-    const errorContainer = document.getElementById("imageError");
-    const uploadStatus = document.getElementById("uploadStatus");
-
-    // Setup event listeners
-    setupEventListeners(
-        dropZone,
-        dropZonePrompt,
-        imageInput,
-        imagePreview,
-        previewContainer,
-        imageDimensions,
-        errorContainer,
-        uploadStatus
-    );
 }
 
-function setupEventListeners(
-    dropZone,
-    dropZonePrompt,
-    imageInput,
-    imagePreview,
-    previewContainer,
-    imageDimensions,
-    errorContainer,
-    uploadStatus
-) {
-    dropZone.addEventListener("click", () => {
-        if (previewContainer.style.display === "none") {
-            imageInput.click();
+function initializeEventListeners(uploadContainer, possibleImageSizes) {
+    const elements = getDOMElements(uploadContainer);
+    setupEventListeners(elements, possibleImageSizes);
+}
+
+function getDOMElements(container) {
+    return {
+        dropZone: container.querySelector("#dropZone"),
+        dropZonePrompt: container.querySelector("#dropZonePrompt"),
+        imageInput: container.querySelector("#imageInput"),
+        imagePreview: container.querySelector("#imagePreview"),
+        previewContainer: container.querySelector("#previewContainer"),
+        imageDimensions: container.querySelector("#imageDimensions"),
+        errorContainer: container.querySelector("#imageError"),
+        uploadStatus: container.querySelector("#uploadStatus"),
+    };
+}
+
+function setupEventListeners(elements, possibleImageSizes) {
+    elements.dropZone.addEventListener("click", () => {
+        if (elements.previewContainer.style.display === "none") {
+            elements.imageInput.click();
         }
     });
 
-    // Drag and drop events
-    dropZone.addEventListener("dragover", (e) => {
+    elements.dropZone.addEventListener("dragover", (e) => {
         e.preventDefault();
-        dropZone.classList.add("dragover");
+        elements.dropZone.classList.add("dragover");
     });
 
-    dropZone.addEventListener("dragleave", () => {
-        dropZone.classList.remove("dragover");
+    elements.dropZone.addEventListener("dragleave", () => {
+        elements.dropZone.classList.remove("dragover");
     });
 
-    dropZone.addEventListener("drop", (e) => {
+    elements.dropZone.addEventListener("drop", (e) => {
         e.preventDefault();
-        dropZone.classList.remove("dragover");
-
+        elements.dropZone.classList.remove("dragover");
         if (e.dataTransfer.files.length) {
-            processImageFile(
-                e.dataTransfer.files[0],
-                imagePreview,
-                previewContainer,
-                dropZonePrompt,
-                dropZone,
-                imageDimensions,
-                errorContainer,
-                uploadStatus
-            );
+            processImageFile(e.dataTransfer.files[0], elements, possibleImageSizes);
         }
     });
 
-    // File input change event
-    imageInput.addEventListener("change", () => {
-        if (imageInput.files.length) {
-            processImageFile(
-                imageInput.files[0],
-                imagePreview,
-                previewContainer,
-                dropZonePrompt,
-                dropZone,
-                imageDimensions,
-                errorContainer,
-                uploadStatus
-            );
+    elements.imageInput.addEventListener("change", () => {
+        if (elements.imageInput.files.length) {
+            processImageFile(elements.imageInput.files[0], elements, possibleImageSizes);
         }
     });
 }
 
-function processImageFile(
-    file,
-    imagePreview,
-    previewContainer,
-    dropZonePrompt,
-    dropZone,
-    imageDimensions,
-    errorContainer,
-    uploadStatus
-) {
+function processImageFile(file, elements, possibleImageSizes) {
     if (!file.type.match("image.*")) {
-        showError("Please select an image file", errorContainer, uploadStatus);
+        showError("Please select an image file", elements);
         return;
     }
 
-    // Show loading status
-    showStatus("Processing image...", uploadStatus);
-
+    showStatus("Processing image...", elements);
     const reader = new FileReader();
+    
     reader.onload = (e) => {
         const img = new Image();
-        img.onload = () => {
-            if (img.width === 28 && img.height === 28) {
-                // Valid dimensions - show the image
-                imagePreview.src = e.target.result;
-                imageDimensions.textContent = `${img.width} × ${img.height} pixels`;
-                previewContainer.style.display = "block";
-                dropZonePrompt.style.display = "none";
-                dropZone.classList.add("has-image");
-                hideError(errorContainer);
-                showStatus(
-                    "Image loaded successfully! Ready for explanation.",
-                    uploadStatus
-                );
-
-                // Store the image data
-                uploadedImage = {
-                    data: e.target.result,
-                    width: img.width,
-                    height: img.height,
-                };
-            } else {
-                // Invalid dimensions - show more prominent error
-                dropZone.classList.add("error");
-                showError(
-                    `ERROR: Image must be exactly 28x28 pixels. Your image is ${img.width}×${img.height}`,
-                    errorContainer, 
-                    uploadStatus
-                );
-                
-                // Reset the image upload but don't call resetImageUpload() which would require all elements
-                // Instead, reset the relevant parts directly
-                imagePreview.src = "";
-                previewContainer.style.display = "none";
-                dropZonePrompt.style.display = "block";
-                uploadedImage = null;
-            }
-        };
-
-        img.onerror = () => {
-            showError(
-                "Failed to load image. Please try another file.",
-                errorContainer,
-                uploadStatus
-            );
-            // Same issue here - don't call resetImageUpload without arguments
-            imagePreview.src = "";
-            previewContainer.style.display = "none";
-            dropZonePrompt.style.display = "block";
-            uploadedImage = null;
-        };
-
+        img.onload = () => handleImageLoad(img, e.target.result, elements, possibleImageSizes);
+        img.onerror = () => showError("Failed to load image. Please try another file.", elements);
         img.src = e.target.result;
     };
-
-    reader.onerror = () => {
-        showError(
-            "Failed to read file. Please try again.",
-            errorContainer,
-            uploadStatus
-        );
-        // Same issue here
-        imagePreview.src = "";
-        previewContainer.style.display = "none";
-        dropZonePrompt.style.display = "block";
-        uploadedImage = null;
-    };
-
+    
+    reader.onerror = () => showError("Failed to read file. Please try again.", elements);
     reader.readAsDataURL(file);
 }
 
-export function resetImageUpload() {
-    const imagePreview = document.getElementById("imagePreview");
-    const previewContainer = document.getElementById("previewContainer");
-    const dropZonePrompt = document.getElementById("dropZonePrompt");
-    const dropZone = document.getElementById("dropZone");
-    const imageInput = document.getElementById("imageInput");
-    const errorContainer = document.getElementById("imageError");
-    const uploadStatus = document.getElementById("uploadStatus");
-
-    if (imagePreview) {
-        imagePreview.src = "";
-        previewContainer.style.display = "none";
-        dropZonePrompt.style.display = "block";
-        dropZone.classList.remove("has-image");
-        dropZone.classList.remove("error"); // Remove error class if present
-        imageInput.value = "";
-        uploadedImage = null;
-        hideError(errorContainer);
-        hideStatus(uploadStatus);
+function handleImageLoad(img, imageData, elements, possibleImageSizes) {
+    if (isValidImageSize(img.width, img.height, possibleImageSizes)) {
+        displayImage(img, imageData, elements);
+    } else {
+        showError(`ERROR: Image must be ${generateSizeRequirementsText(possibleImageSizes)}. Your image is ${img.width}×${img.height}`, elements);
     }
 }
 
-function showError(message, errorContainer, uploadStatus) {
-    errorContainer.textContent = message;
-    errorContainer.style.display = "block";
-    errorContainer.style.color = "#ff3333";
-    errorContainer.style.fontWeight = "bold";
-    uploadStatus.style.display = "none";
+function displayImage(img, imageData, elements) {
+    elements.imagePreview.src = imageData;
+    elements.imageDimensions.textContent = `${img.width} × ${img.height} pixels`;
+    elements.previewContainer.style.display = "block";
+    elements.dropZonePrompt.style.display = "none";
+    elements.dropZone.classList.add("has-image");
+    hideError(elements);
+    showStatus("Image loaded successfully! Ready for explanation.", elements);
+    uploadedImage = { data: imageData, width: img.width, height: img.height };
 }
 
-function hideError(errorContainer) {
-    errorContainer.style.display = "none";
+function generateSizeRequirementsText(sizes) {
+    return sizes.length === 1
+        ? `(must be ${sizes[0][0]}×${sizes[0][1]} pixels)`
+        : `(must be one of these sizes: ${sizes.map(([w, h]) => `${w}×${h}`).join(", ")})`;
 }
 
-function showStatus(message, uploadStatus) {
-    uploadStatus.textContent = message;
-    uploadStatus.style.display = "block";
+function isValidImageSize(width, height, possibleImageSizes) {
+    return possibleImageSizes.some(([validWidth, validHeight]) => width === validWidth && height === validHeight);
 }
 
-function hideStatus(uploadStatus) {
-    uploadStatus.style.display = "none";
+export function resetImageUpload() {
+    const elements = getDOMElements(document);
+    elements.imagePreview.src = "";
+    elements.previewContainer.style.display = "none";
+    elements.dropZonePrompt.style.display = "block";
+    elements.dropZone.classList.remove("has-image", "error");
+    elements.imageInput.value = "";
+    uploadedImage = null;
+    hideError(elements);
+    hideStatus(elements);
+}
+
+function showError(message, elements) {
+    elements.errorContainer.textContent = message;
+    elements.errorContainer.style.display = "block";
+    elements.uploadStatus.style.display = "none";
+}
+
+function hideError(elements) {
+    elements.errorContainer.style.display = "none";
+}
+
+function showStatus(message, elements) {
+    elements.uploadStatus.textContent = message;
+    elements.uploadStatus.style.display = "block";
+}
+
+function hideStatus(elements) {
+    elements.uploadStatus.style.display = "none";
 }
 
 export function getUploadedImage() {

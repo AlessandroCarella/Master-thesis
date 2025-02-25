@@ -10,10 +10,7 @@ export const showExplanationLoading = () => {
 };
 
 export const determineDatasetType = (appState) => {
-    return appState.dataset_name &&
-        appState.dataset_name.toLowerCase().includes("mnist")
-        ? "image"
-        : "tabular";
+    return appState.datasetType || "tabular";
 };
 
 export const buildExplanationRequestData = (
@@ -32,9 +29,8 @@ export const buildExplanationRequestData = (
     if (datasetType === "image" && instanceData.image) {
         requestData.instance_type = "image";
         requestData.image = instanceData.image;
-        if (instanceData.imageWidth !== 28 || instanceData.imageHeight !== 28) {
-            throw new Error("Image must be 28x28 pixels");
-        }
+        requestData.imageWidth = instanceData.imageWidth;
+        requestData.imageHeight = instanceData.imageHeight;
     }
     return requestData;
 };

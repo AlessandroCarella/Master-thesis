@@ -1,5 +1,5 @@
 // Scroll smoothly using requestAnimationFrame
-export function scrollToElement(element, offset = 30, duration = 1000) {
+export function scrollToElement(element, offset = 30, duration = 500) {
     const targetElement =
         typeof element === "string"
             ? document.getElementById(element)

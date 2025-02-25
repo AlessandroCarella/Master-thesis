@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from pythonHelpers.routes.health import router as health_router
-from pythonHelpers.routes.dataset import router as dataset_router
+from pythonHelpers.routes.datasetDataInfo import router as dataset_router
 from pythonHelpers.routes.model import router as model_router
 from pythonHelpers.routes.explain import router as explain_router
 

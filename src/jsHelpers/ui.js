@@ -7,7 +7,6 @@ import {
 
 import { createSection } from "./UIHelpers/inputs.js";
 
-import { getDatasetType } from "./visualizationConnector.js";
 import { createImageUploadInterface } from "./UIHelpers/imageUpload.js";
 import {
     renderFeatureSections,
@@ -39,9 +38,9 @@ export function createFeatureInputs(descriptor, datasetType) {
     // Clear the carousel
     carousel.innerHTML = "";
 
-    // Determine dataset type if not provided
+    // Use datasetType from state if not provided
     if (!datasetType) {
-        datasetType = getDatasetType();
+        datasetType = state.datasetType;
     }
 
     // If the dataset is an image type, display image upload interface
