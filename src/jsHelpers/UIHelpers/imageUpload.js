@@ -18,7 +18,6 @@ export function createImageUploadInterface(container) {
                 <img id="imagePreview" src="" alt="Preview">
                 <div class="image-info">
                     <span id="imageDimensions"></span>
-                    <button id="removeImage" class="btn btn-small">Remove</button>
                 </div>
             </div>
         </div>
@@ -35,7 +34,6 @@ export function createImageUploadInterface(container) {
     const imagePreview = document.getElementById("imagePreview");
     const previewContainer = document.getElementById("previewContainer");
     const imageDimensions = document.getElementById("imageDimensions");
-    const removeButton = document.getElementById("removeImage");
     const errorContainer = document.getElementById("imageError");
     const uploadStatus = document.getElementById("uploadStatus");
 
@@ -47,7 +45,6 @@ export function createImageUploadInterface(container) {
         imagePreview,
         previewContainer,
         imageDimensions,
-        removeButton,
         errorContainer,
         uploadStatus
     );
@@ -60,7 +57,6 @@ function setupEventListeners(
     imagePreview,
     previewContainer,
     imageDimensions,
-    removeButton,
     errorContainer,
     uploadStatus
 ) {
@@ -113,20 +109,6 @@ function setupEventListeners(
             );
         }
     });
-
-    // Remove button click event
-    removeButton.addEventListener("click", (e) => {
-        e.stopPropagation();
-        resetImageUpload(
-            imagePreview,
-            previewContainer,
-            dropZonePrompt,
-            dropZone,
-            imageInput,
-            errorContainer,
-            uploadStatus
-        );
-    });
 }
 
 function processImageFile(
@@ -171,21 +153,20 @@ function processImageFile(
                     height: img.height,
                 };
             } else {
-                // Invalid dimensions
+                // Invalid dimensions - show more prominent error
+                dropZone.classList.add("error");
                 showError(
-                    `Image must be 28×28 pixels. Current dimensions: ${img.width}×${img.height}`,
-                    errorContainer,
+                    `ERROR: Image must be exactly 28x28 pixels. Your image is ${img.width}×${img.height}`,
+                    errorContainer, 
                     uploadStatus
                 );
-                resetImageUpload(
-                    imagePreview,
-                    previewContainer,
-                    dropZonePrompt,
-                    dropZone,
-                    imageInput,
-                    errorContainer,
-                    uploadStatus
-                );
+                
+                // Reset the image upload but don't call resetImageUpload() which would require all elements
+                // Instead, reset the relevant parts directly
+                imagePreview.src = "";
+                previewContainer.style.display = "none";
+                dropZonePrompt.style.display = "block";
+                uploadedImage = null;
             }
         };
 
@@ -195,15 +176,11 @@ function processImageFile(
                 errorContainer,
                 uploadStatus
             );
-            resetImageUpload(
-                imagePreview,
-                previewContainer,
-                dropZonePrompt,
-                dropZone,
-                imageInput,
-                errorContainer,
-                uploadStatus
-            );
+            // Same issue here - don't call resetImageUpload without arguments
+            imagePreview.src = "";
+            previewContainer.style.display = "none";
+            dropZonePrompt.style.display = "block";
+            uploadedImage = null;
         };
 
         img.src = e.target.result;
@@ -215,15 +192,11 @@ function processImageFile(
             errorContainer,
             uploadStatus
         );
-        resetImageUpload(
-            imagePreview,
-            previewContainer,
-            dropZonePrompt,
-            dropZone,
-            imageInput,
-            errorContainer,
-            uploadStatus
-        );
+        // Same issue here
+        imagePreview.src = "";
+        previewContainer.style.display = "none";
+        dropZonePrompt.style.display = "block";
+        uploadedImage = null;
     };
 
     reader.readAsDataURL(file);
@@ -243,6 +216,7 @@ export function resetImageUpload() {
         previewContainer.style.display = "none";
         dropZonePrompt.style.display = "block";
         dropZone.classList.remove("has-image");
+        dropZone.classList.remove("error"); // Remove error class if present
         imageInput.value = "";
         uploadedImage = null;
         hideError(errorContainer);
@@ -253,6 +227,8 @@ export function resetImageUpload() {
 function showError(message, errorContainer, uploadStatus) {
     errorContainer.textContent = message;
     errorContainer.style.display = "block";
+    errorContainer.style.color = "#ff3333";
+    errorContainer.style.fontWeight = "bold";
     uploadStatus.style.display = "none";
 }
 

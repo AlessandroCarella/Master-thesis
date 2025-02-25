@@ -77,14 +77,14 @@ function populateSurrogateForm(container) {
     const surrogateParameters = {
         neighbourhood_size: {
             label: "Neighbourhood Size",
-            min: 10,
-            max: 1000,
+            min: 2,
+            max: 10000,
             default: 100,
             step: 10,
         },
         pca_step: {
             label: "PCA Step Size",
-            min: 0.01,
+            min: 0.00001,
             max: 1,
             default: 0.1,
             step: 0.01,

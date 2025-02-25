@@ -7,9 +7,6 @@ import {
 
 import {
     createSection,
-    createNumericInput,
-    createCategoricalInput,
-    createOrdinalInput,
 } from "./UIHelpers/inputs.js";
 
 import { getDatasetType } from "./visualizationConnector.js";
