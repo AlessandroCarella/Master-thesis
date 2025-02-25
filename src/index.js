@@ -54,6 +54,8 @@ import {
     updateVisualizationUI,
 } from "./jsHelpers/UIHelpers/explanation.js";
 
+import { scrollToElement } from "./jsHelpers/scroll.js";
+
 /********************************************
  *            GLOBAL STATE
  ********************************************/
@@ -85,7 +87,11 @@ window.selectDataset = async function (datasetName) {
 
         const classifiers = await fetchClassifiers();
         populateClassifierGrid(classifiers);
-        document.getElementById("classifierSection").style.display = "block";
+        const classifierSection = document.getElementById("classifierSection");
+        classifierSection.style.display = "block";
+
+        // Add scroll to show the newly displayed section
+        scrollToElement(classifierSection);
 
         // Re-attach event listeners if needed.
         attachDatasetPanelEventListeners();
@@ -108,7 +114,11 @@ window.selectClassifier = async (classifierName) => {
         });
 
         populateParameterForm(parameters);
-        document.getElementById("parameterSection").style.display = "block";
+        const parameterSection = document.getElementById("parameterSection");
+        parameterSection.style.display = "block";
+
+        // Add scroll to show the newly displayed section
+        scrollToElement(parameterSection);
     } catch (error) {
         console.error("Error fetching classifier parameters:", error);
     }
@@ -128,10 +138,18 @@ window.startTraining = async () => {
 
         createFeatureInputs(response.descriptor, response.datasetType);
         // Populate surrogate parameters form if container exists.
+        const featureButtonContainer = document.getElementById(
+            "featureButtonContainer"
+        );
         const surrogateContainer =
             document.getElementById("surrogateContainer");
         if (surrogateContainer) {
             populateSurrogateForm(surrogateContainer);
+        }
+
+        // Add scroll to show the newly displayed feature inputs
+        if (featureButtonContainer) {
+            scrollToElement(featureButtonContainer);
         }
     } catch (error) {
         console.error("Training failed:", error);
@@ -165,6 +183,12 @@ window.explainInstance = async () => {
             },
             datasetType
         );
+
+        // Add scroll to show the newly displayed visualizations
+        const svgContainer = document.getElementById("svg-container");
+        if (svgContainer) {
+            scrollToElement(svgContainer);
+        }
     } catch (error) {
         console.error("Failed to explain instance:", error);
     }
