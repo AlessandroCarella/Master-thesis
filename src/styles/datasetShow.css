@@ -1,14 +1,3 @@
-/* Ensure the dataset-info container is positioned relatively */
-.dataset-info {
-    position: relative;
-    margin-top: 1.5rem;
-    padding: 1.25rem;
-    padding-right: 10rem;
-    background-color: var(--background-color); /* Matches base background */
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-}
-
 /* Position the "Show Dataset" button at the right center */
 .show-dataset-btn {
     position: absolute;

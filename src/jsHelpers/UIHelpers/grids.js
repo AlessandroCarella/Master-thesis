@@ -84,7 +84,7 @@ function populateSurrogateForm(container) {
         },
         pca_step: {
             label: "PCA Step Size",
-            min: 0.00001,
+            min: 0.001,
             max: 1,
             default: 0.1,
             step: 0.01,

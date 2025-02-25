@@ -67,9 +67,11 @@
 
 .dataset-info {
     display: none; /* Hide by default */
+    position: relative;
     margin-top: 1.5rem;
     padding: 1.25rem;
-    background-color: #f8fafc;
+    padding-right: 10rem;
+    background-color: var(--background-color); /* Matches base background */
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
 }

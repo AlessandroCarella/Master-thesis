@@ -120,13 +120,26 @@ window.selectDataset = async function (datasetName) {
     // Update state with new dataset
     appState.dataset_name = datasetName;
 
+    // Hide the dataset info panel until data is loaded
+    const datasetInfoDiv = document.getElementById("datasetInfo");
+    datasetInfoDiv.style.display = "none";
+
     try {
+        // Show loading indicator
+        datasetInfoDiv.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <span class="loading-text">Loading dataset information...</span>
+            </div>
+        `;
+        datasetInfoDiv.style.display = "block";
+
         const infoResponse = await fetch(
             `http://127.0.0.1:8000/api/get-dataset-info/${datasetName}`
         );
         const datasetInfo = await infoResponse.json();
 
-        const datasetInfoDiv = document.getElementById("datasetInfo");
+        // Update the content with the loaded data
         datasetInfoDiv.innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
             <p>Samples: ${datasetInfo.n_samples}</p>
@@ -144,6 +157,8 @@ window.selectDataset = async function (datasetName) {
             ).join(", ")}</p>
             <button id="showDatasetBtn" class="show-dataset-btn btn">Show Dataset</button>
         `;
+
+        // Now show the info panel after data is loaded
         datasetInfoDiv.style.display = "block";
 
         const classifiers = await fetchClassifiers();
@@ -154,6 +169,13 @@ window.selectDataset = async function (datasetName) {
         attachDatasetPanelEventListeners();
     } catch (error) {
         console.error("Error fetching dataset info:", error);
+        // Show error in the info div
+        const datasetInfoDiv = document.getElementById("datasetInfo");
+        datasetInfoDiv.innerHTML = `
+            <h3>Error loading dataset: ${datasetName}</h3>
+            <p>Failed to load dataset information. Please try again.</p>
+        `;
+        datasetInfoDiv.style.display = "block";
     }
 };
 
@@ -184,6 +206,20 @@ window.startTraining = async () => {
     try {
         resetUIstartTraining();
 
+        // Make sure the feature button container exists before modifying it
+        const featureContainer = document.getElementById(
+            "featureButtonContainer"
+        );
+        if (featureContainer) {
+            featureContainer.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <span class="loading-text">Training model... This may take a moment.</span>
+                </div>
+            `;
+            featureContainer.style.display = "block";
+        }
+
         const trainingData = {
             dataset_name: appState.dataset_name,
             classifier: appState.selectedClassifier,
@@ -198,16 +234,32 @@ window.startTraining = async () => {
 
         appState.featureDescriptor = response.descriptor;
 
-        // Create and show feature inputs
+        // Ensure the feature button container is properly reset and prepared
+        if (featureContainer) {
+            featureContainer.innerHTML = `
+                <div class="feature-carousel" id="featureCarousel"></div>
+                <div class="button-group">
+                    <button class="reset-btn btn" onclick="resetFeatures()">Reset Features Values</button>
+                </div>
+                <div id="surrogateContainer"></div>
+                <div class="button-group">
+                    <button class="submit-btn btn" onclick="explainInstance()">Explain!</button>
+                </div>
+            `;
+        }
+
         createFeatureInputs(response.descriptor, response.datasetType);
 
         // Create and show surrogate parameters
         const surrogateContainer =
             document.getElementById("surrogateContainer");
-        populateSurrogateForm(surrogateContainer);
+        if (surrogateContainer) {
+            populateSurrogateForm(surrogateContainer);
+        }
 
-        document.getElementById("featureButtonContainer").style.display =
-            "block";
+        if (featureContainer) {
+            featureContainer.style.display = "block";
+        }
     } catch (error) {
         console.error("Training failed:", error);
     }
@@ -216,6 +268,16 @@ window.startTraining = async () => {
 // Explain an instance based on feature values
 window.explainInstance = async () => {
     try {
+        // Show loading state in visualization container
+        const svgContainer = document.querySelector(".svg-container");
+        svgContainer.style.display = "block";
+        svgContainer.innerHTML = `
+            <div class="loading-container full-width">
+                <div class="loading-spinner"></div>
+                <span class="loading-text">Generating explanation, please wait...</span>
+            </div>
+        `;
+
         const instanceData = getFeatureValues();
         const surrogateParams = getSurrogateParameters();
 
@@ -260,8 +322,23 @@ window.explainInstance = async () => {
         // Set the global color map using the unique classes predicted by the surrogate model
         setGlobalColorMap(result.uniqueClasses);
 
-        // Show the visualization container and initialize visualizations
-        document.querySelector(".svg-container").style.display = "block";
+        // Restore the original visualization container structure
+        svgContainer.innerHTML = `
+            <div class="svg-side-by-side">
+                <div class="visualization-container">
+                    <h2>Neighborhood PCA</h2>
+                    <div id="pca-plot"></div>
+                    <p id="x-axis-label"></p>
+                    <p id="y-axis-label"></p>
+                </div>
+                <div class="visualization-container">
+                    <h2>Surrogate Model</h2>
+                    <div id="visualization"></div>
+                </div>
+            </div>
+        `;
+
+        // Initialize visualizations with the results
         initializeVisualizations(
             {
                 decisionTreeVisualizationData:
