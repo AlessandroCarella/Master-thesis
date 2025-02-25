@@ -262,10 +262,14 @@ window.explainInstance = async () => {
 
         // Show the visualization container and initialize visualizations
         document.querySelector(".svg-container").style.display = "block";
-        initializeVisualizations({
-            decisionTreeVisualizationData: result.decisionTreeVisualizationData,
-            PCAvisualizationData: result.PCAvisualizationData,
-        });
+        initializeVisualizations(
+            {
+                decisionTreeVisualizationData:
+                    result.decisionTreeVisualizationData,
+                PCAvisualizationData: result.PCAvisualizationData,
+            },
+            datasetType
+        );
     } catch (error) {
         console.error("Failed to explain instance:", error);
     }
