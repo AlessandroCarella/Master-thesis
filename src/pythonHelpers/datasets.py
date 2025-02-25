@@ -185,13 +185,30 @@ def load_dataset_california_housing_3():
     return dataset, feature_names, target_names
 
 def load_dataset_mnist():
-    """Load and preprocess the MNIST dataset"""
+    """Load and preprocess the MNIST dataset, subsampling to 1000 samples while maintaining class distribution."""
+    from sklearn.model_selection import train_test_split
+
     dataset = fetch_openml('mnist_784', version=1)
     n_features = dataset.data.shape[1]
     feature_names = [f'pixel_{i}' for i in range(n_features)]
     # Convert targets to integer type
     dataset.target = dataset.target.astype(np.int64)
     target_names = sorted(list(set(dataset.target.astype(str))))
+    
+    # Subsample to 1000 samples using stratified sampling to maintain the distribution of y
+    # train_test_split with test_size as an integer returns exactly that many samples in the test split.
+    _, X_sub, _, y_sub = train_test_split(
+        dataset.data,
+        dataset.target,
+        test_size=1000,
+        stratify=dataset.target,
+        random_state=42
+    )
+    
+    # Update the dataset with the subsample
+    dataset.data = X_sub
+    dataset.target = y_sub
+    
     return dataset, feature_names, target_names
 
 # Cache loading for datasets (for actual data)

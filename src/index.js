@@ -130,7 +130,7 @@ window.selectDataset = async function (datasetName) {
         datasetInfoDiv.innerHTML = `
             <h3>Dataset: ${datasetName}</h3>
             <p>Samples: ${datasetInfo.n_samples}</p>
-            Features: 
+            <p>Features: 
             ${
                 Array.isArray(datasetInfo.feature_names)
                     ? JSON.parse(
@@ -218,12 +218,38 @@ window.explainInstance = async () => {
     try {
         const instanceData = getFeatureValues();
         const surrogateParams = getSurrogateParameters();
+
+        // Check if we're dealing with image data
+        const datasetType =
+            appState.dataset_name &&
+            appState.dataset_name.toLowerCase().includes("mnist")
+                ? "image"
+                : "tabular";
+
+        // Prepare the request data
         const requestData = {
             instance: instanceData,
             dataset_name: appState.dataset_name,
             neighbourhood_size: surrogateParams.neighbourhood_size,
             PCAstep: surrogateParams.PCAstep,
         };
+
+        // Handle image data differently
+        if (datasetType === "image" && instanceData.image) {
+            requestData.instance_type = "image";
+            requestData.image = instanceData.image;
+
+            // Verify image dimensions
+            if (
+                instanceData.imageWidth !== 28 ||
+                instanceData.imageHeight !== 28
+            ) {
+                throw new Error("Image must be 28x28 pixels");
+            }
+        } else {
+            // Regular tabular data
+            requestData.instance = instanceData;
+        }
 
         const result = await fetchJSON(`${API_BASE}/explain`, {
             method: "POST",

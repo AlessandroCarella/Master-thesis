@@ -3,9 +3,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Union
 import numpy as np
 import pandas as pd
+import base64
+import io
+from PIL import Image
 
 # Import helper functions from custom modules
 from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset, DATASETS
@@ -74,8 +77,6 @@ async def get_dataset_info(dataset_name_info: str):
     # Update global dataset metadata for later use in training and explanation
     global dataset_name
     dataset_name = dataset_info["name"]
-    global feature_names
-    feature_names = dataset_info["feature_names"]
     global target_names
     target_names = dataset_info["target_names"]
 
@@ -89,6 +90,8 @@ async def get_selected_dataset():
     converted into a pandas DataFrame, and then returned as a list of records.
     """
     global dataset_name  # dataset_name is set in get_dataset_info
+    global feature_names
+
     if not dataset_name:
         return JSONResponse(content={"error": "No dataset selected."}, status_code=400)
     try:
@@ -141,9 +144,10 @@ async def post_train_model(request: TrainingRequest):
     global descriptor
     global dataset
     global dataset_name
+    global feature_names
 
     # Train the model using the specified dataset, classifier, and parameters
-    bbox, dataset = train_model_with_lore(request.dataset_name, request.classifier, request.parameters)
+    bbox, dataset, feature_names = train_model_with_lore(request.dataset_name, request.classifier, request.parameters)
     descriptor = dataset.descriptor
     
     # Get the dataset type from the DATASETS dictionary
@@ -160,12 +164,16 @@ class InstanceRequest(BaseModel):
     Pydantic model for instance explanation requests.
 
     Attributes:
-        instance (Dict[str, Any]): The instance features provided as a dictionary.
+        instance (Optional[Dict[str, Any]]): The instance features provided as a dictionary (for tabular data).
+        image (Optional[str]): Base64 encoded image data (for image datasets).
+        instance_type (Optional[str]): Type of instance ('tabular' or 'image').
         dataset_name (str): The name of the dataset.
         neighbourhood_size (int): The size of the neighbourhood for LIME-like explanations.
         PCAstep (float): The step size for PCA visualization.
     """
-    instance: Dict[str, Any]
+    instance: Optional[Dict[str, Any]] = None
+    image: Optional[str] = None
+    instance_type: Optional[str] = "tabular"
     dataset_name: str
     neighbourhood_size: int
     PCAstep: float
@@ -174,10 +182,13 @@ class InstanceRequest(BaseModel):
 async def post_explain_instance(request: InstanceRequest):
     """
     POST endpoint to explain a single instance using a surrogate decision tree model.
+    Supports both tabular data and image data.
 
     Args:
         request (InstanceRequest): The instance request containing:
-            - instance (dict): The input instance to explain.
+            - instance (dict, optional): The input instance to explain (for tabular data).
+            - image (str, optional): Base64 encoded image data (for image datasets).
+            - instance_type (str): Type of instance ('tabular' or 'image').
             - dataset_name (str): The name of the dataset.
             - neighbourhood_size (int): The size of the neighbourhood to generate.
             - PCAstep (float): The step size for PCA visualization.
@@ -193,8 +204,45 @@ async def post_explain_instance(request: InstanceRequest):
     global target_names
     global dataset_name
 
-    # Convert the instance dictionary to a list of values ordered by feature_names
-    instance_values = [request.instance[feature] for feature in feature_names]
+    # Process the instance based on the instance type
+    if request.instance_type == "image" and request.image:
+        # Process image data for image datasets
+        try:
+            # Extract the base64 data (remove the data:image/... prefix if present)
+            image_data = request.image
+            if ',' in image_data:
+                image_data = image_data.split(',', 1)[1]
+            
+            # Decode the base64 image
+            image_bytes = base64.b64decode(image_data)
+            
+            # Open the image and convert to grayscale
+            image = Image.open(io.BytesIO(image_bytes)).convert('L')
+            
+            # Verify image dimensions (28x28 for MNIST)
+            if image.width != 28 or image.height != 28:
+                return JSONResponse(
+                    content={"error": f"Image must be 28x28 pixels. Got {image.width}x{image.height}"},
+                    status_code=400
+                )
+            
+            # Convert to NumPy array and flatten (MNIST images are typically flattened to 784 features)
+            instance_values = np.array(image).flatten().ravel() #/ 255.0  # Normalize to [0, 1]
+        except Exception as e:
+            return JSONResponse(
+                content={"error": f"Error processing image: {str(e)}"},
+                status_code=400
+            )
+    else:
+        # Process tabular data
+        if not request.instance:
+            return JSONResponse(
+                content={"error": "No instance data provided"},
+                status_code=400
+            )
+        
+        # Convert the instance dictionary to a list of values ordered by feature_names
+        instance_values = [request.instance[feature] for feature in feature_names]
 
     # Create a neighbourhood around the instance for local explanation
     neighbourood, neighb_train_X, neighb_train_y, neighb_train_yz = create_neighbourhood_with_lore(
@@ -235,7 +283,7 @@ async def post_explain_instance(request: InstanceRequest):
         "message": "Instance explained",
         "decisionTreeVisualizationData": decisionTreeVisualizationData,
         "PCAvisualizationData": PCAvisualizationData,
-        "uniqueClasses":target_names,
+        "uniqueClasses": target_names,
         "datasetType": DATASETS.get(dataset_name, 'unknown')
     }
 

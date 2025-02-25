@@ -145,4 +145,4 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
         classifier_name=classifier_name
     )
     
-    return trained_model, dataset
+    return trained_model, dataset, feature_names
