@@ -13,8 +13,9 @@ import joblib
 
 # Available datasets with kind information
 DATASETS = {
-    'iris': 'tabular',
     'mnist': 'image',
+    'fashion_mnist': 'image',
+    'iris': 'tabular',
     'wine': 'tabular',
     'breast_cancer': 'tabular',
     'diabetes': 'tabular',
@@ -115,6 +116,31 @@ def get_dataset_information_mnist():
         "target_names": target_names,
         "dataset_type": DATASETS["mnist"],
         "possible_image_sizes":[(28,28)],
+    }
+
+def get_dataset_information_fashion_mnist():
+    """Get detailed information about the Fashion-MNIST dataset with 1000 stratified samples"""
+    # Fetch the dataset
+    dataset = fetch_openml('Fashion-MNIST', version=1)
+    
+    # Stratify the dataset to get 1000 samples
+    X = dataset.data
+    y = dataset.target
+    
+    # Perform stratified sampling
+    X_stratified, _, y_stratified, _ = train_test_split(X, y, train_size=1000, stratify=y, random_state=42)
+    
+    n_samples = X_stratified.shape[0]
+    feature_names = "The dataset is made of images, so its features are pixel values."
+    target_names = sorted(list(set(y_stratified)))
+    
+    return {
+        "name": "fashion_mnist",
+        "n_samples": n_samples,
+        "feature_names": feature_names,
+        "target_names": target_names,
+        "dataset_type": "fashion_mnist",  # Assuming DATASETS is predefined as a constant elsewhere
+        "possible_image_sizes": [(28, 28)],  # 28x28 grayscale images
     }
 
 def load_cached_dataset_information(dataset_name, info_function, cache_dir='cache'):
@@ -219,6 +245,13 @@ def load_dataset_mnist():
     
     return dataset, feature_names, target_names
 
+def load_dataset_fashion_mnist():
+    """Load and preprocess the Fashion-MNIST dataset"""
+    dataset = fetch_openml('Fashion-MNIST', version=1)
+    feature_names = "The dataset is made of images, so its features are pixel values."
+    target_names = sorted(list(set(dataset.target)))
+    return dataset, feature_names, target_names
+
 # Cache loading for datasets (for actual data)
 def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
     """Load dataset from cache if available, else compute and cache it"""
@@ -251,6 +284,7 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
             'california_housing_2': get_dataset_information_california_housing_2,
             'california_housing_3': get_dataset_information_california_housing_3,
             'mnist': get_dataset_information_mnist,
+            'fashion_mnist': get_dataset_information_fashion_mnist,
         }
         
         return load_cached_dataset_information(dataset_name, information_functions[dataset_name], cache_dir=cache_dir)
@@ -272,6 +306,7 @@ def load_dataset(dataset_name: str):
         'california_housing_2': load_dataset_california_housing_2,
         'california_housing_3': load_dataset_california_housing_3,
         'mnist': load_dataset_mnist,
+        'fashion_mnist': load_dataset_fashion_mnist,
     }
     
     return load_cached_dataset(dataset_name, loading_functions[dataset_name])

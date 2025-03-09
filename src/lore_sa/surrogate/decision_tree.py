@@ -24,9 +24,6 @@ class DecisionTreeSurrogate(Surrogate):
     def __init__(self, kind=None, preprocessing=None):
         super().__init__(kind, preprocessing)
         self.dt = None
-    
-    def get_dt(self):
-        return self.dt
 
     def train(self, Z, Yb, weights=None, class_values=None, multi_label: bool = False, one_vs_rest: bool = False, cv=5,
               prune_tree: bool = False):
