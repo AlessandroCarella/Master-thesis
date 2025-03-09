@@ -18,7 +18,7 @@ export const buildExplanationRequestData = (
         instance: instanceData,
         dataset_name: appState.dataset_name,
         neighbourhood_size: surrogateParams.neighbourhood_size,
-        PCAstep: surrogateParams.PCAstep,
+        scatterPlotStep: surrogateParams.scatterPlotStep,
     };
 };
 
@@ -27,8 +27,8 @@ export const updateVisualizationUI = () => {
     svgContainer.innerHTML = `
       <div class="svg-side-by-side">
         <div class="visualization-container">
-          <h2>Neighborhood PCA</h2>
-          <div id="pca-plot"></div>
+          <h2>Neighborhood scatter plot</h2>
+          <div id="scatter-plot"></div>
           <p id="x-axis-label"></p>
           <p id="y-axis-label"></p>
         </div>

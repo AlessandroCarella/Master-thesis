@@ -19,7 +19,7 @@ export const resetUIDatasetSelection = (appState) => {
 
     // Hide visualization container and reset visualizations
     document.querySelector(".svg-container").style.display = "none";
-    document.getElementById("pca-plot").innerHTML = "";
+    document.getElementById("scatter-plot").innerHTML = "";
     document.getElementById("visualization").innerHTML = "";
 
     // Reset state values
@@ -42,7 +42,7 @@ export const resetUISelectClassifier = (appState) => {
 
     // Hide visualization container and reset visualizations
     document.querySelector(".svg-container").style.display = "none";
-    document.getElementById("pca-plot").innerHTML = "";
+    document.getElementById("scatter-plot").innerHTML = "";
     document.getElementById("visualization").innerHTML = "";
 
     // Reset feature descriptor in the state
@@ -53,6 +53,6 @@ export const resetUIstartTraining = () => {
     // Clear surrogate parameters container and visualization container
     document.getElementById("surrogateContainer").innerHTML = "";
     document.querySelector(".svg-container").style.display = "none";
-    document.getElementById("pca-plot").innerHTML = "";
+    document.getElementById("scatter-plot").innerHTML = "";
     document.getElementById("visualization").innerHTML = "";
 };

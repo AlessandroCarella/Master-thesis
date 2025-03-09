@@ -5,21 +5,21 @@ import { togglePointColor } from "./tree.js"; // we'll export togglePointColor f
 export function createPoints(
     g,
     data,
-    x,
-    y,
     colorMap,
     tooltip,
-    treeVisualization
+    treeVisualization,
+    x,
+    y
 ) {
     const symbolGenerator = d3.symbol().size(100);
-     // Last elements rendered appear on top of everything else, 
-     // in fact the original instance is at the end of the list 
-    const lastIndex = data.pcaData.length - 1;
+    // Last elements rendered appear on top of everything else,
+    // in fact the original instance is at the end of the list
+    const lastIndex = data.transformedData.length - 1;
 
     // Create all points normally
     const points = g
         .selectAll("path.point")
-        .data(data.pcaData)
+        .data(data.transformedData)
         .enter()
         .append("path")
         .attr("class", "point")

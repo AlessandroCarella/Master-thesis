@@ -19,8 +19,8 @@ export function pointBelongsToLeaf(point, originalData, leafNode) {
 }
 
 // Reset all highlights across visualizations
-// Note: pcaVis and treeVis are passed as parameters (state is managed elsewhere)
-export function resetHighlights(treeVis, pcaVis) {
+// Note: scatterPlotVis and treeVis are passed as parameters (state is managed elsewhere)
+export function resetHighlights(treeVis, scatterPlotVis) {
     // Reset decision tree highlights
     if (treeVis && treeVis.contentGroup) {
         treeVis.contentGroup
@@ -37,29 +37,29 @@ export function resetHighlights(treeVis, pcaVis) {
             );
     }
 
-    // Reset PCA plot highlights
-    if (pcaVis && pcaVis.points) {
-        const colorMap = generateColorMap([...new Set(pcaVis.data.targets)]);
-        pcaVis.points
-            .style("fill", (d, i) => colorMap[pcaVis.data.targets[i]])
+    // Reset Scatter plot highlights
+    if (scatterPlotVis && scatterPlotVis.points) {
+        const colorMap = generateColorMap([...new Set(scatterPlotVis.data.targets)]);
+        scatterPlotVis.points
+            .style("fill", (d, i) => colorMap[scatterPlotVis.data.targets[i]])
             .style("opacity", colorScheme.opacity.hover);
     }
 }
 
-// Highlight points in PCA plot for selected leaf node
-export function highlightPointsForLeaf(leafNode, pcaVis) {
-    if (!pcaVis || !pcaVis.points) return;
+// Highlight points in scatter plot for selected leaf node
+export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
+    if (!scatterPlotVis || !scatterPlotVis.points) return;
 
-    const colorMap = generateColorMap([...new Set(pcaVis.data.targets)]);
-    pcaVis.points
+    const colorMap = generateColorMap([...new Set(scatterPlotVis.data.targets)]);
+    scatterPlotVis.points
         .style("fill", (d, i) => {
-            const originalData = pcaVis.data.originalData[i];
+            const originalData = scatterPlotVis.data.originalData[i];
             return pointBelongsToLeaf(d, originalData, leafNode)
                 ? colorScheme.ui.highlight
-                : colorMap[pcaVis.data.targets[i]];
+                : colorMap[scatterPlotVis.data.targets[i]];
         })
         .style("opacity", (d, i) => {
-            const originalData = pcaVis.data.originalData[i];
+            const originalData = scatterPlotVis.data.originalData[i];
             return pointBelongsToLeaf(d, originalData, leafNode)
                 ? colorScheme.opacity.active
                 : colorScheme.opacity.inactive;
@@ -100,20 +100,20 @@ export function highlightPathToRoot(contentGroup, leafNode, metrics) {
 }
 
 // Recursively highlights a node and all its descendants, including their connecting paths.
-// Also highlights PCA points for leaf nodes.
-export function highlightDescendants(contentGroup, node, metrics, pcaVis) {
+// Also highlights scatter plot points for leaf nodes.
+export function highlightDescendants(contentGroup, node, metrics, scatterPlotVis) {
     highlightNode(contentGroup, node, metrics);
 
-    // If this is a leaf, highlight corresponding PCA points
+    // If this is a leaf, highlight corresponding scatter plot points
     if (node.data.is_leaf) {
-        highlightPointsForLeaf(node, pcaVis);
+        highlightPointsForLeaf(node, scatterPlotVis);
     }
 
     // Process children if available
     if (node.children) {
         node.children.forEach((child) => {
             highlightPath(contentGroup, node, child, metrics);
-            highlightDescendants(contentGroup, child, metrics, pcaVis);
+            highlightDescendants(contentGroup, child, metrics, scatterPlotVis);
         });
     }
 }

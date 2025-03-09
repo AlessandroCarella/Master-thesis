@@ -80,8 +80,8 @@ function populateSurrogateForm(container) {
             default: 100,
             step: 10,
         },
-        pca_step: {
-            label: "PCA Step Size",
+        scatter_plot_step: {
+            label: "Scatter plot Step Size",
             min: 0.001,
             max: 1,
             default: 0.1,

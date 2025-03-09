@@ -14,12 +14,12 @@ import {
     highlightPointsForLeaf,
 } from "./visualizationConnectorHelpers/highlight.js";
 
-let pcaVisualization = null;
+let scatterPlotVisualization = null;
 let treeVisualization = null;
 
-export function setPCAVisualization(vis) {
-    pcaVisualization = vis;
-    window.pcaVisualization = vis;
+export function setScatterPlotVisualization(vis) {
+    scatterPlotVisualization = vis;
+    window.scatterPlotVisualization = vis;
 }
 
 export function setTreeVisualization(vis) {
@@ -27,8 +27,8 @@ export function setTreeVisualization(vis) {
     window.treeVisualization = vis;
 }
 
-export function getPCAVisualization() {
-    return pcaVisualization;
+export function getScatterPlotVisualization() {
+    return scatterPlotVisualization;
 }
 
 export function getTreeVisualization() {
@@ -53,26 +53,26 @@ export function handleTreeNodeClick(
     d,
     contentGroup,
     treeVis,
-    pcaVis,
+    scatterPlotVis,
     metrics
 ) {
     event.stopPropagation();
 
     // Deselect if clicking the already selected node
     if (selectedNode === d) {
-        resetHighlights(treeVis, pcaVis);
+        resetHighlights(treeVis, scatterPlotVis);
         selectedNode = null;
         return;
     }
 
-    resetHighlights(treeVis, pcaVis);
+    resetHighlights(treeVis, scatterPlotVis);
     selectedNode = d;
     
     if (d.data.is_leaf) {
         // Highlight the clicked node
         highlightNode(contentGroup, d, metrics);
-        // For leaf nodes: highlight the path to the root and corresponding PCA points
+        // For leaf nodes: highlight the path to the root and corresponding scatter plot points
         highlightPathToRoot(contentGroup, d, metrics);
-        highlightPointsForLeaf(d, pcaVis);
+        highlightPointsForLeaf(d, scatterPlotVis);
     }
 }

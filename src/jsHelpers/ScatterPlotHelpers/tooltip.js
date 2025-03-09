@@ -2,7 +2,7 @@ export function createTooltip() {
     return d3
         .select("body")
         .append("div")
-        .attr("class", "pca-tooltip")
+        .attr("class", "scatter-plot-tooltip")
         .style("opacity", 0)
         .style("position", "absolute")
         .style("background-color", "white")
@@ -37,7 +37,7 @@ function getPointIndex(event, data) {
     const targetData = event.target.__data__;
     if (!targetData) return -1;
 
-    const index = data.pcaData.findIndex(
+    const index = data.transformedData.findIndex(
         (p) => p[0] === targetData[0] && p[1] === targetData[1]
     );
     if (index === -1) console.warn("Could not find matching point data");

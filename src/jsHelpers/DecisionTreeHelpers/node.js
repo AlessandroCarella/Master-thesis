@@ -1,7 +1,7 @@
 import {
     colorScheme,
     getNodeColor,
-    getPCAVisualization,
+    getScatterPlotVisualization,
     getTreeVisualization,
     handleTreeNodeClick,
     getSelectedNode,
@@ -44,7 +44,7 @@ export function addNodes(
             d,
             contentGroup,
             getTreeVisualization(),
-            getPCAVisualization(),
+            getScatterPlotVisualization(),
             metrics
         )
     );

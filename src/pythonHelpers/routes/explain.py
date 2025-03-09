@@ -10,7 +10,7 @@ from pythonHelpers.generate_decision_tree_visualization_data import (
     generate_decision_tree_visualization_data,
     extract_tree_structure
 )
-from pythonHelpers.generate_pca_visualization_data import generate_pca_visualization_data
+from pythonHelpers.create_scatter_plot_data import create_scatter_plot_data
 from pythonHelpers.datasets import DATASETS
 from pythonHelpers.routes.state import global_state
 from pythonHelpers.datasets import get_dataset_information
@@ -22,7 +22,7 @@ class InstanceRequest(BaseModel):
     instance: Optional[Dict[str, Any]] = None
     dataset_name: str
     neighbourhood_size: int
-    PCAstep: float
+    scatterPlotStep: float
 
 def process_instance(request):
     """Process tabular data input."""
@@ -63,20 +63,20 @@ async def explain_instance(request: InstanceRequest):
     )
     decisionTreeVisualizationData = generate_decision_tree_visualization_data(decision_tree_structure)
 
-    # Generate PCA visualization data.
-    PCAvisualizationData = generate_pca_visualization_data(
+    # Generate scatter plot data.
+    scatterPlotVisualizationData = create_scatter_plot_data(
         feature_names=global_state.feature_names,
         X=neighb_train_X,
         y=neighb_train_y,
         pretrained_tree=dt_surr,
         class_names=global_state.target_names,
-        step=request.PCAstep
+        step=request.scatterPlotStep
     )
 
     return {
         "status": "success",
         "message": "Instance explained",
         "decisionTreeVisualizationData": decisionTreeVisualizationData,
-        "PCAvisualizationData": PCAvisualizationData,
+        "scatterPlotVisualizationData": scatterPlotVisualizationData,
         "uniqueClasses": global_state.target_names    
     }

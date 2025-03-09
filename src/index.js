@@ -177,7 +177,7 @@ window.explainInstance = async () => {
             {
                 decisionTreeVisualizationData:
                     result.decisionTreeVisualizationData,
-                PCAvisualizationData: result.PCAvisualizationData,
+                scatterPlotVisualizationData: result.scatterPlotVisualizationData,
             }
         );
 

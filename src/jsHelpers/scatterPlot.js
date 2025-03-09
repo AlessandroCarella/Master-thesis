@@ -1,31 +1,25 @@
-// pcaScatterPlot.js
+// scatterPlot.js
 
 import {
-    setPCAVisualization,
+    setScatterPlotVisualization,
     getGlobalColorMap,
 } from "./visualizationConnector.js";
-import { createTooltip } from "./PCAHelpers/tooltip.js";
-import { createZoom } from "./PCAHelpers/zoom.js";
-import { createAxes } from "./PCAHelpers/axis.js";
-import { drawVoronoi } from "./PCAHelpers/voronoi.js";
-import { createPoints } from "./PCAHelpers/points.js";
+import { createTooltip } from "./ScatterPlotHelpers/tooltip.js";
+import { createZoom } from "./ScatterPlotHelpers/zoom.js";
+import { createAxes } from "./ScatterPlotHelpers/axis.js";
+import { drawVoronoi } from "./ScatterPlotHelpers/voronoi.js";
+import { createPoints } from "./ScatterPlotHelpers/points.js";
 
-// Main function to create the PCA scatter plot
-export function createPCAscatterPlot(data, container, treeVis) {
-    if (
-        !data ||
-        !data.pcaData ||
-        !data.targets ||
-        !data.decisionBoundary ||
-        !data.originalData
-    ) {
-        console.error("Invalid PCA data structure:", data);
+// Main function to create the scatter plot
+export function createScatterPlot(data, container, treeVis) {
+    if (!data || !data.transformedData || !data.targets || !data.originalData) {
+        console.error("Invalid scatter plot data structure:", data);
         return;
     }
 
     const treeVisualization = treeVis || window.treeVisualization;
     const visualization = { data, points: null };
-    setPCAVisualization(visualization);
+    setScatterPlotVisualization(visualization);
 
     const width = 800;
     const height = 800;
@@ -47,6 +41,9 @@ export function createPCAscatterPlot(data, container, treeVis) {
     const g = svg.append("g");
     createZoom(svg, g, margin, width, height);
 
+    // Use consistent color scheme
+    const colorMap = getGlobalColorMap();
+
     const x = d3
         .scaleLinear()
         .domain(data.decisionBoundary.xRange)
@@ -57,21 +54,22 @@ export function createPCAscatterPlot(data, container, treeVis) {
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
 
-    // Use consistent color scheme
-    const colorMap = getGlobalColorMap();
-
-    // Draw Voronoi regions with updated colors
-    drawVoronoi(g, data, x, y, colorMap);
+    // Create axes regardless of method
     createAxes(g, x, y, margin, width, height);
+
+    // Only draw Voronoi regions for PCA
+    if (data.method.toUpperCase() === "PCA") {
+        drawVoronoi(g, data, x, y, colorMap);
+    }
 
     visualization.points = createPoints(
         g,
         data,
-        x,
-        y,
         colorMap,
         tooltip,
         treeVisualization,
+        x,
+        y
     );
 
     return visualization;

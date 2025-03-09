@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon
@@ -8,34 +9,61 @@ from shapely.ops import unary_union
 import networkx as nx
 from sklearn.cluster import KMeans
 
-def preprocess_data(X):
+def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
     """
-    Standardize the data and apply PCA transformation.
+    Standardize the data and apply dimensionality reduction (PCA or t-SNE).
     
     Parameters:
     -----------
     X : array-like
         Input features
+    method : str, default='pca'
+        Dimensionality reduction method ('pca' or 'tsne')
+    n_components : int, default=2
+        Number of components
+    random_state : int, default=42
+        Random state for reproducibility
+    **kwargs : dict
+        Additional keyword arguments for the dimensionality reduction method
         
     Returns:
     --------
     tuple
-        (transformed_data, pca_model, scaler_model)
+        (transformed_data, model, scaler_model)
     """
     scaler = StandardScaler()
-    pca = PCA(n_components=2)
     X_scaled = scaler.fit_transform(X)
-    X_pca = pca.fit_transform(X_scaled)
-    return X_pca, pca, scaler
+    
+    if method.lower() == 'pca':
+        model = PCA(n_components=n_components)
+        X_transformed = model.fit_transform(X_scaled)
+    elif method.lower() == 'tsne':
+        # Default t-SNE parameters
+        tsne_params = {
+            'perplexity': 30.0,
+            'early_exaggeration': 12.0,
+            'learning_rate': 'auto',
+            'n_iter': 1000,
+            'n_iter_without_progress': 300
+        }
+        # Update with any provided kwargs
+        tsne_params.update(kwargs)
+        
+        model = TSNE(n_components=n_components, random_state=random_state, **tsne_params)
+        X_transformed = model.fit_transform(X_scaled)
+    else:
+        raise ValueError(f"Unsupported method: {method}. Use 'pca' or 'tsne'.")
+    
+    return X_transformed, model, scaler
 
-def generate_decision_boundary_grid(X_pca, step=0.1):
+def generate_decision_boundary_grid(X_transformed, step=0.1):
     """
     Generate a grid for decision boundary visualization.
     
     Parameters:
     -----------
-    X_pca : array-like
-        PCA transformed features
+    X_transformed : array-like
+        Transformed features (PCA or t-SNE)
     step : float, default=0.1
         Step size for the grid
         
@@ -44,8 +72,8 @@ def generate_decision_boundary_grid(X_pca, step=0.1):
     tuple
         (xx, yy) meshgrid arrays and (x_min, x_max, y_min, y_max) boundaries
     """
-    x_min, x_max = X_pca[:, 0].min() - 1, X_pca[:, 0].max() + 1
-    y_min, y_max = X_pca[:, 1].min() - 1, X_pca[:, 1].max() + 1
+    x_min, x_max = X_transformed[:, 0].min() - 1, X_transformed[:, 0].max() + 1
+    y_min, y_max = X_transformed[:, 1].min() - 1, X_transformed[:, 1].max() + 1
     xx, yy = np.meshgrid(
         np.arange(x_min, x_max, step),
         np.arange(y_min, y_max, step)
@@ -243,9 +271,10 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, class_names, step=0.1):
+def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, method='tsne', step=0.1, random_state=42, **kwargs):
     """
-    Generate PCA visualization data and decision boundaries for a pre-trained decision tree.
+    Generate visualization data and decision boundaries for a pre-trained decision tree
+    using either PCA or t-SNE dimensionality reduction.
     
     Parameters:
     -----------
@@ -257,39 +286,69 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, class_
         Target labels
     pretrained_tree : DecisionTreeClassifier
         Pre-trained decision tree classifier on original (non-PCA) data
+    class_names : list
+        List of class names
+    method : str, default='pca'
+        Dimensionality reduction method ('pca' or 'tsne')
     step : float, default=0.1
         Step size for decision boundary grid
+    random_state : int, default=42
+        Random state for reproducibility
+    **kwargs : dict
+        Additional parameters for the dimensionality reduction method
         
     Returns:
     --------
     dict
-        Visualization data including PCA coordinates, original data, and decision boundaries
+        Visualization data including transformed coordinates, original data, and decision boundaries
     """
     # Transform data
-    X_pca, pca, scaler = preprocess_data(X)
+    X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state, **kwargs)
     
-    # Generate grid in PCA space
-    xx, yy, (x_min, x_max, y_min, y_max) = generate_decision_boundary_grid(X_pca, step)
-    
-    # Transform grid points back to original space for prediction
-    grid_points = np.c_[xx.ravel(), yy.ravel()]
-    grid_original = pca.inverse_transform(grid_points)
-    grid_original = scaler.inverse_transform(grid_original)
-    
-    # Get predictions using the pre-trained tree
-    Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
-    
-    # Filter PCA points and original data
-    filtered_pca_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(
-        X_pca, X, y, threshold=2000, threshold_multiplier=5
+    # Filter transformed points and original data
+    filtered_transformed_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(
+        X_transformed, X, y, threshold=2000, threshold_multiplier=5, random_state=random_state
     )
     
-    # Create Voronoi regions with class names
-    merged_regions, merged_classes = create_voronoi_regions(xx, yy, Z, class_names)
+    # Get data range for visualization
+    x_min, x_max = X_transformed[:, 0].min() - 1, X_transformed[:, 0].max() + 1
+    y_min, y_max = X_transformed[:, 1].min() - 1, X_transformed[:, 1].max() + 1
     
-    # Format PC labels
-    pc1_label = format_pc_label(pca.components_[0], feature_names, 0)
-    pc2_label = format_pc_label(pca.components_[1], feature_names, 1)
+    # Format axis labels based on the method
+    if method.lower() == 'pca':
+        x_axis_label = format_pc_label(model.components_[0], feature_names, 0)
+        y_axis_label = format_pc_label(model.components_[1], feature_names, 1)
+        
+        # Generate grid in PCA space
+        xx, yy, _ = generate_decision_boundary_grid(X_transformed, step)
+        
+        # Transform grid points back to original space for prediction
+        grid_points = np.c_[xx.ravel(), yy.ravel()]
+        grid_original = model.inverse_transform(grid_points)
+        grid_original = scaler.inverse_transform(grid_original)
+        
+        # Get predictions using the pre-trained tree
+        Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
+        
+        # Create Voronoi regions with class names
+        merged_regions, merged_classes = create_voronoi_regions(xx, yy, Z, class_names)
+        
+        # Decision boundary for PCA
+        decision_boundary = {
+            "regions": [list(p.exterior.coords) for p in merged_regions],
+            "regionClasses": merged_classes,
+            "xRange": [float(x_min), float(x_max)],
+            "yRange": [float(y_min), float(y_max)],
+        }
+    else:  # t-SNE
+        x_axis_label = "t-SNE dimension 1"
+        y_axis_label = "t-SNE dimension 2"
+        
+        # For t-SNE, still provide the x and y ranges, but no regions/regionClasses
+        decision_boundary = {
+            "xRange": [float(x_min), float(x_max)],
+            "yRange": [float(y_min), float(y_max)],
+        }
     
     # Convert original data to lists of pd.Series
     original_series_list = [
@@ -299,17 +358,13 @@ def generate_pca_visualization_data(feature_names, X, y, pretrained_tree, class_
     
     # Prepare visualization data
     visualization_data = {
-        "pcaData": filtered_pca_data.tolist(),
+        "transformedData": filtered_transformed_data.tolist(),
         "originalData": original_series_list,
         "targets": filtered_labels.tolist(),
-        "decisionBoundary": {
-            "regions": [list(p.exterior.coords) for p in merged_regions],
-            "regionClasses": merged_classes,  # Now contains actual class names
-            "xRange": [float(x_min), float(x_max)],
-            "yRange": [float(y_min), float(y_max)],
-        },
-        "xAxisLabel": pc1_label,
-        "yAxisLabel": pc2_label,
+        "decisionBoundary": decision_boundary,
+        "xAxisLabel": x_axis_label,
+        "yAxisLabel": y_axis_label,
+        "method": method,
     }
     
     return visualization_data

@@ -92,7 +92,7 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("opacity", colorScheme.opacity.hover);
 
-    const index = data.pcaData.indexOf(d);
+    const index = data.transformedData.indexOf(d);
     const originalFeatures = data.originalData[index];
 
     // If clicking the same point, reset everything and exit
