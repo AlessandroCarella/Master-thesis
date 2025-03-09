@@ -6,6 +6,7 @@ from sklearn.datasets import (
     fetch_california_housing,
     fetch_openml
 )
+from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import os
@@ -13,8 +14,6 @@ import joblib
 
 # Available datasets with kind information
 DATASETS = {
-    'mnist': 'image',
-    'fashion_mnist': 'image',
     'iris': 'tabular',
     'wine': 'tabular',
     'breast_cancer': 'tabular',
@@ -36,7 +35,6 @@ def get_dataset_information_iris():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": list(dataset.target_names),
-        "dataset_type": DATASETS["iris"]
     }
 
 def get_dataset_information_wine():
@@ -47,7 +45,6 @@ def get_dataset_information_wine():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": list(dataset.target_names),
-        "dataset_type": DATASETS["wine"]
     }
 
 def get_dataset_information_breast_cancer():
@@ -60,7 +57,6 @@ def get_dataset_information_breast_cancer():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "dataset_type": DATASETS["breast_cancer"]
     }
 
 def get_dataset_information_diabetes():
@@ -73,7 +69,6 @@ def get_dataset_information_diabetes():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "dataset_type": DATASETS["diabetes"]
     }
 
 def get_dataset_information_california_housing_2():
@@ -87,7 +82,6 @@ def get_dataset_information_california_housing_2():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "dataset_type": DATASETS["california_housing_2"]
     }
 
 def get_dataset_information_california_housing_3():
@@ -100,47 +94,6 @@ def get_dataset_information_california_housing_3():
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
-        "dataset_type": DATASETS["california_housing_3"]
-    }
-
-def get_dataset_information_mnist():
-    """Get detailed information about the MNIST dataset"""
-    dataset = fetch_openml('mnist_784', version=1)
-    n_samples = dataset.data.shape[0]
-    feature_names = "The dataset is made of images, so its features are the pixel values"
-    target_names = sorted(list(set(dataset.target)))
-    return {
-        "name": "mnist",
-        "n_samples": n_samples,
-        "feature_names": feature_names,
-        "target_names": target_names,
-        "dataset_type": DATASETS["mnist"],
-        "possible_image_sizes":[(28,28)],
-    }
-
-def get_dataset_information_fashion_mnist():
-    """Get detailed information about the Fashion-MNIST dataset with 1000 stratified samples"""
-    # Fetch the dataset
-    dataset = fetch_openml('Fashion-MNIST', version=1)
-    
-    # Stratify the dataset to get 1000 samples
-    X = dataset.data
-    y = dataset.target
-    
-    # Perform stratified sampling
-    X_stratified, _, y_stratified, _ = train_test_split(X, y, train_size=1000, stratify=y, random_state=42)
-    
-    n_samples = X_stratified.shape[0]
-    feature_names = "The dataset is made of images, so its features are pixel values."
-    target_names = sorted(list(set(y_stratified)))
-    
-    return {
-        "name": "fashion_mnist",
-        "n_samples": n_samples,
-        "feature_names": feature_names,
-        "target_names": target_names,
-        "dataset_type": "fashion_mnist",  # Assuming DATASETS is predefined as a constant elsewhere
-        "possible_image_sizes": [(28, 28)],  # 28x28 grayscale images
     }
 
 def load_cached_dataset_information(dataset_name, info_function, cache_dir='cache'):
@@ -218,40 +171,6 @@ def load_dataset_california_housing_3():
     
     return dataset, feature_names, target_names
 
-def load_dataset_mnist():
-    """Load and preprocess the MNIST dataset, subsampling to 1000 samples while maintaining class distribution."""
-    from sklearn.model_selection import train_test_split
-
-    dataset = fetch_openml('mnist_784', version=1)
-    n_features = dataset.data.shape[1]
-    feature_names = [f'pixel_{i}' for i in range(n_features)]
-    # Convert targets to integer type
-    dataset.target = dataset.target.astype(np.int64)
-    target_names = sorted(list(set(dataset.target.astype(str))))
-    
-    # Subsample to 1000 samples using stratified sampling to maintain the distribution of y
-    # train_test_split with test_size as an integer returns exactly that many samples in the test split.
-    _, X_sub, _, y_sub = train_test_split(
-        dataset.data,
-        dataset.target,
-        test_size=1000,
-        stratify=dataset.target,
-        random_state=42
-    )
-    
-    # Update the dataset with the subsample
-    dataset.data = X_sub
-    dataset.target = y_sub
-    
-    return dataset, feature_names, target_names
-
-def load_dataset_fashion_mnist():
-    """Load and preprocess the Fashion-MNIST dataset"""
-    dataset = fetch_openml('Fashion-MNIST', version=1)
-    feature_names = "The dataset is made of images, so its features are pixel values."
-    target_names = sorted(list(set(dataset.target)))
-    return dataset, feature_names, target_names
-
 # Cache loading for datasets (for actual data)
 def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
     """Load dataset from cache if available, else compute and cache it"""
@@ -283,8 +202,6 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
             'diabetes': get_dataset_information_diabetes,
             'california_housing_2': get_dataset_information_california_housing_2,
             'california_housing_3': get_dataset_information_california_housing_3,
-            'mnist': get_dataset_information_mnist,
-            'fashion_mnist': get_dataset_information_fashion_mnist,
         }
         
         return load_cached_dataset_information(dataset_name, information_functions[dataset_name], cache_dir=cache_dir)
@@ -305,8 +222,6 @@ def load_dataset(dataset_name: str):
         'diabetes': load_dataset_diabetes,
         'california_housing_2': load_dataset_california_housing_2,
         'california_housing_3': load_dataset_california_housing_3,
-        'mnist': load_dataset_mnist,
-        'fashion_mnist': load_dataset_fashion_mnist,
     }
     
     return load_cached_dataset(dataset_name, loading_functions[dataset_name])

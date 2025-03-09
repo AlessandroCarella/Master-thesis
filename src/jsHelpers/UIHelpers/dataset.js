@@ -25,29 +25,18 @@ const updateDatasetInfoContent = (htmlContent) => {
 export const updateDatasetInfoPanel = (datasetName, datasetInfo) => {
     const featureNames = formatFeatureNames(datasetInfo.feature_names);
     const targetNames = formatFeatureNames(datasetInfo.target_names);
-    const imageSizes =
-        datasetInfo.dataset_type === "image"
-            ? formatImageSizes(datasetInfo.possible_image_sizes)
-            : "";
 
     updateDatasetInfoContent(`
         <h3>Dataset: ${datasetName}</h3>
         <p>Samples: ${datasetInfo.n_samples}</p>
         <p>Features: ${featureNames}</p>
         <p>Target: ${targetNames}</p>
-        ${imageSizes}
         <button id="showDatasetBtn" class="show-dataset-btn btn">Show Dataset</button>
     `);
 };
 
 const formatFeatureNames = (names) => {
     return Array.isArray(names) ? names.join(", ") : names;
-};
-
-const formatImageSizes = (sizes) => {
-    return `<p>Possible image sizes: ${sizes
-        .map((size) => `${size[0]}x${size[1]}`)
-        .join(", ")}</p>`;
 };
 
 export const handleDatasetInfoError = (datasetName) => {
@@ -73,26 +62,6 @@ export const createTableFromData = (data) => {
     return `<table><thead><tr>${headerRow}</tr></thead><tbody>${rows}</tbody></table>`;
 };
 
-export const createImageGrid = (data) => {
-    if (!data || !data.length) return "<p>No images available.</p>";
-    return `
-        <div class="image-grid">
-            ${data
-                .map(
-                    (record) => `
-                <div class="image-grid-item">
-                    <img src="${record.image}" alt="${
-                        record.label || "Image"
-                    }" />
-                    ${record.label ? `<p>${record.label}</p>` : ""}
-                </div>
-            `
-                )
-                .join("")}
-        </div>
-    `;
-};
-
 export const attachDatasetPanelEventListeners = () => {
     attachShowDatasetButtonListener();
     attachCloseDatasetPanelListener();
@@ -115,10 +84,7 @@ const attachShowDatasetButtonListener = () => {
                 return;
             }
 
-            document.getElementById("datasetPanelContent").innerHTML =
-                result.dataset?.length && result.dataset[0].image
-                    ? createImageGrid(result.dataset)
-                    : createTableFromData(result.dataset);
+            document.getElementById("datasetPanelContent").innerHTML = createTableFromData(result.dataset);
 
             document.getElementById("datasetPanel").classList.add("visible");
         } catch (error) {

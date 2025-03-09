@@ -2,7 +2,7 @@
 import { createVisualization } from "./DecisionTree.js";
 import { createPCAscatterPlot } from "./PCA.js";
 
-export function initializeVisualizations(data, datasetType) {
+export function initializeVisualizations(data) {
     if (!data) {
         console.error("No visualization data provided");
         return;
@@ -20,6 +20,6 @@ export function initializeVisualizations(data, datasetType) {
     // Then create PCA plot with reference to tree visualization
     if (data.PCAvisualizationData) {
         const treeVis = window.treeVisualization; // Get the tree visualization reference
-        createPCAscatterPlot(data.PCAvisualizationData, "#pca-plot", treeVis, datasetType);
+        createPCAscatterPlot(data.PCAvisualizationData, "#pca-plot", treeVis);
     }
 }

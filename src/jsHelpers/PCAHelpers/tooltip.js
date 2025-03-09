@@ -15,18 +15,22 @@ export function createTooltip() {
         .style("line-height", "1.4");
 }
 
-export function showTooltip(event, d, data, tooltip, datasetType) {
+export function showTooltip(event, data, tooltip) {
     const pointIndex = getPointIndex(event, data);
     if (pointIndex === -1) return;
 
     const className = data.targets[pointIndex];
     const originalData = data.originalData[pointIndex];
 
-    if (datasetType === "image" && isSquareImage(originalData)) {
-        displayImageTooltip(event, tooltip, className, originalData);
-    } else {
-        displayTabularTooltip(event, tooltip, className, originalData);
-    }
+    let tooltipContent = "<strong>Decoded Values:</strong><br>";
+    Object.entries(originalData).forEach(([feature, value]) => {
+        tooltipContent += `${feature}: ${
+            typeof value === "number" ? value.toFixed(3) : value
+        }<br>`;
+    });
+    tooltipContent += `<strong>Class: ${className}</strong>`;
+
+    showTooltipContent(event, tooltip, tooltipContent);
 }
 
 function getPointIndex(event, data) {
@@ -38,59 +42,6 @@ function getPointIndex(event, data) {
     );
     if (index === -1) console.warn("Could not find matching point data");
     return index;
-}
-
-function isSquareImage(originalData) {
-    const pixelCount = Object.keys(originalData).length;
-    const imageSize = Math.sqrt(pixelCount);
-    return Math.floor(imageSize) === imageSize;
-}
-
-function displayImageTooltip(event, tooltip, className, originalData) {
-    const imageSize = Math.sqrt(Object.keys(originalData).length);
-    const tooltipContent = `
-        <strong>Image (${imageSize}px x ${imageSize}px):</strong><br>
-        <canvas id="pixel-canvas" width="${imageSize}" height="${imageSize}" 
-                style="width: 200px; height: 200px; image-rendering: pixelated;"></canvas><br>
-        <strong>Class: ${className}</strong>
-    `;
-
-    showTooltipContent(event, tooltip, tooltipContent);
-    renderImage(originalData, imageSize);
-}
-
-function renderImage(originalData, imageSize) {
-    setTimeout(() => {
-        const canvas = document.getElementById("pixel-canvas");
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        const imageData = ctx.createImageData(imageSize, imageSize);
-
-        let pixelIndex = 0;
-        Object.values(originalData).forEach((value) => {
-            const pixelValue =
-                typeof value === "number" ? value : parseFloat(value);
-            imageData.data.set(
-                [pixelValue, pixelValue, pixelValue, 255],
-                pixelIndex * 4
-            );
-            pixelIndex++;
-        });
-
-        ctx.putImageData(imageData, 0, 0);
-    }, 0);
-}
-
-function displayTabularTooltip(event, tooltip, className, originalData) {
-    let tooltipContent = "<strong>Decoded Values:</strong><br>";
-    Object.entries(originalData).forEach(([feature, value]) => {
-        tooltipContent += `${feature}: ${
-            typeof value === "number" ? value.toFixed(3) : value
-        }<br>`;
-    });
-    tooltipContent += `<strong>Class: ${className}</strong>`;
-
-    showTooltipContent(event, tooltip, tooltipContent);
 }
 
 function showTooltipContent(event, tooltip, content) {

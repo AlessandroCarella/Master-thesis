@@ -7,7 +7,6 @@ import {
 
 import { createSection } from "./UIHelpers/inputs.js";
 
-import { createImageUploadInterface } from "./UIHelpers/imageUpload.js";
 import {
     renderFeatureSections,
     setDefaultFeatureValues,
@@ -26,7 +25,7 @@ export function getState() {
     return state;
 }
 
-export function createFeatureInputs(descriptor, datasetType) {
+export function createFeatureInputs(descriptor) {
     const carousel = document.getElementById("featureCarousel");
 
     // Exit if carousel element doesn't exist
@@ -38,40 +37,28 @@ export function createFeatureInputs(descriptor, datasetType) {
     // Clear the carousel
     carousel.innerHTML = "";
 
-    // Use datasetType from state if not provided
-    if (!datasetType) {
-        datasetType = state.datasetType;
-    }
+    try {
+        const sections = {
+            numeric: createSection("Numeric Features", "numeric-features"),
+            categorical: createSection(
+                "Categorical Features",
+                "categorical-features"
+            ),
+            ordinal: createSection("Ordinal Features", "ordinal-features"),
+        };
 
-    // If the dataset is an image type, display image upload interface
-    if (datasetType === "image") {
-        createImageUploadInterface(carousel);
-        return;
-    } else {
-        // Regular flow for non-image datasets
-        try {
-            const sections = {
-                numeric: createSection("Numeric Features", "numeric-features"),
-                categorical: createSection(
-                    "Categorical Features",
-                    "categorical-features"
-                ),
-                ordinal: createSection("Ordinal Features", "ordinal-features"),
-            };
-
-            Object.values(sections).forEach((section) => {
-                if (carousel) {
-                    carousel.appendChild(section);
-                }
-            });
-
-            renderFeatureSections(descriptor, sections);
-            setDefaultFeatureValues(descriptor);
-        } catch (error) {
-            console.error("Error creating feature inputs:", error);
+        Object.values(sections).forEach((section) => {
             if (carousel) {
-                carousel.innerHTML = `<div class="error-message">Error loading feature inputs: ${error.message}</div>`;
+                carousel.appendChild(section);
             }
+        });
+
+        renderFeatureSections(descriptor, sections);
+        setDefaultFeatureValues(descriptor);
+    } catch (error) {
+        console.error("Error creating feature inputs:", error);
+        if (carousel) {
+            carousel.innerHTML = `<div class="error-message">Error loading feature inputs: ${error.message}</div>`;
         }
     }
 }

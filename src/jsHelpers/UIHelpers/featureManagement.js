@@ -1,6 +1,4 @@
 import { getState } from "../ui.js";
-import { getDatasetType } from "../visualizationConnector.js";
-import { getUploadedImage, resetImageUpload } from "./imageUpload.js";
 import { createNumericInput } from "./inputs.js";
 
 export function renderFeatureSections(descriptor, sections) {
@@ -89,21 +87,6 @@ export function getFeatureValues() {
     const state = getState();
     if (!state?.featureDescriptor) return {};
 
-    // Check if we're dealing with an image dataset
-    const datasetType = getDatasetType();
-    if (datasetType === "image") {
-        // For image datasets, return the uploaded image data if available
-        const uploadedImage = getUploadedImage();
-        if (uploadedImage) {
-            return {
-                image: uploadedImage.data,
-                imageWidth: uploadedImage.width,
-                imageHeight: uploadedImage.height,
-            };
-        }
-        return {};
-    }
-
     const descriptor = state.featureDescriptor;
     const values = {};
 
@@ -134,14 +117,6 @@ export function getFeatureValues() {
 export function resetFeatures() {
     const state = getState();
     if (!state?.featureDescriptor) return;
-
-    // Check if we're dealing with an image dataset
-    const datasetType = getDatasetType();
-    if (datasetType === "image") {
-        // Reset the image upload interface
-        resetImageUpload();
-        return;
-    }
 
     setDefaultFeatureValues(state.featureDescriptor);
 }

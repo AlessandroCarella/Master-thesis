@@ -9,30 +9,17 @@ export const showExplanationLoading = () => {
     `;
 };
 
-export const determineDatasetType = (appState) => {
-    return appState.datasetType || "tabular";
-};
-
 export const buildExplanationRequestData = (
     instanceData,
     surrogateParams,
-    datasetType,
     appState
 ) => {
-    const requestData = {
+    return {
         instance: instanceData,
         dataset_name: appState.dataset_name,
         neighbourhood_size: surrogateParams.neighbourhood_size,
         PCAstep: surrogateParams.PCAstep,
     };
-
-    if (datasetType === "image" && instanceData.image) {
-        requestData.instance_type = "image";
-        requestData.image = instanceData.image;
-        requestData.imageWidth = instanceData.imageWidth;
-        requestData.imageHeight = instanceData.imageHeight;
-    }
-    return requestData;
 };
 
 export const updateVisualizationUI = () => {

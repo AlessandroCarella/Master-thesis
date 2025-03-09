@@ -9,8 +9,7 @@ export function createPoints(
     y,
     colorMap,
     tooltip,
-    treeVisualization,
-    datasetType
+    treeVisualization
 ) {
     const symbolGenerator = d3.symbol().size(100);
      // Last elements rendered appear on top of everything else, 
@@ -35,7 +34,7 @@ export function createPoints(
         .style("stroke-width", 1)
         .style("opacity", colorScheme.opacity.hover)
         .on("mouseover", (event, d) => {
-            showTooltip(event, d, data, tooltip, datasetType);
+            showTooltip(event, data, tooltip);
             d3.select(event.currentTarget)
                 .style("opacity", colorScheme.opacity.active)
                 .style("stroke", colorScheme.ui.highlight);

@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset, DATASETS
 from pythonHelpers.routes.state import global_state
-from pythonHelpers.datasetDataInfoUtils import process_image_dataset, process_tabular_dataset
+from pythonHelpers.datasetDataInfoUtils import process_tabular_dataset
 
 router = APIRouter(prefix="/api")
 
@@ -25,9 +25,6 @@ async def get_dataset_info(dataset_name_info: str):
     # Update global state
     global_state.dataset_name = dataset_info["name"]
     global_state.target_names = dataset_info["target_names"]
-    global_state.dataset_type = dataset_info["dataset_type"]
-    if (global_state.dataset_type == "image"):
-        global_state.possible_image_sizes = dataset_info["possible_image_sizes"]
 
     return dataset_info
 
@@ -39,9 +36,6 @@ async def get_selected_dataset():
     try:
         ds, feature_names, target_names = load_dataset(global_state.dataset_name)
         global_state.feature_names = feature_names  # Update state
-        
-        if global_state.dataset_type == "image":
-            return process_image_dataset(ds, feature_names, target_names)
         
         return process_tabular_dataset(ds, feature_names)
     except Exception as e:

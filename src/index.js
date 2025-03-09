@@ -49,7 +49,6 @@ import {
 
 import {
     showExplanationLoading,
-    determineDatasetType,
     buildExplanationRequestData,
     updateVisualizationUI,
 } from "./jsHelpers/UIHelpers/explanation.js";
@@ -64,8 +63,6 @@ export const appState = {
     selectedClassifier: null,
     parameters: {},
     featureDescriptor: null,
-    possible_image_sizes: null,
-    datasetType: null,
 };
 
 /********************************************
@@ -85,11 +82,6 @@ window.selectDataset = async function (datasetName) {
     try {
         showDatasetLoading();
         const datasetInfo = await fetchDatasetInfo(datasetName);
-
-        // Store dataset type and possible image sizes in appState
-        appState.datasetType = datasetInfo.dataset_type;
-        appState.possible_image_sizes =
-            datasetInfo.possible_image_sizes || null;
 
         updateDatasetInfoPanel(datasetName, datasetInfo);
 
@@ -144,7 +136,7 @@ window.startTraining = async () => {
         appState.featureDescriptor = response.descriptor;
         updateUIAfterTraining(response);
 
-        createFeatureInputs(response.descriptor, response.datasetType);
+        createFeatureInputs(response.descriptor);
         // Populate surrogate parameters form if container exists.
         const featureButtonContainer = document.getElementById(
             "featureButtonContainer"
@@ -170,11 +162,9 @@ window.explainInstance = async () => {
         showExplanationLoading();
         const instanceData = getFeatureValues();
         const surrogateParams = getSurrogateParameters();
-        const datasetType = determineDatasetType(appState);
         const requestData = buildExplanationRequestData(
             instanceData,
             surrogateParams,
-            datasetType,
             appState
         );
 
@@ -188,8 +178,7 @@ window.explainInstance = async () => {
                 decisionTreeVisualizationData:
                     result.decisionTreeVisualizationData,
                 PCAvisualizationData: result.PCAvisualizationData,
-            },
-            datasetType
+            }
         );
 
         // Add scroll to show the newly displayed visualizations

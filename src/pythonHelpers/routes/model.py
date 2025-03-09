@@ -32,9 +32,6 @@ async def train_model(request: TrainingRequest):
     )
     global_state.descriptor = global_state.dataset.descriptor
 
-    # Get the dataset type from the DATASETS dictionary.
-    dataset_type = DATASETS[request.dataset_name]
-
     return {
         "status": "success",
         "message": "Model trained successfully",

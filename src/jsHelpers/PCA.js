@@ -3,7 +3,6 @@
 import {
     setPCAVisualization,
     getGlobalColorMap,
-    getDatasetType,
 } from "./visualizationConnector.js";
 import { createTooltip } from "./PCAHelpers/tooltip.js";
 import { createZoom } from "./PCAHelpers/zoom.js";
@@ -12,7 +11,7 @@ import { drawVoronoi } from "./PCAHelpers/voronoi.js";
 import { createPoints } from "./PCAHelpers/points.js";
 
 // Main function to create the PCA scatter plot
-export function createPCAscatterPlot(data, container, treeVis, datasetType) {
+export function createPCAscatterPlot(data, container, treeVis) {
     if (
         !data ||
         !data.pcaData ||
@@ -34,8 +33,8 @@ export function createPCAscatterPlot(data, container, treeVis, datasetType) {
 
     const tooltip = createTooltip();
 
-    document.getElementById("x-axis-label").textContent = datasetType === "tabular" ? data.xAxisLabel : "PCA component 1";
-    document.getElementById("y-axis-label").textContent = datasetType === "tabular" ? data.yAxisLabel : "PCA component 2";
+    document.getElementById("x-axis-label").textContent = data.xAxisLabel;
+    document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
     d3.select(container).select("svg").remove();
 
@@ -73,7 +72,6 @@ export function createPCAscatterPlot(data, container, treeVis, datasetType) {
         colorMap,
         tooltip,
         treeVisualization,
-        datasetType,
     );
 
     return visualization;

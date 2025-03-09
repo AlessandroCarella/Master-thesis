@@ -3,9 +3,6 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-import base64
-import io
-from PIL import Image
 import numpy as np
 
 from pythonHelpers.lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
@@ -23,35 +20,9 @@ router = APIRouter(prefix="/api")
 
 class InstanceRequest(BaseModel):
     instance: Optional[Dict[str, Any]] = None
-    image: Optional[str] = None
-    instance_type: Optional[str] = "tabular"
     dataset_name: str
     neighbourhood_size: int
     PCAstep: float
-
-def process_image(request):
-    """Process image input and validate size."""
-    try:
-        image_data = request.image.split(',', 1)[-1] if ',' in request.image else request.image
-        image_bytes = base64.b64decode(image_data)
-        image = Image.open(io.BytesIO(image_bytes)).convert('L')
-        
-        dataset_info = get_dataset_information(request.dataset_name)
-        possible_sizes = dataset_info["possible_image_sizes"]
-        
-        if not any(image.width == w and image.height == h for w, h in possible_sizes):
-            size_str = ", ".join([f"{w}x{h}" for w, h in possible_sizes])
-            return JSONResponse(
-                content={"error": f"Image must be one of these sizes: {size_str}. Got {image.width}x{image.height}"},
-                status_code=400
-            )
-        
-        return np.array(image).flatten().ravel()
-    except Exception as e:
-        return JSONResponse(
-            content={"error": f"Error processing image: {str(e)}"},
-            status_code=400
-        )
 
 def process_instance(request):
     """Process tabular data input."""
@@ -63,12 +34,8 @@ def process_instance(request):
 async def explain_instance(request: InstanceRequest):
     """
     Generate a local explanation for a given instance.
-    Supports both tabular and image data.
     """
-    instance_values = (
-        process_image(request) if request.instance_type == "image" and request.image 
-        else process_instance(request)
-    )
+    instance_values = process_instance(request)
     
     if isinstance(instance_values, JSONResponse):
         return instance_values
@@ -111,6 +78,5 @@ async def explain_instance(request: InstanceRequest):
         "message": "Instance explained",
         "decisionTreeVisualizationData": decisionTreeVisualizationData,
         "PCAvisualizationData": PCAvisualizationData,
-        "uniqueClasses": global_state.target_names,
-        "datasetType": DATASETS.get(global_state.dataset_name, 'unknown')
+        "uniqueClasses": global_state.target_names    
     }

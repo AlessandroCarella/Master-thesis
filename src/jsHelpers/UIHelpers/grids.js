@@ -1,4 +1,3 @@
-import { setDatasetType } from "../visualizationConnector.js";
 import { createSection, createSurrogateInput } from "./inputs.js";
 
 function populateDatasetGrid(data) {
@@ -20,7 +19,6 @@ function populateDatasetGrid(data) {
             });
             // Add selected class to clicked card
             card.classList.add("selected");
-            setDatasetType(data.datasets[dataset]);
             selectDataset(dataset);
         };
         grid.appendChild(card);
