@@ -1,24 +1,25 @@
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, MDS
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import networkx as nx
 from sklearn.cluster import KMeans
+import umap
 
 def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
     """
-    Standardize the data and apply dimensionality reduction (PCA or t-SNE).
+    Standardize the data and apply dimensionality reduction (PCA, t-SNE, UMAP, or MDS).
     
     Parameters:
     -----------
     X : array-like
         Input features
     method : str, default='pca'
-        Dimensionality reduction method ('pca' or 'tsne')
+        Dimensionality reduction method ('pca', 'tsne', 'umap', or 'mds')
     n_components : int, default=2
         Number of components
     random_state : int, default=42
@@ -46,13 +47,17 @@ def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
             'n_iter': 1000,
             'n_iter_without_progress': 300
         }
-        # Update with any provided kwargs
         tsne_params.update(kwargs)
-        
         model = TSNE(n_components=n_components, random_state=random_state, **tsne_params)
         X_transformed = model.fit_transform(X_scaled)
+    elif method.lower() == 'umap':
+        model = umap.UMAP(n_components=n_components, random_state=random_state, **kwargs)
+        X_transformed = model.fit_transform(X_scaled)
+    elif method.lower() == 'mds':
+        model = MDS(n_components=n_components, random_state=random_state, **kwargs)
+        X_transformed = model.fit_transform(X_scaled)
     else:
-        raise ValueError(f"Unsupported method: {method}. Use 'pca' or 'tsne'.")
+        raise ValueError(f"Unsupported method: {method}. Use 'pca', 'tsne', 'umap', or 'mds'.")
     
     return X_transformed, model, scaler
 
@@ -271,7 +276,7 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, method='tsne', step=0.1, random_state=42, **kwargs):
+def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, method='mds', step=0.1, random_state=42, **kwargs):
     """
     Generate visualization data and decision boundaries for a pre-trained decision tree
     using either PCA or t-SNE dimensionality reduction.
@@ -289,7 +294,7 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
     class_names : list
         List of class names
     method : str, default='pca'
-        Dimensionality reduction method ('pca' or 'tsne')
+        Dimensionality reduction method ('pca', 'tsne', 'umap', or 'mds')
     step : float, default=0.1
         Step size for decision boundary grid
     random_state : int, default=42
@@ -326,8 +331,6 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
         grid_points = np.c_[xx.ravel(), yy.ravel()]
         grid_original = model.inverse_transform(grid_points)
         grid_original = scaler.inverse_transform(grid_original)
-        
-        # Get predictions using the pre-trained tree
         Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
         
         # Create Voronoi regions with class names
@@ -340,11 +343,12 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
             "xRange": [float(x_min), float(x_max)],
             "yRange": [float(y_min), float(y_max)],
         }
-    else:  # t-SNE
-        x_axis_label = "t-SNE dimension 1"
-        y_axis_label = "t-SNE dimension 2"
+    else:
+        # For t-SNE, UMAP, and MDS, generate generic axis labels and decision boundary ranges.
+        method_label = method.upper() if method.lower() != 'mds' else 'MDS'
+        x_axis_label = f"{method_label} dimension 1"
+        y_axis_label = f"{method_label} dimension 2"
         
-        # For t-SNE, still provide the x and y ranges, but no regions/regionClasses
         decision_boundary = {
             "xRange": [float(x_min), float(x_max)],
             "yRange": [float(y_min), float(y_max)],
