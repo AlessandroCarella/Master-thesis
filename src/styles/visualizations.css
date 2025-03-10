@@ -69,14 +69,30 @@
 
 .decision-tree-tooltip {
     position: absolute;
-    background-color: rgba(0, 0, 0, 0.7); /* Dark background */
-    color: white;
-    padding: 15px; /* Increase padding */
-    border-radius: 5px;
-    font-size: 20px; /* Increase font size */
-    pointer-events: none; /* Prevent tooltip from blocking other events */
-    white-space: nowrap; /* Prevent text from wrapping */
-    max-width: 300px; /* You can also adjust max-width if necessary */
+    background-color: white; /* Changed to white background */
+    color: black; /* Changed text color to black */
+    padding: 12px; /* Adjusted to match scatter-plot tooltip */
+    border: 1px solid #ddd; /* Added border */
+    border-radius: 4px; /* Changed border-radius */
+    font-size: 12px; /* Reduced font size to match */
+    pointer-events: none;
+    white-space: normal; /* Allow text wrapping */
+    max-width: 300px;
+    line-height: 1.4; /* Added line height */
+    opacity: 1; /* Set initial opacity - you may want to change this */
+}
+
+.scatter-plot-tooltip {
+    opacity: 0;
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    pointer-events: none;
+    max-width: 300px;
+    font-size: 12px;
+    line-height: 1.4;
 }
 
 .visualization-header {

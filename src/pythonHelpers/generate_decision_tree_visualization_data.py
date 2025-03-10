@@ -1,17 +1,21 @@
 from sklearn.tree import DecisionTreeClassifier
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from dataclasses import asdict
+import numpy as np
 
 @dataclass
 class TreeNode:
-    """Class to store decision tree node information"""
+    """Class to store complete decision tree node information"""
     # Unique identifier for the node in the tree
     node_id: int
     
     # The name of the feature used for the decision at this node. 
     # If the node is a leaf, this will be `None`.
     feature_name: Optional[str]
+    
+    # The index of the feature used for the decision (original sklearn value)
+    feature_index: Optional[int]
     
     # The threshold value for the feature used to split the data at this node. 
     # If the node is a leaf, this will be `None`.
@@ -30,12 +34,22 @@ class TreeNode:
     # Only set if the node is a leaf; otherwise, it is `None`.
     class_label: Optional[str]
     
+    # The impurity value at the node (Gini, entropy, or MSE depending on criterion)
+    impurity: float
+    
     # The number of samples (data points) that reached this node during training.
-    samples: int
+    n_samples: int
+    
+    # Weighted number of samples reaching this node
+    weighted_n_samples: float
+    
+    # Full distribution of samples across all classes (for classification)
+    # or the predicted value (for regression)
+    value: np.ndarray
 
 def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_names: List[str], target_names: List[str]) -> List[TreeNode]: 
     """
-    Extract node information from a trained DecisionTreeClassifier
+    Extract complete node information from a trained DecisionTreeClassifier
 
     Parameters:
     -----------
@@ -49,7 +63,7 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
     Returns:
     --------
     List[TreeNode]
-        List of TreeNode objects containing the tree structure
+        List of TreeNode objects containing the complete tree structure
     """
     tree = tree_classifier.tree_
     
@@ -68,15 +82,20 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
             node = TreeNode(
                 node_id=node_id,
                 feature_name=None,
+                feature_index=None,
                 threshold=None,
                 left_child=None,
                 right_child=None,
                 is_leaf=True,
                 class_label=class_label,
-                samples=int(tree.n_node_samples[node_id])
+                impurity=tree.impurity[node_id],
+                n_samples=int(tree.n_node_samples[node_id]),
+                weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
+                value=tree.value[node_id].copy()
             )
         else:
-            feature_name = feature_names[int(tree.feature[node_id])]
+            feature_index = int(tree.feature[node_id])
+            feature_name = feature_names[feature_index]
             threshold = float(tree.threshold[node_id])
             left_child = int(tree.children_left[node_id])
             right_child = int(tree.children_right[node_id])
@@ -84,12 +103,16 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
             node = TreeNode(
                 node_id=node_id,
                 feature_name=feature_name,
+                feature_index=feature_index,
                 threshold=threshold,
                 left_child=left_child,
                 right_child=right_child,
                 is_leaf=False,
                 class_label=None,
-                samples=int(tree.n_node_samples[node_id])
+                impurity=tree.impurity[node_id],
+                n_samples=int(tree.n_node_samples[node_id]),
+                weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
+                value=tree.value[node_id].copy()
             )
 
         nodes.append(node)
@@ -98,18 +121,25 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
 
 def generate_decision_tree_visualization_data(nodes):
     """
-    Save the tree structure to a JSON file
+    Prepare the tree structure for visualization
     
     Parameters:
     -----------
     nodes : List[TreeNode]
-        List of TreeNode objects to save
-    filename : str
-        Path to save the JSON file
-    indent : int
-        Number of spaces for indentation
+        List of TreeNode objects to process
+    
+    Returns:
+    --------
+    List[Dict]
+        List of node dictionaries suitable for visualization
     """
     # Convert TreeNodes to dictionaries
-    nodes_dict = [asdict(node) for node in nodes]
+    nodes_dict = []
+    for node in nodes:
+        node_dict = asdict(node)
+        # Convert numpy arrays to lists for JSON serialization
+        if isinstance(node_dict['value'], np.ndarray):
+            node_dict['value'] = node_dict['value'].tolist()
+        nodes_dict.append(node_dict)
     
     return nodes_dict

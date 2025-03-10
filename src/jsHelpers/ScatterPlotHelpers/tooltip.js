@@ -3,16 +3,6 @@ export function createTooltip() {
         .select("body")
         .append("div")
         .attr("class", "scatter-plot-tooltip")
-        .style("opacity", 0)
-        .style("position", "absolute")
-        .style("background-color", "white")
-        .style("border", "1px solid #ddd")
-        .style("border-radius", "4px")
-        .style("padding", "12px")
-        .style("pointer-events", "none")
-        .style("max-width", "300px")
-        .style("font-size", "12px")
-        .style("line-height", "1.4");
 }
 
 export function showTooltip(event, data, tooltip) {
