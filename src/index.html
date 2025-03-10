@@ -81,7 +81,44 @@
             <div class="svg-container" id="svg-container" style="display: none">
                 <div class="svg-side-by-side">
                     <div class="visualization-container">
-                        <h2>Neighborhood scatter plot</h2>
+                        <div class="visualization-header">
+                            <h2>Neighborhood scatter plot</h2>
+                            <div class="scatter-plot-controls">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="scatterPlotMethod"
+                                        value="umap"
+                                        checked
+                                    />
+                                    <span>UMAP</span>
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="scatterPlotMethod"
+                                        value="pca"
+                                    />
+                                    <span>PCA</span>
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="scatterPlotMethod"
+                                        value="tsne"
+                                    />
+                                    <span>t-SNE</span>
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="scatterPlotMethod"
+                                        value="mds"
+                                    />
+                                    <span>MDS</span>
+                                </label>
+                            </div>
+                        </div>
                         <div id="scatter-plot"></div>
                         <p id="x-axis-label"></p>
                         <p id="y-axis-label"></p>

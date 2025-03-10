@@ -23,6 +23,8 @@ class InstanceRequest(BaseModel):
     dataset_name: str
     neighbourhood_size: int
     scatterPlotStep: float
+    scatterPlotMethod: str = "umap"
+
 
 def process_instance(request):
     """Process tabular data input."""
@@ -70,7 +72,8 @@ async def explain_instance(request: InstanceRequest):
         y=neighb_train_y,
         pretrained_tree=dt_surr,
         class_names=global_state.target_names,
-        step=request.scatterPlotStep
+        step=request.scatterPlotStep,
+        method=request.scatterPlotMethod
     )
 
     return {

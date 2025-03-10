@@ -173,13 +173,10 @@ window.explainInstance = async () => {
         setGlobalColorMap(result.uniqueClasses);
         updateVisualizationUI();
 
-        initializeVisualizations(
-            {
-                decisionTreeVisualizationData:
-                    result.decisionTreeVisualizationData,
-                scatterPlotVisualizationData: result.scatterPlotVisualizationData,
-            }
-        );
+        initializeVisualizations({
+            decisionTreeVisualizationData: result.decisionTreeVisualizationData,
+            scatterPlotVisualizationData: result.scatterPlotVisualizationData,
+        });
 
         // Add scroll to show the newly displayed visualizations
         const svgContainer = document.getElementById("svg-container");
@@ -198,6 +195,11 @@ window.updateParameter = updateParameter;
 window.getFeatureValues = getFeatureValues;
 window.resetFeatures = resetFeatures;
 window.appState = appState;
+window.getSurrogateParameters = getSurrogateParameters;
+window.fetchExplanation = fetchExplanation;
+window.showExplanationLoading = showExplanationLoading;
+window.updateVisualizationUI = updateVisualizationUI;
+window.buildExplanationRequestData = buildExplanationRequestData;
 
 // Initialize UI and attach event listeners when DOM is loaded.
 document.addEventListener("DOMContentLoaded", async () => {
