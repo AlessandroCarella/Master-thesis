@@ -12,6 +12,7 @@ import {
     highlightPathToRoot,
     highlightDescendants,
     highlightPointsForLeaf,
+    highlightPointsForDescendants,
 } from "./visualizationConnectorHelpers/highlight.js";
 
 let scatterPlotVisualization = null;
@@ -67,12 +68,18 @@ export function handleTreeNodeClick(
 
     resetHighlights(treeVis, scatterPlotVis);
     selectedNode = d;
-    
+
     if (d.data.is_leaf) {
         // Highlight the clicked node
         highlightNode(contentGroup, d, metrics);
         // For leaf nodes: highlight the path to the root and corresponding scatter plot points
         highlightPathToRoot(contentGroup, d, metrics);
         highlightPointsForLeaf(d, scatterPlotVis);
+    } else {
+        // For split nodes: highlight the node and all its descendants
+        highlightNode(contentGroup, d, metrics);
+        highlightDescendants(contentGroup, d, metrics);
+        // Add this line to highlight scatter plot points for all descendant nodes
+        highlightPointsForDescendants(d, scatterPlotVis);
     }
 }

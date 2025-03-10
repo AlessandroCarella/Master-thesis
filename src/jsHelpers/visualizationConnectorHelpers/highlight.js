@@ -39,7 +39,9 @@ export function resetHighlights(treeVis, scatterPlotVis) {
 
     // Reset Scatter plot highlights
     if (scatterPlotVis && scatterPlotVis.points) {
-        const colorMap = generateColorMap([...new Set(scatterPlotVis.data.targets)]);
+        const colorMap = generateColorMap([
+            ...new Set(scatterPlotVis.data.targets),
+        ]);
         scatterPlotVis.points
             .style("fill", (d, i) => colorMap[scatterPlotVis.data.targets[i]])
             .style("opacity", colorScheme.opacity.hover);
@@ -50,7 +52,9 @@ export function resetHighlights(treeVis, scatterPlotVis) {
 export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
     if (!scatterPlotVis || !scatterPlotVis.points) return;
 
-    const colorMap = generateColorMap([...new Set(scatterPlotVis.data.targets)]);
+    const colorMap = generateColorMap([
+        ...new Set(scatterPlotVis.data.targets),
+    ]);
     scatterPlotVis.points
         .style("fill", (d, i) => {
             const originalData = scatterPlotVis.data.originalData[i];
@@ -101,11 +105,16 @@ export function highlightPathToRoot(contentGroup, leafNode, metrics) {
 
 // Recursively highlights a node and all its descendants, including their connecting paths.
 // Also highlights scatter plot points for leaf nodes.
-export function highlightDescendants(contentGroup, node, metrics, scatterPlotVis) {
+export function highlightDescendants(
+    contentGroup,
+    node,
+    metrics,
+    scatterPlotVis
+) {
     highlightNode(contentGroup, node, metrics);
 
-    // If this is a leaf, highlight corresponding scatter plot points
-    if (node.data.is_leaf) {
+    // If this is a leaf and scatterPlotVis is provided, highlight corresponding scatter plot points
+    if (node.data.is_leaf && scatterPlotVis) {
         highlightPointsForLeaf(node, scatterPlotVis);
     }
 
@@ -116,4 +125,62 @@ export function highlightDescendants(contentGroup, node, metrics, scatterPlotVis
             highlightDescendants(contentGroup, child, metrics, scatterPlotVis);
         });
     }
+}
+
+// Collect all leaf nodes under a given node (including the node itself if it's a leaf)
+export function collectLeafNodes(node) {
+    if (!node) return [];
+
+    if (node.data.is_leaf) {
+        return [node];
+    }
+
+    let leaves = [];
+    if (node.children) {
+        node.children.forEach((child) => {
+            leaves = leaves.concat(collectLeafNodes(child));
+        });
+    }
+
+    return leaves;
+}
+
+// Highlight points in scatter plot for all leaf nodes under a split node
+export function highlightPointsForDescendants(node, scatterPlotVis) {
+    if (!scatterPlotVis || !scatterPlotVis.points) return;
+
+    // Collect all leaf nodes under this node
+    const leafNodes = collectLeafNodes(node);
+
+    if (leafNodes.length === 0) return;
+
+    const colorMap = generateColorMap([
+        ...new Set(scatterPlotVis.data.targets),
+    ]);
+
+    scatterPlotVis.points
+        .style("fill", (d, i) => {
+            const originalData = scatterPlotVis.data.originalData[i];
+
+            // Check if point belongs to any of the leaf nodes
+            for (const leafNode of leafNodes) {
+                if (pointBelongsToLeaf(d, originalData, leafNode)) {
+                    return colorScheme.ui.highlight;
+                }
+            }
+
+            return colorMap[scatterPlotVis.data.targets[i]];
+        })
+        .style("opacity", (d, i) => {
+            const originalData = scatterPlotVis.data.originalData[i];
+
+            // Check if point belongs to any of the leaf nodes
+            for (const leafNode of leafNodes) {
+                if (pointBelongsToLeaf(d, originalData, leafNode)) {
+                    return colorScheme.opacity.active;
+                }
+            }
+
+            return colorScheme.opacity.inactive;
+        });
 }
