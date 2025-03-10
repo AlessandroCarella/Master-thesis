@@ -8,7 +8,7 @@ import numpy as np
 
 from lore_sa.bbox import sklearn_classifier_bbox
 from lore_sa.dataset import TabularDataset
-from lore_sa.neighgen import RandomGenerator
+from lore_sa.neighgen import GeneticGenerator
 from lore_sa.encoder_decoder import ColumnTransformerEnc
 from lore_sa.surrogate import DecisionTreeSurrogate
 
@@ -227,8 +227,8 @@ def create_neighbourhood_with_lore(instance: pd.Series, dataset: TabularDataset,
     # Encode the input instance; [0] to get the first (and only) element of the list
     z = tabular_enc.encode([instance])[0]
     
-    # Initialize the random neighbourhood generator with a small ocr (output class rate) perturbation
-    gen = RandomGenerator(bbox=bbox, dataset=dataset, encoder=tabular_enc, ocr=0.1)
+    # Initialize the Genetic neighbourhood generator 
+    gen = GeneticGenerator(bbox=bbox, dataset=dataset, encoder=tabular_enc)
     
     # Generate the neighbourhood in the encoded space
     neighbourhood = gen.generate(z, neighbourhood_size, dataset.descriptor, tabular_enc)
