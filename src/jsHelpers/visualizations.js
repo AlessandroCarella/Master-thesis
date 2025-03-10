@@ -6,10 +6,7 @@ import {
     updateVisualizationUI,
 } from "./UIHelpers/explanation.js";
 import { getFeatureValues, getSurrogateParameters } from "./ui.js";
-import { fetchExplanation } from "./API.js";
-
-// Store current visualization data for reuse when changing plot method
-let currentVisualizationData = null;
+import { fetchExplanation, fetchVisualizationUpdate } from "./API.js";
 
 export function initializeVisualizations(data) {
     if (!data) {
@@ -17,7 +14,6 @@ export function initializeVisualizations(data) {
         return;
     }
 
-    currentVisualizationData = data;
     clearVisualizations();
     createVisualizations(data);
     setupScatterPlotMethodListeners();
@@ -57,8 +53,8 @@ async function handleScatterPlotMethodChange(event) {
 
     showExplanationLoading();
     try {
-        const requestData = buildRequestData(event.target.value);
-        const result = await fetchExplanation(requestData);
+        const requestData = buildVisualizationRequestData(event.target.value);
+        const result = await fetchVisualizationUpdate(requestData);
         updateVisualizationUI();
         document.querySelector(
             `input[name="scatterPlotMethod"][value="${event.target.value}"]`
@@ -70,16 +66,13 @@ async function handleScatterPlotMethodChange(event) {
     }
 }
 
-function buildRequestData(selectedMethod) {
-    const instanceData = getFeatureValues();
+function buildVisualizationRequestData(selectedMethod) {
     const surrogateParams = getSurrogateParameters();
-    const requestData = buildExplanationRequestData(
-        instanceData,
-        surrogateParams,
-        window.appState
-    );
-    requestData.scatterPlotMethod = selectedMethod;
-    return requestData;
+    return {
+        dataset_name: window.appState.dataset_name,
+        scatterPlotStep: surrogateParams.scatterPlotStep || 0.1,
+        scatterPlotMethod: selectedMethod
+    };
 }
 
 function updateVisualizations(data) {

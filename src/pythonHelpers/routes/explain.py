@@ -13,7 +13,6 @@ from pythonHelpers.generate_decision_tree_visualization_data import (
 from pythonHelpers.create_scatter_plot_data import create_scatter_plot_data
 from pythonHelpers.datasets import DATASETS
 from pythonHelpers.routes.state import global_state
-from pythonHelpers.datasets import get_dataset_information
 
 
 router = APIRouter(prefix="/api")
@@ -25,12 +24,59 @@ class InstanceRequest(BaseModel):
     scatterPlotStep: float
     scatterPlotMethod: str = "umap"
 
+class VisualizationRequest(BaseModel):
+    dataset_name: str
+    scatterPlotStep: float
+    scatterPlotMethod: str = "umap"
+
 
 def process_instance(request):
     """Process tabular data input."""
     if not request.instance:
         return JSONResponse(content={"error": "No instance data provided"}, status_code=400)
     return [request.instance[feature] for feature in global_state.feature_names]
+
+@router.post("/update-visualization")
+async def update_visualization(request: VisualizationRequest):
+    """
+    Update visualization technique without regenerating the neighborhood.
+    """
+    # Check if we have stored neighborhood data
+    if (global_state.neighborhood is None or 
+        global_state.neighb_train_X is None or 
+        global_state.neighb_train_y is None or 
+        global_state.dt_surrogate is None):
+        return JSONResponse(
+            content={"error": "No explanation data available. Please explain an instance first."},
+            status_code=400
+        )
+    
+    # Generate scatter plot data with the new method
+    scatterPlotVisualizationData = create_scatter_plot_data(
+        feature_names=global_state.feature_names,
+        X=global_state.neighb_train_X,
+        y=global_state.neighb_train_y,
+        pretrained_tree=global_state.dt_surrogate,
+        class_names=global_state.target_names,
+        step=request.scatterPlotStep,
+        method=request.scatterPlotMethod
+    )
+
+    # Extract the decision tree structure for visualization
+    decision_tree_structure = extract_tree_structure(
+        tree_classifier=global_state.dt_surrogate,
+        feature_names=global_state.feature_names,
+        target_names=global_state.target_names
+    )
+    decisionTreeVisualizationData = generate_decision_tree_visualization_data(decision_tree_structure)
+
+    return {
+        "status": "success",
+        "message": "Visualization updated",
+        "decisionTreeVisualizationData": decisionTreeVisualizationData,
+        "scatterPlotVisualizationData": scatterPlotVisualizationData,
+        "uniqueClasses": global_state.target_names,
+    }
 
 @router.post("/explain")
 async def explain_instance(request: InstanceRequest):
@@ -56,6 +102,13 @@ async def explain_instance(request: InstanceRequest):
         neighbour=neighbourood,
         neighb_train_yz=neighb_train_yz
     )
+
+    # Store the neighborhood data in global state
+    global_state.neighborhood = neighbourood
+    global_state.neighb_train_X = neighb_train_X
+    global_state.neighb_train_y = neighb_train_y
+    global_state.neighb_train_yz = neighb_train_yz
+    global_state.dt_surrogate = dt_surr
 
     # Extract the decision tree structure for visualization.
     decision_tree_structure = extract_tree_structure(
