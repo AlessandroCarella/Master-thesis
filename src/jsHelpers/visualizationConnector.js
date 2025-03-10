@@ -50,6 +50,17 @@ export function setSelectedNode(node) {
     selectedNode = node;
 }
 
+// Store the currently explained instance
+let explainedInstance = null;
+
+export function getExplainedInstance() {
+    return explainedInstance;
+}
+
+export function setExplainedInstance(instance) {
+    explainedInstance = instance;
+}
+
 // Main handler for a tree node click event
 // Additional parameters are passed for the required elements (e.g. contentGroup, tree metrics, etc.)
 export function handleTreeNodeClick(

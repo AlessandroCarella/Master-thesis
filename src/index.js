@@ -15,7 +15,7 @@ import {
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter } from "./jsHelpers/stateManagement.js";
-import { setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
+import { setExplainedInstance, setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
 
 // Import helper functions
 import {
@@ -173,10 +173,11 @@ window.explainInstance = async () => {
         setGlobalColorMap(result.uniqueClasses);
         updateVisualizationUI();
 
+        setExplainedInstance(instanceData);
+
         initializeVisualizations({
             decisionTreeVisualizationData: result.decisionTreeVisualizationData,
             scatterPlotVisualizationData: result.scatterPlotVisualizationData,
-            instance: instanceData,
         });
 
         // Add scroll to show the newly displayed visualizations
