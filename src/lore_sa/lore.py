@@ -43,7 +43,7 @@ class Lore(object):
         # map the single record in input to the encoded space
         [z] = self.encoder.encode([x])
         # generate a neighborhood of instances around the projected instance `z`
-        neighbour = self.generator.generate(z, num_instances, self.descriptor, self.encoder)
+        neighbour = self.generator.generate(z.copy(), num_instances, self.descriptor, self.encoder)
         dec_neighbor = self.encoder.decode(neighbour)
         # split neighbor in features and class using train_test_split
         neighb_train_X = dec_neighbor[:, :]
@@ -63,6 +63,7 @@ class Lore(object):
             # 'x': x.tolist(),
             'rule': rule.to_dict(),
             'counterfactuals': [c.to_dict() for c in crules],
+            'fidelity': self.surrogate.fidelity
         }
 
 

@@ -4,12 +4,14 @@ import operator
 from collections import defaultdict
 
 import numpy as np
+from sklearn.metrics import confusion_matrix
 
 from lore_sa.encoder_decoder import EncDec, ColumnTransformerEnc
 from lore_sa.logger import logger
 from sklearn.tree._tree import TREE_LEAF
 from sklearn.tree import DecisionTreeClassifier
 import sklearn.model_selection
+from sklearn.experimental import enable_halving_search_cv
 
 __all__ = ["Surrogate", "DecisionTreeSurrogate"]
 
@@ -21,12 +23,20 @@ import lore_sa
 
 class DecisionTreeSurrogate(Surrogate):
 
-    def __init__(self, kind=None, preprocessing=None):
+    def __init__(self, kind=None, preprocessing=None, class_values=None, multi_label: bool = False,
+                 one_vs_rest: bool = False, cv=5, prune_tree: bool = False, ):
         super().__init__(kind, preprocessing)
         self.dt = None
+        self.fidelity = None
+        self.confusion_matrix = None
+        self.prune_tree = prune_tree
+        self.class_values = class_values
+        self.multi_label = multi_label
+        self.one_vs_rest = one_vs_rest
+        self.cv = cv
 
-    def train(self, Z, Yb, weights=None, class_values=None, multi_label: bool = False, one_vs_rest: bool = False, cv=5,
-              prune_tree: bool = False):
+
+    def train(self, Z, Yb, weights=None, ):
         """
 
         :param Z: The training input samples
@@ -40,7 +50,7 @@ class DecisionTreeSurrogate(Surrogate):
         :return:
         """
         self.dt = DecisionTreeClassifier()
-        if prune_tree is True:
+        if self.prune_tree is True:
             param_list = {'min_samples_split': [0.01, 0.05, 0.1, 0.2, 3, 2],
                           'min_samples_leaf': [0.001, 0.01, 0.05, 0.1, 2, 4],
                           'splitter': ['best', 'random'],
@@ -49,16 +59,16 @@ class DecisionTreeSurrogate(Surrogate):
                           'max_features': [0.2, 1, 5, 'auto', 'sqrt', 'log2']
                           }
 
-            if multi_label is False or (multi_label is True and one_vs_rest is True):
-                if len(class_values) == 2 or (multi_label and one_vs_rest):
-                    scoring = 'precision'
-                else:
-                    scoring = 'precision_macro'
-            else:
-                scoring = 'precision_samples'
+            # if multi_label is False or (multi_label is True and one_vs_rest is True):
+            #     if len(class_values) == 2 or (multi_label and one_vs_rest):
+            #         scoring = 'precision'
+            #     else:
+            #         scoring = 'precision_macro'
+            # else:
+            scoring = 'precision_micro'
 
             dt_search = sklearn.model_selection.HalvingGridSearchCV(self.dt, param_grid=param_list, scoring=scoring,
-                                                                    cv=cv, n_jobs=-1)
+                                                                    cv=self.cv, n_jobs=-1)
             logger.info('Search the best estimator')
             logger.info('Start time: {0}'.format(datetime.datetime.now()))
             dt_search.fit(Z, Yb, sample_weight=weights)
@@ -68,6 +78,8 @@ class DecisionTreeSurrogate(Surrogate):
             self.prune_duplicate_leaves(self.dt)
         else:
             self.dt.fit(Z, Yb)
+
+        self.fidelity = self.dt.score(Z, Yb)
 
         return self.dt
 
