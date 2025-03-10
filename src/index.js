@@ -176,6 +176,7 @@ window.explainInstance = async () => {
         initializeVisualizations({
             decisionTreeVisualizationData: result.decisionTreeVisualizationData,
             scatterPlotVisualizationData: result.scatterPlotVisualizationData,
+            instance: instanceData,
         });
 
         // Add scroll to show the newly displayed visualizations

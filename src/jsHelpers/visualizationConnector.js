@@ -15,6 +15,9 @@ import {
     highlightPointsForDescendants,
 } from "./visualizationConnectorHelpers/highlight.js";
 
+import { findInstancePath } from "./DecisionTreeHelpers/dataProcessing.js";
+import { highlightInstancePath } from "./DecisionTreeHelpers/link.js";
+
 let scatterPlotVisualization = null;
 let treeVisualization = null;
 
@@ -82,4 +85,19 @@ export function handleTreeNodeClick(
         // Add this line to highlight scatter plot points for all descendant nodes
         highlightPointsForDescendants(d, scatterPlotVis);
     }
+}
+
+export function highlightInstancePathInTree(instance) {
+    if (!treeVisualization || !instance) return;
+
+    const { contentGroup, treeData } = treeVisualization;
+
+    // Get the hierarchical data (before d3.hierarchy transformation)
+    const hierarchyRoot = treeData.data;
+
+    // Find the path for this instance
+    const pathNodeIds = findInstancePath(hierarchyRoot, instance);
+
+    // Highlight the path in the visualization
+    highlightInstancePath(contentGroup, pathNodeIds);
 }

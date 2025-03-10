@@ -1,6 +1,7 @@
 import {
     setTreeVisualization,
     getGlobalColorMap,
+    highlightInstancePathInTree,
 } from "./visualizationConnector.js";
 import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
 import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
@@ -20,9 +21,13 @@ import { addLinks } from "./DecisionTreeHelpers/link.js";
 import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 
-export function createVisualization(rawTreeData) {
+export function createTreeVisualization(rawTreeData, instance) {
     if (!rawTreeData) {
-        console.error("No tree data provided to createVisualization");
+        console.error("No tree data provided to createTreeVisualization");
+        return;
+    }
+    if (!instance) {
+        console.error("No instance data provided to createTreeVisualization")
         return;
     }
 
@@ -64,4 +69,8 @@ export function createVisualization(rawTreeData) {
 
     setTreeVisualization({ contentGroup, treeData, metrics });
     window.treeVisualization = { contentGroup, treeData, metrics };
+
+    if (instance) {
+        highlightInstancePathInTree(instance);
+    }
 }

@@ -81,5 +81,5 @@ async def explain_instance(request: InstanceRequest):
         "message": "Instance explained",
         "decisionTreeVisualizationData": decisionTreeVisualizationData,
         "scatterPlotVisualizationData": scatterPlotVisualizationData,
-        "uniqueClasses": global_state.target_names    
+        "uniqueClasses": global_state.target_names,
     }

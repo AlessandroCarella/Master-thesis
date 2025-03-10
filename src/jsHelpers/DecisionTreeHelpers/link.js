@@ -19,8 +19,56 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .enter()
         .append("path")
         .attr("class", "link")
+        .attr("data-source-id", (d) => d.source.data.node_id)
+        .attr("data-target-id", (d) => d.target.data.node_id)
         .style("stroke-width", `${metrics.linkStrokeWidth}px`)
         .attr("d", (d) => createSplitPath(d, SETTINGS))
         .style("fill", "none")
         .style("stroke", colorScheme.ui.linkStroke);
+}
+
+export function highlightInstancePath(contentGroup, pathNodeIds) {
+    // Reset any existing path highlights
+    contentGroup
+        .selectAll(".link.instance-path")
+        .classed("instance-path", false);
+    contentGroup.selectAll(".link-highlight").remove();
+
+    if (!pathNodeIds || pathNodeIds.length < 2) return;
+
+    // Create an array of link identifiers (source-target pairs)
+    const linkPairs = pathNodeIds.slice(0, -1).map((source, i) => ({
+        source,
+        target: pathNodeIds[i + 1],
+    }));
+
+    // Add highlights
+    contentGroup
+        .selectAll(".link")
+        .filter((d) => {
+            const sourceId = d.source.data.node_id;
+            const targetId = d.target.data.node_id;
+
+            return linkPairs.some(
+                (pair) => pair.source === sourceId && pair.target === targetId
+            );
+        })
+        .each(function () {
+            const originalPath = d3.select(this);
+            const pathD = originalPath.attr("d");
+            const strokeWidth =
+                parseFloat(originalPath.style("stroke-width")) + 6;
+
+            contentGroup
+                .append("path")
+                .attr("class", "link-highlight")
+                .attr("d", pathD)
+                .style("stroke", "#4287f5") // Blue highlight
+                .style("stroke-width", `${strokeWidth}px`)
+                .style("fill", "none")
+                .style("opacity", 0.5)
+                .lower();
+
+            originalPath.classed("instance-path", true);
+        });
 }

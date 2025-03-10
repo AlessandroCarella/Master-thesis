@@ -1,4 +1,4 @@
-import { createVisualization } from "./DecisionTree.js";
+import { createTreeVisualization } from "./DecisionTree.js";
 import { createScatterPlot } from "./scatterPlot.js";
 import {
     buildExplanationRequestData,
@@ -30,7 +30,7 @@ function clearVisualizations() {
 
 function createVisualizations(data) {
     if (data.decisionTreeVisualizationData) {
-        createVisualization(data.decisionTreeVisualizationData);
+        createTreeVisualization(data.decisionTreeVisualizationData, data.instance);
     }
     if (data.scatterPlotVisualizationData) {
         createScatterPlot(
