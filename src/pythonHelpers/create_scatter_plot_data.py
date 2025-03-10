@@ -41,7 +41,7 @@ def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
     elif method.lower() == 'tsne':
         # Default t-SNE parameters
         tsne_params = {
-            'perplexity': 30.0,
+            'perplexity': min(30.0, X.shape[0] / 3),
             'early_exaggeration': 12.0,
             'learning_rate': 'auto',
             'n_iter': 1000,
