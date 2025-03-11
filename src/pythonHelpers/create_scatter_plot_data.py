@@ -8,6 +8,8 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import networkx as nx
 from sklearn.cluster import KMeans
+import logging
+logging.getLogger('numba').setLevel(logging.WARNING)
 import umap
 
 def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
