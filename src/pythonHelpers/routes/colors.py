@@ -8,6 +8,19 @@ from matplotlib.colors import rgb2hex
 
 from pythonHelpers.routes.state import global_state
 
+DEFAULT_COLORS = [
+    "#8dd3c7",
+    "#ffffb3",
+    "#bebada",
+    "#fb8072",
+    "#80b1d3",
+    "#fdb462",
+    "#b3de69",
+    "#fccde5",
+    "#d9d9d9",
+    "#bc80bd",
+]
+
 router = APIRouter(prefix="/api")
 
 def compute_centroids(X, y):
@@ -61,7 +74,7 @@ def project_to_rgb(centroids):
 @router.get("/get-classes-colors")
 async def get_colors():
     # Check if we have target names and they're long enough to warrant computing colors
-    if global_state.target_names and len(global_state.target_names) < 10:
+    if global_state.target_names and len(global_state.target_names) > 10:
         # Get the dataset from the current state
         if global_state.neighb_train_X is not None and global_state.neighb_train_y is not None:
             # Compute centroids using the neighborhood data
@@ -79,19 +92,4 @@ async def get_colors():
         # Convert to hex
         return [rgb2hex(color) for color in colors.values()]
     
-    return default_colors()
-
-def default_colors():
-    """Return a default set of colors"""
-    return [
-        "#8dd3c7",
-        "#ffffb3",
-        "#bebada",
-        "#fb8072",
-        "#80b1d3",
-        "#fdb462",
-        "#b3de69",
-        "#fccde5",
-        "#d9d9d9",
-        "#bc80bd",
-    ]
+    return DEFAULT_COLORS
