@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
+import logging
 
 # Available datasets with kind information
 DATASETS = {
@@ -103,11 +104,11 @@ def load_cached_dataset_information(dataset_name, info_function, cache_dir='cach
     
     if os.path.exists(cache_file):
         info = joblib.load(cache_file)
-        print(f"Loaded {dataset_name} information from cache.")
+        logging.info(f"Loaded {dataset_name} information from cache.")
     else:
         info = info_function()
         joblib.dump(info, cache_file)
-        print(f"Cached {dataset_name} information to file.")
+        logging.info(f"Cached {dataset_name} information to file.")
     
     return info
 
@@ -179,11 +180,11 @@ def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
     
     if os.path.exists(cache_file):
         dataset = joblib.load(cache_file)
-        print(f"Loaded {dataset_name} from cache.")
+        logging.info(f"Loaded {dataset_name} from cache.")
     else:
         dataset = load_function()
         joblib.dump(dataset, cache_file)
-        print(f"Cached {dataset_name} to file.")
+        logging.info(f"Cached {dataset_name} to file.")
     
     return dataset
 

@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
+import logging
 
 from lore_sa.bbox import sklearn_classifier_bbox
 from lore_sa.dataset import TabularDataset
@@ -167,11 +168,11 @@ def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_na
     
     if os.path.exists(cache_file):
         classifier_bbox = joblib.load(cache_file)
-        print(f"Loaded classifier for {dataset_name} from cache.")
+        logging.info(f"Loaded classifier for {dataset_name} from cache.")
     else:
         classifier_bbox = train_model_generalized(dataset, target_name, classifier)
         joblib.dump(classifier_bbox, cache_file)
-        print(f"Cached classifier for {dataset_name} to file.")
+        logging.info(f"Cached classifier for {dataset_name} to file.")
         
     return classifier_bbox
 
