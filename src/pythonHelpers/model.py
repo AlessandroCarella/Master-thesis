@@ -8,7 +8,8 @@ import numpy as np
 
 from pythonHelpers.datasets import load_dataset
 from pythonHelpers.lore import load_cached_classifier
-        
+from pythonHelpers.datasets import DATASETS
+
 """
 Module for training machine learning classifiers using the LORE framework.
 
@@ -112,37 +113,64 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
         6. Instantiate the classifier using create_classifier.
         7. Train the model using LORE's train_model_generalized function.
     """
-    # Load dataset and corresponding metadata (feature names and target names)
-    dataset, feature_names, target_names = load_dataset(dataset_name)
-    
-    # Extract feature matrix X and target vector y
-    X = dataset.data
-    y = dataset.target
+    try:
+        # Validate inputs
+        if dataset_name not in DATASETS:
+            raise ValueError(f"Dataset '{dataset_name}' not found. Available datasets: {list(DATASETS.keys())}")
+        
+        if classifier_name not in CLASSIFIERS:
+            raise ValueError(f"Classifier '{classifier_name}' not supported. Available classifiers: {list(CLASSIFIERS.keys())}")
+        
+        # Load dataset and corresponding metadata (feature names and target names)
+        try:
+            dataset, feature_names, target_names = load_dataset(dataset_name)
+        except Exception as e:
+            raise RuntimeError(f"Error loading dataset '{dataset_name}': {str(e)}")
+        
+        # Extract feature matrix X and target vector y
+        X = dataset.data
+        y = dataset.target
 
-    if not isinstance(X, np.ndarray):
-        X = X.to_numpy()
+        if not isinstance(X, np.ndarray):
+            X = X.to_numpy()
 
-    # Prepare a dictionary for LORE where each feature name maps to its data column
-    data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
-    
-    # Define the name of the target column and map target indices to target names
-    target_name = 'target'
-    data_dict[target_name] = [target_names[i] for i in y]
-    
-    # Create a LORE-compatible TabularDataset from the dictionary and clean the data by dropping missing values
-    dataset = TabularDataset.from_dict(data_dict, target_name)
-    dataset.df.dropna(inplace=True)
-    
-    # Create the classifier instance with the provided parameters
-    classifier = create_classifier(classifier_name, parameters)
-    
-    # Train the model using the LORE generalized training function
-    trained_model = load_cached_classifier(
-        dataset=dataset,
-        target_name=target_name,
-        dataset_name=dataset_name,
-        classifier=classifier,
-        classifier_name=classifier_name
-    )
-    
-    return trained_model, dataset, feature_names
+        # Prepare a dictionary for LORE where each feature name maps to its data column
+        data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
+        
+        # Define the name of the target column and map target indices to target names
+        target_name = 'target'
+        data_dict[target_name] = [target_names[i] for i in y]
+        
+        # Create a LORE-compatible TabularDataset from the dictionary and clean the data by dropping missing values
+        try:
+            dataset = TabularDataset.from_dict(data_dict, target_name)
+            dataset.df.dropna(inplace=True)
+            
+            if dataset.df.empty:
+                raise ValueError("Dataset is empty after dropping missing values")
+        except Exception as e:
+            raise RuntimeError(f"Error preparing dataset: {str(e)}")
+        
+        # Create the classifier instance with the provided parameters
+        try:
+            classifier = create_classifier(classifier_name, parameters)
+        except Exception as e:
+            raise RuntimeError(f"Error creating classifier: {str(e)}")
+        
+        # Train the model using the LORE generalized training function
+        try:
+            trained_model = load_cached_classifier(
+                dataset=dataset,
+                target_name=target_name,
+                dataset_name=dataset_name,
+                classifier=classifier,
+                classifier_name=classifier_name
+            )
+        except Exception as e:
+            raise RuntimeError(f"Error training model: {str(e)}")
+        
+        return trained_model, dataset, feature_names
+    except Exception as e:
+        import logging
+        logging.error(f"Error in train_model_with_lore: {str(e)}")
+        raise

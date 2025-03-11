@@ -309,68 +309,107 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
     dict
         Visualization data including transformed coordinates, original data, and decision boundaries
     """
-    # Transform data
-    X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state, **kwargs)
-    
-    # Filter transformed points and original data
-    filtered_transformed_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(
-        X_transformed, X, y, threshold=2000, threshold_multiplier=5, random_state=random_state
-    )
-    
-    # Get data range for visualization
-    x_min, x_max = X_transformed[:, 0].min() - 1, X_transformed[:, 0].max() + 1
-    y_min, y_max = X_transformed[:, 1].min() - 1, X_transformed[:, 1].max() + 1
-    
-    # Format axis labels based on the method
-    if method.lower() == 'pca':
-        x_axis_label = format_pc_label(model.components_[0], feature_names, 0)
-        y_axis_label = format_pc_label(model.components_[1], feature_names, 1)
+    try:
+        # Validate inputs
+        if feature_names is None or len(feature_names) == 0:
+            raise ValueError("feature_names cannot be None or empty")
+            
+        if X is None or len(X) == 0:
+            raise ValueError("X cannot be None or empty")
+            
+        if y is None or len(y) == 0:
+            raise ValueError("y cannot be None or empty")
+            
+        if pretrained_tree is None:
+            raise ValueError("pretrained_tree cannot be None")
+            
+        if class_names is None or len(class_names) == 0:
+            raise ValueError("class_names cannot be None or empty")
+            
+        if method not in ['pca', 'tsne', 'umap', 'mds']:
+            raise ValueError(f"Unsupported method: {method}. Use 'pca', 'tsne', 'umap', or 'mds'.")
+            
+        if not isinstance(step, (int, float)) or step <= 0:
+            raise ValueError(f"step must be a positive number, got {step}")
+            
+        # Transform data
+        try:
+            X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state, **kwargs)
+        except Exception as e:
+            raise RuntimeError(f"Error preprocessing data: {str(e)}")
         
-        # Generate grid in PCA space
-        xx, yy, _ = generate_decision_boundary_grid(X_transformed, step)
+        # Filter transformed points and original data
+        try:
+            filtered_transformed_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(
+                X_transformed, X, y, threshold=2000, threshold_multiplier=5, random_state=random_state
+            )
+        except Exception as e:
+            raise RuntimeError(f"Error filtering points: {str(e)}")
         
-        # Transform grid points back to original space for prediction
-        grid_points = np.c_[xx.ravel(), yy.ravel()]
-        grid_original = model.inverse_transform(grid_points)
-        grid_original = scaler.inverse_transform(grid_original)
-        Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
+        # Get data range for visualization
+        x_min, x_max = X_transformed[:, 0].min() - 1, X_transformed[:, 0].max() + 1
+        y_min, y_max = X_transformed[:, 1].min() - 1, X_transformed[:, 1].max() + 1
         
-        # Create Voronoi regions with class names
-        merged_regions, merged_classes = create_voronoi_regions(xx, yy, Z, class_names)
+        # Format axis labels based on the method
+        if method.lower() == 'pca':
+            try:
+                x_axis_label = format_pc_label(model.components_[0], feature_names, 0)
+                y_axis_label = format_pc_label(model.components_[1], feature_names, 1)
+                
+                # Generate grid in PCA space
+                xx, yy, _ = generate_decision_boundary_grid(X_transformed, step)
+                
+                # Transform grid points back to original space for prediction
+                grid_points = np.c_[xx.ravel(), yy.ravel()]
+                grid_original = model.inverse_transform(grid_points)
+                grid_original = scaler.inverse_transform(grid_original)
+                Z = pretrained_tree.predict(grid_original).reshape(xx.shape)
+                
+                # Create Voronoi regions with class names
+                merged_regions, merged_classes = create_voronoi_regions(xx, yy, Z, class_names)
+                
+                # Decision boundary for PCA
+                decision_boundary = {
+                    "regions": [list(p.exterior.coords) for p in merged_regions],
+                    "regionClasses": merged_classes,
+                    "xRange": [float(x_min), float(x_max)],
+                    "yRange": [float(y_min), float(y_max)],
+                }
+            except Exception as e:
+                raise RuntimeError(f"Error creating PCA visualization: {str(e)}")
+        else:
+            # For t-SNE, UMAP, and MDS, generate generic axis labels and decision boundary ranges.
+            method_label = method.upper() if method.lower() != 'mds' else 'MDS'
+            x_axis_label = f"{method_label} dimension 1"
+            y_axis_label = f"{method_label} dimension 2"
+            
+            decision_boundary = {
+                "xRange": [float(x_min), float(x_max)],
+                "yRange": [float(y_min), float(y_max)],
+            }
         
-        # Decision boundary for PCA
-        decision_boundary = {
-            "regions": [list(p.exterior.coords) for p in merged_regions],
-            "regionClasses": merged_classes,
-            "xRange": [float(x_min), float(x_max)],
-            "yRange": [float(y_min), float(y_max)],
+        # Convert original data to lists of pd.Series
+        try:
+            original_series_list = [
+                pd.Series(row, index=feature_names).to_dict()
+                for row in filtered_original_data
+            ]
+        except Exception as e:
+            raise RuntimeError(f"Error converting data to series: {str(e)}")
+        
+        # Prepare visualization data
+        visualization_data = {
+            "transformedData": filtered_transformed_data.tolist(),
+            "originalData": original_series_list,
+            "targets": filtered_labels.tolist(),
+            "decisionBoundary": decision_boundary,
+            "xAxisLabel": x_axis_label,
+            "yAxisLabel": y_axis_label,
+            "method": method,
         }
-    else:
-        # For t-SNE, UMAP, and MDS, generate generic axis labels and decision boundary ranges.
-        method_label = method.upper() if method.lower() != 'mds' else 'MDS'
-        x_axis_label = f"{method_label} dimension 1"
-        y_axis_label = f"{method_label} dimension 2"
         
-        decision_boundary = {
-            "xRange": [float(x_min), float(x_max)],
-            "yRange": [float(y_min), float(y_max)],
-        }
-    
-    # Convert original data to lists of pd.Series
-    original_series_list = [
-        pd.Series(row, index=feature_names).to_dict()
-        for row in filtered_original_data
-    ]
-    
-    # Prepare visualization data
-    visualization_data = {
-        "transformedData": filtered_transformed_data.tolist(),
-        "originalData": original_series_list,
-        "targets": filtered_labels.tolist(),
-        "decisionBoundary": decision_boundary,
-        "xAxisLabel": x_axis_label,
-        "yAxisLabel": y_axis_label,
-        "method": method,
-    }
-    
-    return visualization_data
+        return visualization_data
+    except Exception as e:
+        import logging
+        logging.error(f"Error in create_scatter_plot_data: {str(e)}")
+        raise

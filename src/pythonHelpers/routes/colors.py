@@ -1,5 +1,6 @@
 # routes/dataset.py
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 import numpy as np
 from sklearn.decomposition import PCA
@@ -73,23 +74,41 @@ def project_to_rgb(centroids):
 
 @router.get("/get-classes-colors")
 async def get_colors():
-    # Check if we have target names and they're long enough to warrant computing colors
-    if global_state.target_names and len(global_state.target_names) > 10:
-        # Get the dataset from the current state
-        if global_state.neighb_train_X is not None and global_state.neighb_train_y is not None:
-            # Compute centroids using the neighborhood data
-            centroids = compute_centroids(
-                global_state.neighb_train_X,
-                global_state.neighb_train_y
-            )
-        else:
-            # Return default colors if no data is available
-            return default_colors()
+    try:
+        # Check if we have target names and they're long enough to warrant computing colors
+        if not global_state.target_names:
+            return JSONResponse(content={"error": "No target names available"}, status_code=400)
             
-        # Project centroids to RGB space
-        colors = project_to_rgb(centroids)
+        if len(global_state.target_names) > 10:
+            # Get the dataset from the current state
+            if global_state.neighb_train_X is not None and global_state.neighb_train_y is not None:
+                try:
+                    # Compute centroids using the neighborhood data
+                    centroids = compute_centroids(
+                        global_state.neighb_train_X,
+                        global_state.neighb_train_y
+                    )
+                except Exception as e:
+                    import logging
+                    logging.error(f"Error computing centroids: {str(e)}")
+                    return JSONResponse(content={"error": f"Error computing centroids: {str(e)}"}, status_code=500)
+            else:
+                # Return default colors if no data is available
+                return DEFAULT_COLORS
+                
+            try:
+                # Project centroids to RGB space
+                colors = project_to_rgb(centroids)
+                
+                # Convert to hex
+                return [rgb2hex(color) for color in colors.values()]
+            except Exception as e:
+                import logging
+                logging.error(f"Error projecting colors: {str(e)}")
+                return JSONResponse(content={"error": f"Error projecting colors: {str(e)}"}, status_code=500)
         
-        # Convert to hex
-        return [rgb2hex(color) for color in colors.values()]
-    
-    return DEFAULT_COLORS
+        return DEFAULT_COLORS
+    except Exception as e:
+        import logging
+        logging.error(f"Unexpected error in get_colors: {str(e)}")
+        return JSONResponse(content={"error": f"Unexpected error: {str(e)}"}, status_code=500)

@@ -212,16 +212,24 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
 def load_dataset(dataset_name: str):
     """Load a dataset and return features, target, and metadata"""
     if dataset_name not in DATASETS:
-        raise ValueError(f"Dataset {dataset_name} not found")
+        raise ValueError(f"Dataset {dataset_name} not found. Available datasets: {list(DATASETS.keys())}")
     
-    # Map of dataset names to their specific loading functions
-    loading_functions = {
-        'iris': load_dataset_iris,
-        'wine': load_dataset_wine,
-        'breast_cancer': load_dataset_breast_cancer,
-        'diabetes': load_dataset_diabetes,
-        'california_housing_2': load_dataset_california_housing_2,
-        'california_housing_3': load_dataset_california_housing_3,
-    }
-    
-    return load_cached_dataset(dataset_name, loading_functions[dataset_name])
+    try:
+        # Map of dataset names to their specific loading functions
+        loading_functions = {
+            'iris': load_dataset_iris,
+            'wine': load_dataset_wine,
+            'breast_cancer': load_dataset_breast_cancer,
+            'diabetes': load_dataset_diabetes,
+            'california_housing_2': load_dataset_california_housing_2,
+            'california_housing_3': load_dataset_california_housing_3,
+        }
+        
+        if dataset_name not in loading_functions:
+            raise ValueError(f"No loading function defined for dataset {dataset_name}")
+            
+        return load_cached_dataset(dataset_name, loading_functions[dataset_name])
+    except Exception as e:
+        import logging
+        logging.error(f"Error loading dataset {dataset_name}: {str(e)}")
+        raise RuntimeError(f"Error loading dataset {dataset_name}: {str(e)}")
