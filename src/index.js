@@ -14,7 +14,7 @@ import {
 } from "./jsHelpers/ui.js";
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
-import { updateParameter } from "./jsHelpers/stateManagement.js";
+import { updateParameter, loadingState } from "./jsHelpers/stateManagement.js";
 import { setExplainedInstance, setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
 
 // Import helper functions
@@ -72,6 +72,11 @@ export const appState = {
 
 // Handle dataset selection.
 window.selectDataset = async function (datasetName) {
+    // Prevent multiple concurrent requests
+    if (loadingState.isLoading) return;
+    
+    loadingState.setLoading(true);
+    
     closeDatasetPanelIfVisible();
     resetUIDatasetSelection(appState);
     appState.dataset_name = datasetName;
@@ -98,11 +103,18 @@ window.selectDataset = async function (datasetName) {
         attachDatasetPanelEventListeners();
     } catch (error) {
         handleDatasetInfoError(datasetName, error);
+    } finally {
+        loadingState.setLoading(false);
     }
 };
 
 // Handle classifier selection.
 window.selectClassifier = async (classifierName) => {
+    // Prevent multiple concurrent requests
+    if (loadingState.isLoading) return;
+    
+    loadingState.setLoading(true);
+    
     try {
         resetUISelectClassifier(appState);
         const data = await fetchClassifierParameters();
@@ -122,11 +134,18 @@ window.selectClassifier = async (classifierName) => {
         scrollToElement(parameterSection);
     } catch (error) {
         console.error("Error fetching classifier parameters:", error);
+    } finally {
+        loadingState.setLoading(false);
     }
 };
 
 // Start training the model.
 window.startTraining = async () => {
+    // Prevent multiple concurrent requests
+    if (loadingState.isLoading) return;
+    
+    loadingState.setLoading(true);
+    
     try {
         resetUIstartTraining();
         showTrainingLoading();
@@ -154,11 +173,18 @@ window.startTraining = async () => {
         }
     } catch (error) {
         console.error("Training failed:", error);
+    } finally {
+        loadingState.setLoading(false);
     }
 };
 
 // Explain an instance based on feature values.
 window.explainInstance = async () => {
+    // Prevent multiple concurrent requests
+    if (loadingState.isLoading) return;
+    
+    loadingState.setLoading(true);
+    
     try {
         showExplanationLoading();
         const instanceData = getFeatureValues();
@@ -193,6 +219,8 @@ window.explainInstance = async () => {
         }
     } catch (error) {
         console.error("Failed to explain instance:", error);
+    } finally {
+        loadingState.setLoading(false);
     }
 };
 
