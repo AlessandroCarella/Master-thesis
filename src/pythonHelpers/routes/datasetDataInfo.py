@@ -2,9 +2,10 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+import pandas as pd
+
 from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset, DATASETS
 from pythonHelpers.routes.state import global_state
-from pythonHelpers.datasetDataInfoUtils import process_tabular_dataset
 
 router = APIRouter(prefix="/api")
 
@@ -27,6 +28,13 @@ async def get_dataset_info(dataset_name_info: str):
     global_state.target_names = dataset_info["target_names"]
 
     return dataset_info
+
+def process_tabular_dataset(ds, feature_names):
+    """Process tabular dataset and return a JSON response."""
+    df = pd.DataFrame(ds.data, columns=feature_names)
+    if hasattr(ds, "target"):
+        df["target"] = ds.target
+    return JSONResponse(content={"dataset": df.to_dict(orient="records")})
 
 @router.get("/get-selected-dataset")
 async def get_selected_dataset():

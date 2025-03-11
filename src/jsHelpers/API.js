@@ -36,24 +36,29 @@ export const fetchExplanation = async (requestData) =>
         body: JSON.stringify(requestData),
     });
 
+export const fetchClassColors = () =>
+    fetchJSON(`${API_BASE}/get-classes-colors`);
+
 export async function fetchVisualizationUpdate(requestData) {
     try {
         const response = await fetch(`${API_BASE}/update-visualization`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
             body: JSON.stringify(requestData),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to update visualization');
+            throw new Error(
+                errorData.error || "Failed to update visualization"
+            );
         }
 
         return await response.json();
     } catch (error) {
-        console.error('Error updating visualization:', error);
+        console.error("Error updating visualization:", error);
         throw error;
     }
 }

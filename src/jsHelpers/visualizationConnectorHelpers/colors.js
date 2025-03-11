@@ -1,18 +1,9 @@
+import { fetchClassColors } from '../API.js';
+
 // Consistent color scheme for both visualizations
 export const colorScheme = {
-    // Predefined colors for class labels
-    classColors: [
-        "#8dd3c7",
-        "#ffffb3",
-        "#bebada",
-        "#fb8072",
-        "#80b1d3",
-        "#fdb462",
-        "#b3de69",
-        "#fccde5",
-        "#d9d9d9",
-        "#bc80bd",
-    ],
+    // Predefined colors for class labels will be populated from API
+    classColors: [],
     // UI element colors
     ui: {
         highlight: "#ff4444",
@@ -30,6 +21,18 @@ export const colorScheme = {
     },
 };
 
+// Fetch colors from API
+export async function initializeColors() {
+    try {
+        const colors = await fetchClassColors();
+        colorScheme.classColors = colors;
+    } catch (error) {
+        console.error('Failed to fetch class colors:', error);
+        // Fallback to empty array if fetch fails
+        colorScheme.classColors = [];
+    }
+}
+
 // Generate and maintain consistent color mapping
 export function generateColorMap(classes) {
     if (!Array.isArray(classes) || classes.length === 0) {
@@ -42,10 +45,7 @@ export function generateColorMap(classes) {
     const colorMap = {};
 
     sortedClasses.forEach((classLabel, index) => {
-        colorMap[classLabel] =
-            index < colorScheme.classColors.length
-                ? colorScheme.classColors[index]
-                : `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+        colorMap[classLabel] = colorScheme.classColors[index]
     });
 
     return colorMap;

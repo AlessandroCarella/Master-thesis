@@ -54,6 +54,7 @@ import {
 } from "./jsHelpers/UIHelpers/explanation.js";
 
 import { scrollToElement } from "./jsHelpers/scroll.js";
+import { initializeColors } from "./jsHelpers/visualizationConnectorHelpers/colors.js";
 
 /********************************************
  *            GLOBAL STATE
@@ -169,8 +170,13 @@ window.explainInstance = async () => {
         );
 
         const result = await fetchExplanation(requestData);
-
+        
+        // Now fetch the colors based on the neighborhood data
+        // that was just populated by the explanation
+        await initializeColors();
+        
         setGlobalColorMap(result.uniqueClasses);
+        
         updateVisualizationUI();
 
         setExplainedInstance(instanceData);

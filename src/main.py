@@ -6,6 +6,7 @@ from pythonHelpers.routes.health import router as health_router
 from pythonHelpers.routes.datasetDataInfo import router as dataset_router
 from pythonHelpers.routes.model import router as model_router
 from pythonHelpers.routes.explain import router as explain_router
+from pythonHelpers.routes.colors import router as colors_router
 
 app = FastAPI()
 
@@ -28,6 +29,7 @@ app.include_router(health_router)
 app.include_router(dataset_router)
 app.include_router(model_router)
 app.include_router(explain_router)
+app.include_router(colors_router)
 
 if __name__ == "__main__":
     import uvicorn

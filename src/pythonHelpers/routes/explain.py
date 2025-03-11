@@ -11,7 +11,6 @@ from pythonHelpers.generate_decision_tree_visualization_data import (
     extract_tree_structure
 )
 from pythonHelpers.create_scatter_plot_data import create_scatter_plot_data
-from pythonHelpers.datasets import DATASETS
 from pythonHelpers.routes.state import global_state
 
 
