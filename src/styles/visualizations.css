@@ -48,13 +48,13 @@
 }
 
 #scatter-plot,
-#visualization {
+#tree-plot {
     width: 100%;
     overflow: hidden;
 }
 
 #scatter-plot svg,
-#visualization svg {
+#tree-plot svg {
     border: 2px solid var(--border-color); /* Add a visible border */
     border-radius: var(--radius-md); /* Optional rounded corners */
 }

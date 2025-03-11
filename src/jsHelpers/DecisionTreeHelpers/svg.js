@@ -1,10 +1,10 @@
 export function clearExistingSVG() {
-    d3.select("#visualization svg").remove();
+    d3.select("#tree-plot svg").remove();
 }
 
 export function createSVGContainer(SETTINGS) {
     return d3
-        .select("#visualization")
+        .select("#tree-plot")
         .append("svg")
         .attr(
             "width",

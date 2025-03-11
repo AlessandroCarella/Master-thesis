@@ -68,7 +68,7 @@ export const updateVisualizationUI = () => {
       </div>
       <div class="visualization-container">
         <h2>Surrogate Model</h2>
-        <div id="visualization"></div>
+        <div id="tree-plot"></div>
       </div>
     </div>
   `;

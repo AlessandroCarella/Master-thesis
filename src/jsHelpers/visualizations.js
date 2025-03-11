@@ -21,7 +21,7 @@ export function initializeVisualizations(data) {
 
 function clearVisualizations() {
     d3.select("#scatter-plot").selectAll("*").remove();
-    d3.select("#visualization").selectAll("*").remove();
+    d3.select("#tree-plot").selectAll("*").remove();
 }
 
 function createVisualizations(data) {

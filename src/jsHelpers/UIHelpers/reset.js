@@ -20,7 +20,7 @@ export const resetUIDatasetSelection = (appState) => {
     // Hide visualization container and reset visualizations
     document.querySelector(".svg-container").style.display = "none";
     document.getElementById("scatter-plot").innerHTML = "";
-    document.getElementById("visualization").innerHTML = "";
+    document.getElementById("tree-plot").innerHTML = "";
 
     // Reset state values
     appState.selectedClassifier = null;
@@ -43,7 +43,7 @@ export const resetUISelectClassifier = (appState) => {
     // Hide visualization container and reset visualizations
     document.querySelector(".svg-container").style.display = "none";
     document.getElementById("scatter-plot").innerHTML = "";
-    document.getElementById("visualization").innerHTML = "";
+    document.getElementById("tree-plot").innerHTML = "";
 
     // Reset feature descriptor in the state
     appState.featureDescriptor = null;
@@ -54,5 +54,5 @@ export const resetUIstartTraining = () => {
     document.getElementById("surrogateContainer").innerHTML = "";
     document.querySelector(".svg-container").style.display = "none";
     document.getElementById("scatter-plot").innerHTML = "";
-    document.getElementById("visualization").innerHTML = "";
+    document.getElementById("tree-plot").innerHTML = "";
 };
