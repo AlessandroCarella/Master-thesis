@@ -16,8 +16,8 @@ DATASETS = {
     'wine': 'tabular',
     'breast_cancer': 'tabular',
     'diabetes': 'tabular',
-    'california_housing_2': 'tabular',
     'california_housing_3': 'tabular',
+    'california_housing_11': 'tabular',
 }
 
 def get_available_datasets():
@@ -69,19 +69,6 @@ def get_dataset_information_diabetes():
         "target_names": target_names,
     }
 
-def get_dataset_information_california_housing_2():
-    """Get detailed information about the California housing dataset"""
-    dataset = fetch_california_housing()
-    # California housing is a regression dataset, so we'll create binary classification
-    # by splitting at the median house value
-    target_names = ['above_median', 'below_median']
-    return {
-        "name": "california_housing_2",
-        "n_samples": dataset.data.shape[0],
-        "feature_names": list(dataset.feature_names),
-        "target_names": target_names,
-    }
-
 def get_dataset_information_california_housing_3():
     """Get detailed information about the California housing dataset"""
     dataset = fetch_california_housing()
@@ -89,6 +76,17 @@ def get_dataset_information_california_housing_3():
     target_names = ['high_price', 'low_price', 'medium_price']
     return {
         "name": "california_housing_3",
+        "n_samples": dataset.data.shape[0],
+        "feature_names": list(dataset.feature_names),
+        "target_names": target_names,
+    }
+
+def get_dataset_information_california_housing_11():
+    """Get detailed information about the California housing dataset with 11 classes."""
+    dataset = fetch_california_housing()
+    target_names = [f'percentile_{i}' for i in range(11)]
+    return {
+        "name": "california_housing_11",
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
         "target_names": target_names,
@@ -141,16 +139,6 @@ def load_dataset_diabetes():
     dataset.target = (dataset.target > dataset.target.mean()).astype(int)
     return dataset, feature_names, target_names
 
-def load_dataset_california_housing_2():
-    """Load and preprocess the California housing dataset"""
-    dataset = fetch_california_housing()
-    feature_names = list(dataset.feature_names)
-    target_names = ['below_median', 'above_median']
-    # Convert continuous target to binary classification based on median value
-    median_price = np.median(dataset.target)
-    dataset.target = (dataset.target > median_price).astype(int)
-    return dataset, feature_names, target_names
-
 def load_dataset_california_housing_3():
     """Load and preprocess the California housing dataset"""
     dataset = fetch_california_housing()
@@ -166,6 +154,21 @@ def load_dataset_california_housing_3():
     dataset.target = np.zeros_like(prices, dtype=int)
     dataset.target[(prices > low_threshold) & (prices <= high_threshold)] = 1
     dataset.target[prices > high_threshold] = 2
+    
+    return dataset, feature_names, target_names
+
+def load_dataset_california_housing_11():
+    """Load and preprocess the California housing dataset into 11 classes."""
+    dataset = fetch_california_housing()
+    feature_names = list(dataset.feature_names)
+    target_names = [f'percentile_{i}' for i in range(11)]
+    
+    # Define percentile-based bins
+    prices = dataset.target
+    percentiles = np.percentile(prices, np.linspace(0, 100, 12))
+    
+    # Assign labels based on the bin each price falls into
+    dataset.target = np.digitize(prices, percentiles, right=True) - 1
     
     return dataset, feature_names, target_names
 
@@ -194,8 +197,8 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
         'wine': get_dataset_information_wine,
         'breast_cancer': get_dataset_information_breast_cancer,
         'diabetes': get_dataset_information_diabetes,
-        'california_housing_2': get_dataset_information_california_housing_2,
         'california_housing_3': get_dataset_information_california_housing_3,
+        'california_housing_11': get_dataset_information_california_housing_11,
     }
     
     return load_cached_dataset_information(dataset_name, information_functions[dataset_name], cache_dir=cache_dir)
@@ -208,8 +211,8 @@ def load_dataset(dataset_name: str):
         'wine': load_dataset_wine,
         'breast_cancer': load_dataset_breast_cancer,
         'diabetes': load_dataset_diabetes,
-        'california_housing_2': load_dataset_california_housing_2,
         'california_housing_3': load_dataset_california_housing_3,
+        'california_housing_11': load_dataset_california_housing_11,
     }
         
     return load_cached_dataset(dataset_name, loading_functions[dataset_name])
