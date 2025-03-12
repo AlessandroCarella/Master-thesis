@@ -15,7 +15,10 @@ import {
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter, loadingState } from "./jsHelpers/stateManagement.js";
-import { setExplainedInstance, setGlobalColorMap } from "./jsHelpers/visualizationConnector.js";
+import {
+    setExplainedInstance,
+    setGlobalColorMap,
+} from "./jsHelpers/visualizationConnector.js";
 
 // Import helper functions
 import {
@@ -74,9 +77,9 @@ export const appState = {
 window.selectDataset = async function (datasetName) {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
-    
+
     loadingState.setLoading(true);
-    
+
     closeDatasetPanelIfVisible();
     resetUIDatasetSelection(appState);
     appState.dataset_name = datasetName;
@@ -112,9 +115,9 @@ window.selectDataset = async function (datasetName) {
 window.selectClassifier = async (classifierName) => {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
-    
+
     loadingState.setLoading(true);
-    
+
     try {
         resetUISelectClassifier(appState);
         const data = await fetchClassifierParameters();
@@ -143,9 +146,9 @@ window.selectClassifier = async (classifierName) => {
 window.startTraining = async () => {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
-    
+
     loadingState.setLoading(true);
-    
+
     try {
         resetUIstartTraining();
         showTrainingLoading();
@@ -182,9 +185,9 @@ window.startTraining = async () => {
 window.explainInstance = async () => {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
-    
+
     loadingState.setLoading(true);
-    
+
     try {
         showExplanationLoading();
         const instanceData = getFeatureValues();
@@ -196,13 +199,13 @@ window.explainInstance = async () => {
         );
 
         const result = await fetchExplanation(requestData);
-        
+
         // Now fetch the colors based on the neighborhood data
         // that was just populated by the explanation
         await initializeColors();
-        
+
         setGlobalColorMap(result.uniqueClasses);
-        
+
         updateVisualizationUI();
 
         setExplainedInstance(instanceData);

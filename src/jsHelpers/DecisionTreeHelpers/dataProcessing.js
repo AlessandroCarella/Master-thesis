@@ -29,11 +29,11 @@ export function createHierarchy(data) {
 
 export function findInstancePath(rootNode, instance) {
     // Add validation for instance parameter
-    if (!rootNode || !instance || typeof instance !== 'object') {
+    if (!rootNode || !instance || typeof instance !== "object") {
         console.error("Invalid parameters provided to findInstancePath");
         return [];
     }
-    
+
     // This function will return an array of node_ids that form the path
     const path = [];
     let currentNode = rootNode;

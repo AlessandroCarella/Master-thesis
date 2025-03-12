@@ -1,8 +1,8 @@
-import logging
 import os
 import sys
-from logging.handlers import RotatingFileHandler
 import warnings
+import logging
+from logging.handlers import RotatingFileHandler
 
 def configure_logging(log_level=None, log_file=None, clean_log=True):
     """

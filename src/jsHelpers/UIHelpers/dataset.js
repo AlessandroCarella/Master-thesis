@@ -84,7 +84,8 @@ const attachShowDatasetButtonListener = () => {
                 return;
             }
 
-            document.getElementById("datasetPanelContent").innerHTML = createTableFromData(result.dataset);
+            document.getElementById("datasetPanelContent").innerHTML =
+                createTableFromData(result.dataset);
 
             document.getElementById("datasetPanel").classList.add("visible");
         } catch (error) {

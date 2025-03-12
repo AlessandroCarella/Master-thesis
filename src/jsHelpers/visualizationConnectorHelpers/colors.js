@@ -1,4 +1,4 @@
-import { fetchClassColors } from '../API.js';
+import { fetchClassColors } from "../API.js";
 
 // Consistent color scheme for both visualizations
 export const colorScheme = {
@@ -11,7 +11,7 @@ export const colorScheme = {
         nodeStroke: "#666666",
         linkStroke: "#999999",
         background: "#ffffff",
-        instancePathHighlight: "#d40f15"
+        instancePathHighlight: "#d40f15",
     },
     // Opacity settings
     opacity: {
@@ -27,7 +27,7 @@ export async function initializeColors() {
         const colors = await fetchClassColors();
         colorScheme.classColors = colors;
     } catch (error) {
-        console.error('Failed to fetch class colors:', error);
+        console.error("Failed to fetch class colors:", error);
         // Fallback to empty array if fetch fails
         colorScheme.classColors = [];
     }
@@ -45,7 +45,7 @@ export function generateColorMap(classes) {
     const colorMap = {};
 
     sortedClasses.forEach((classLabel, index) => {
-        colorMap[classLabel] = colorScheme.classColors[index]
+        colorMap[classLabel] = colorScheme.classColors[index];
     });
 
     return colorMap;

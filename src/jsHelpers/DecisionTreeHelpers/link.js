@@ -27,13 +27,18 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .style("stroke", colorScheme.ui.linkStroke);
 }
 
-export function highlightInstancePath(contentGroup, pathNodeIds, metrics, SETTINGS) {
+export function highlightInstancePath(
+    contentGroup,
+    pathNodeIds,
+    metrics,
+    SETTINGS
+) {
     // Add validation for pathNodeIds
     if (!contentGroup || !pathNodeIds) {
         console.warn("Missing required parameters for highlightInstancePath");
         return;
     }
-    
+
     // Reset any existing path highlights
     contentGroup
         .selectAll(".link.instance-path")
@@ -49,7 +54,10 @@ export function highlightInstancePath(contentGroup, pathNodeIds, metrics, SETTIN
     }));
 
     // Extract this calculation to a separate function for reusability
-    const highlightStrokeWidth = calculateHighlightStrokeWidth(metrics, SETTINGS);
+    const highlightStrokeWidth = calculateHighlightStrokeWidth(
+        metrics,
+        SETTINGS
+    );
 
     // Add highlights
     contentGroup
@@ -65,14 +73,19 @@ export function highlightInstancePath(contentGroup, pathNodeIds, metrics, SETTIN
         .each(function () {
             const originalPath = d3.select(this);
             const pathD = originalPath.attr("d");
-            const baseStrokeWidth = parseFloat(originalPath.style("stroke-width"));
+            const baseStrokeWidth = parseFloat(
+                originalPath.style("stroke-width")
+            );
 
             contentGroup
                 .append("path")
                 .attr("class", "link-highlight")
                 .attr("d", pathD)
                 .style("stroke", colorScheme.ui.instancePathHighlight)
-                .style("stroke-width", `${baseStrokeWidth + highlightStrokeWidth}px`)
+                .style(
+                    "stroke-width",
+                    `${baseStrokeWidth + highlightStrokeWidth}px`
+                )
                 .style("fill", "none")
                 .style("opacity", 0.5)
                 .lower();
@@ -82,22 +95,26 @@ export function highlightInstancePath(contentGroup, pathNodeIds, metrics, SETTIN
 }
 
 function calculateHighlightStrokeWidth(metrics, SETTINGS) {
-    return metrics ? 
-        parseFloat(metrics.linkStrokeWidth) + calculateHighlightThickness(metrics.totalNodes, SETTINGS) : 
-        6; // Default fallback if metrics not provided
+    return metrics
+        ? parseFloat(metrics.linkStrokeWidth) +
+              calculateHighlightThickness(metrics.totalNodes, SETTINGS)
+        : 6; // Default fallback if metrics not provided
 }
 
 // Helper function to calculate highlight thickness based on tree size
 function calculateHighlightThickness(totalNodes, SETTINGS) {
     if (!totalNodes || !SETTINGS) return 6; // Default fallback
-    
+
     // Scale highlight thickness inversely with tree size
     // Larger trees get thinner highlights to avoid visual clutter
     const minThickness = 3;
     const maxThickness = 12;
     const baseThickness = 6;
-    
+
     // Use logarithmic scaling to handle trees of different sizes
     const scale = Math.max(0.5, Math.min(2, 30 / Math.sqrt(totalNodes)));
-    return Math.min(maxThickness, Math.max(minThickness, baseThickness * scale));
+    return Math.min(
+        maxThickness,
+        Math.max(minThickness, baseThickness * scale)
+    );
 }

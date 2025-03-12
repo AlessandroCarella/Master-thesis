@@ -3,11 +3,8 @@ from sklearn.datasets import (
     load_wine, 
     load_breast_cancer, 
     load_diabetes, 
-    fetch_california_housing,
-    fetch_openml
+    fetch_california_housing
 )
-from sklearn.model_selection import train_test_split
-import pandas as pd
 import numpy as np
 import os
 import joblib

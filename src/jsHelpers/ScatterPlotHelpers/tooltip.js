@@ -2,7 +2,7 @@ export function createTooltip() {
     return d3
         .select("body")
         .append("div")
-        .attr("class", "scatter-plot-tooltip")
+        .attr("class", "scatter-plot-tooltip");
 }
 
 export function showTooltip(event, data, tooltip) {

@@ -127,7 +127,7 @@ export function getSurrogateParameters() {
             document.getElementById("surrogate-neighbourhood_size").value
         ),
         scatterPlotStep: parseFloat(
-            document.getElementById("surrogate-scatter_plot_step").value
+            document.getElementById("surrogate-scatterPlotStep").value
         ),
     };
 }

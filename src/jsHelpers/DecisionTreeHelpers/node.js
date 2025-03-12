@@ -55,7 +55,7 @@ export function addNodes(
 export function handleMouseOver(event, d, tooltip, metrics) {
     // Extract tooltip content creation to a separate function
     const content = createNodeTooltipContent(d);
-    
+
     tooltip
         .html(content.join("<br>"))
         .style("class", "decision-tree-tooltip")
@@ -76,7 +76,7 @@ export function handleMouseOver(event, d, tooltip, metrics) {
 
 function createNodeTooltipContent(d) {
     const content = [];
-    
+
     // Node type and primary information
     if (d.data.is_leaf) {
         // Leaf node information
@@ -90,11 +90,11 @@ function createNodeTooltipContent(d) {
         );
         content.push(`<strong>Feature Index:</strong> ${d.data.feature_index}`);
     }
-    
+
     // Common information for both node types
     content.push(`<strong>Impurity:</strong> ${d.data.impurity.toFixed(4)}`);
     content.push(`<strong>Samples:</strong> ${d.data.n_samples}`);
-    
+
     // Add weighted samples if available
     if (d.data.weighted_n_samples) {
         const weightDiff = Math.abs(
@@ -109,7 +109,7 @@ function createNodeTooltipContent(d) {
             );
         }
     }
-    
+
     // Add class distribution if available (summarized)
     if (d.data.value && d.data.value.length > 0 && d.data.value[0].length > 0) {
         const valueArray = d.data.value[0];
@@ -123,7 +123,7 @@ function createNodeTooltipContent(d) {
             );
         }
     }
-    
+
     return content;
 }
 

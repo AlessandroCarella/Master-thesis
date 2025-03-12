@@ -77,10 +77,10 @@ function populateSurrogateForm(container) {
             label: "Neighbourhood Size",
             min: 2,
             max: 10000,
-            default: 100,
+            default: 500,
             step: 10,
         },
-        scatter_plot_step: {
+        scatterPlotStep: {
             label: "Scatter plot Step Size",
             min: 0.001,
             max: 1,

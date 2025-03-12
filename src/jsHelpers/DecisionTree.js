@@ -36,7 +36,7 @@ export function createTreeVisualization(rawTreeData) {
         return;
     }
 
-    const colorMap = getGlobalColorMap()
+    const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
@@ -67,7 +67,7 @@ export function createTreeVisualization(rawTreeData) {
     setTreeVisualization({ contentGroup, treeData, metrics });
     window.treeVisualization = { contentGroup, treeData, metrics };
 
-    let instance = getExplainedInstance()
+    let instance = getExplainedInstance();
     if (instance) {
         highlightInstancePathInTree(instance);
     }

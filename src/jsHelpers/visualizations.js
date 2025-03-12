@@ -26,7 +26,10 @@ function clearVisualizations() {
 
 function createVisualizations(data) {
     if (data.decisionTreeVisualizationData) {
-        createTreeVisualization(data.decisionTreeVisualizationData, data.instance);
+        createTreeVisualization(
+            data.decisionTreeVisualizationData,
+            data.instance
+        );
     }
     if (data.scatterPlotVisualizationData) {
         createScatterPlot(
@@ -71,7 +74,7 @@ function buildVisualizationRequestData(selectedMethod) {
     return {
         dataset_name: window.appState.dataset_name,
         scatterPlotStep: surrogateParams.scatterPlotStep || 0.1,
-        scatterPlotMethod: selectedMethod
+        scatterPlotMethod: selectedMethod,
     };
 }
 
