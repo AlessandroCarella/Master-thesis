@@ -65,81 +65,64 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
     List[TreeNode]
         List of TreeNode objects containing the complete tree structure
     """
-    try:
-        # Validate inputs
-        if tree_classifier is None:
-            raise ValueError("tree_classifier cannot be None")
+    tree = tree_classifier.tree_
+    
+    nodes = []
+
+    for node_id in range(tree.node_count):
+        # Check if node is leaf
+        is_leaf = tree.children_left[node_id] == -1
+
+        # Get node information
+        if is_leaf:
+            # Get the class label based on the majority class in the leaf
+            class_label_index = int(tree.value[node_id].argmax())
+            if class_label_index >= len(target_names):
+                raise ValueError(f"Class label index {class_label_index} out of range for target_names of length {len(target_names)}")
+            class_label = target_names[class_label_index]
             
-        if feature_names is None or len(feature_names) == 0:
-            raise ValueError("feature_names cannot be None or empty")
-            
-        if target_names is None or len(target_names) == 0:
-            raise ValueError("target_names cannot be None or empty")
-            
-        tree = tree_classifier.tree_
-        
-        nodes = []
+            node = TreeNode(
+                node_id=node_id,
+                feature_name=None,
+                feature_index=None,
+                threshold=None,
+                left_child=None,
+                right_child=None,
+                is_leaf=True,
+                class_label=class_label,
+                impurity=tree.impurity[node_id],
+                n_samples=int(tree.n_node_samples[node_id]),
+                weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
+                value=tree.value[node_id].copy()
+            )
+        else:
+            feature_index = int(tree.feature[node_id])
+            if feature_index >= len(feature_names):
+                raise ValueError(f"Feature index {feature_index} out of range for feature_names of length {len(feature_names)}")
+            feature_name = feature_names[feature_index]
+            threshold = float(tree.threshold[node_id])
+            left_child = int(tree.children_left[node_id])
+            right_child = int(tree.children_right[node_id])
 
-        for node_id in range(tree.node_count):
-            try:
-                # Check if node is leaf
-                is_leaf = tree.children_left[node_id] == -1
+            node = TreeNode(
+                node_id=node_id,
+                feature_name=feature_name,
+                feature_index=feature_index,
+                threshold=threshold,
+                left_child=left_child,
+                right_child=right_child,
+                is_leaf=False,
+                class_label=None,
+                impurity=tree.impurity[node_id],
+                n_samples=int(tree.n_node_samples[node_id]),
+                weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
+                value=tree.value[node_id].copy()
+            )
 
-                # Get node information
-                if is_leaf:
-                    # Get the class label based on the majority class in the leaf
-                    class_label_index = int(tree.value[node_id].argmax())
-                    if class_label_index >= len(target_names):
-                        raise ValueError(f"Class label index {class_label_index} out of range for target_names of length {len(target_names)}")
-                    class_label = target_names[class_label_index]
-                    
-                    node = TreeNode(
-                        node_id=node_id,
-                        feature_name=None,
-                        feature_index=None,
-                        threshold=None,
-                        left_child=None,
-                        right_child=None,
-                        is_leaf=True,
-                        class_label=class_label,
-                        impurity=tree.impurity[node_id],
-                        n_samples=int(tree.n_node_samples[node_id]),
-                        weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
-                        value=tree.value[node_id].copy()
-                    )
-                else:
-                    feature_index = int(tree.feature[node_id])
-                    if feature_index >= len(feature_names):
-                        raise ValueError(f"Feature index {feature_index} out of range for feature_names of length {len(feature_names)}")
-                    feature_name = feature_names[feature_index]
-                    threshold = float(tree.threshold[node_id])
-                    left_child = int(tree.children_left[node_id])
-                    right_child = int(tree.children_right[node_id])
+        nodes.append(node)
 
-                    node = TreeNode(
-                        node_id=node_id,
-                        feature_name=feature_name,
-                        feature_index=feature_index,
-                        threshold=threshold,
-                        left_child=left_child,
-                        right_child=right_child,
-                        is_leaf=False,
-                        class_label=None,
-                        impurity=tree.impurity[node_id],
-                        n_samples=int(tree.n_node_samples[node_id]),
-                        weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
-                        value=tree.value[node_id].copy()
-                    )
+    return nodes
 
-                nodes.append(node)
-            except Exception as e:
-                raise RuntimeError(f"Error processing node {node_id}: {str(e)}")
-
-        return nodes
-    except Exception as e:
-        import logging
-        logging.error(f"Error in extract_tree_structure: {str(e)}")
-        raise
 
 def generate_decision_tree_visualization_data(nodes):
     """
@@ -155,24 +138,13 @@ def generate_decision_tree_visualization_data(nodes):
     List[Dict]
         List of node dictionaries suitable for visualization
     """
-    try:
-        if nodes is None:
-            raise ValueError("nodes cannot be None")
-            
-        # Convert TreeNodes to dictionaries
-        nodes_dict = []
-        for i, node in enumerate(nodes):
-            try:
-                node_dict = asdict(node)
-                # Convert numpy arrays to lists for JSON serialization
-                if isinstance(node_dict['value'], np.ndarray):
-                    node_dict['value'] = node_dict['value'].tolist()
-                nodes_dict.append(node_dict)
-            except Exception as e:
-                raise RuntimeError(f"Error processing node at index {i}: {str(e)}")
-        
-        return nodes_dict
-    except Exception as e:
-        import logging
-        logging.error(f"Error in generate_decision_tree_visualization_data: {str(e)}")
-        raise
+    # Convert TreeNodes to dictionaries
+    nodes_dict = []
+    for i, node in enumerate(nodes):
+        node_dict = asdict(node)
+        # Convert numpy arrays to lists for JSON serialization
+        if isinstance(node_dict['value'], np.ndarray):
+            node_dict['value'] = node_dict['value'].tolist()
+        nodes_dict.append(node_dict)
+    
+    return nodes_dict

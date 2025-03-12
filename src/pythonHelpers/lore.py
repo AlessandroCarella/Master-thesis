@@ -6,12 +6,16 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import logging
+import os
+import joblib
 
 from lore_sa.bbox import sklearn_classifier_bbox
 from lore_sa.dataset import TabularDataset
 from lore_sa.neighgen import GeneticGenerator
 from lore_sa.encoder_decoder import ColumnTransformerEnc
 from lore_sa.surrogate import DecisionTreeSurrogate
+
+from pythonHelpers.routes.state import global_state
 
 def get_feature_indices(dataset: TabularDataset):
     """
@@ -123,7 +127,11 @@ def train_model_generalized(dataset: TabularDataset, target_name: str, classifie
     
     # Split the dataset into training and testing subsets
     X_train, X_test, y_train, y_test = split_dataset(dataset, numeric_indices, categorical_indices, target_name)
-    
+    global_state.X_train = X_train
+    global_state.y_train = y_train
+    global_state.X_test = X_test
+    global_state.y_test = y_test
+
     # Create a pipeline that applies preprocessing and then the classifier
     model = make_pipeline(preprocessor, classifier)
     model.fit(X_train, y_train)
@@ -150,10 +158,6 @@ def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_na
     Returns:
         object: A black-box classifier object wrapped using sklearn_classifier_bbox.
     """
-    import os
-    import joblib
-    from sklearn.ensemble import RandomForestClassifier
-
     # Ensure cache directory exists
     os.makedirs(cache_dir, exist_ok=True)
             
@@ -199,103 +203,55 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset: TabularDa
             - neighb_train_y: Predictions from the black-box model on the decoded instances.
             - neighb_train_yz: Encoded target predictions.
     """
-    try:
-        # Validate inputs
-        if instance is None:
-            raise ValueError("Instance cannot be None")
-            
-        if bbox is None:
-            raise ValueError("Black box model (bbox) cannot be None")
-            
-        if dataset is None:
-            raise ValueError("Dataset cannot be None")
-            
-        if not isinstance(neighbourhood_size, int) or neighbourhood_size <= 0:
-            raise ValueError(f"neighbourhood_size must be a positive integer, got {neighbourhood_size}")
-            
-        def remove_duplicates(neighbourhood):
-            """Remove duplicate rows from the neighbourhood."""
-            try:
-                unique_neighbourhood = []
-                seen = set()
-                for row in neighbourhood:
-                    row_tuple = tuple(row)
-                    if row_tuple not in seen:
-                        unique_neighbourhood.append(row)
-                        seen.add(row_tuple)
-                return np.array(unique_neighbourhood, dtype=neighbourhood.dtype)
-            except Exception as e:
-                raise RuntimeError(f"Error removing duplicates: {str(e)}")
+    def remove_duplicates(neighbourhood):
+        """Remove duplicate rows from the neighbourhood."""
+        unique_neighbourhood = []
+        seen = set()
+        for row in neighbourhood:
+            row_tuple = tuple(row)
+            if row_tuple not in seen:
+                unique_neighbourhood.append(row)
+                seen.add(row_tuple)
+        return np.array(unique_neighbourhood, dtype=neighbourhood.dtype)
 
-        def ensure_instance_in_neighbourhood(instance, neighbourhood):
-            """Ensure the instance is present at the end of the neighbourhood."""
-            try:
-                instance_idx = np.where((neighbourhood == instance).all(axis=1))[0]
+    def ensure_instance_in_neighbourhood(instance, neighbourhood):
+        """Ensure the instance is present at the end of the neighbourhood."""
+        instance_idx = np.where((neighbourhood == instance).all(axis=1))[0]
 
-                if instance_idx.size == 0:
-                    neighbourhood = np.vstack([neighbourhood, instance])
-                elif instance_idx[0] != len(neighbourhood) - 1:
-                    neighbourhood = np.delete(neighbourhood, instance_idx[0], axis=0)
-                    neighbourhood = np.vstack([neighbourhood, instance])
+        if instance_idx.size == 0:
+            neighbourhood = np.vstack([neighbourhood, instance])
+        elif instance_idx[0] != len(neighbourhood) - 1:
+            neighbourhood = np.delete(neighbourhood, instance_idx[0], axis=0)
+            neighbourhood = np.vstack([neighbourhood, instance])
 
-                return neighbourhood
-            except Exception as e:
-                raise RuntimeError(f"Error ensuring instance in neighbourhood: {str(e)}")
-        
-        # Initialize the encoder/decoder based on the dataset descriptor
-        try:
-            tabular_enc = ColumnTransformerEnc(dataset.descriptor)
-        except Exception as e:
-            raise RuntimeError(f"Error initializing encoder: {str(e)}")
-        
-        # Encode the input instance; [0] to get the first (and only) element of the list
-        try:
-            z = tabular_enc.encode([instance])[0]
-        except Exception as e:
-            raise RuntimeError(f"Error encoding instance: {str(e)}")
-        
-        # Initialize the Genetic neighbourhood generator 
-        try:
-            gen = GeneticGenerator(bbox=bbox, dataset=dataset, encoder=tabular_enc)
-        except Exception as e:
-            raise RuntimeError(f"Error initializing genetic generator: {str(e)}")
-        
-        # Generate the neighbourhood in the encoded space
-        try:
-            neighbourhood = gen.generate(z, neighbourhood_size, dataset.descriptor, tabular_enc)
-        except Exception as e:
-            raise RuntimeError(f"Error generating neighbourhood: {str(e)}")
-        
-        try:
-            neighbourhood = remove_duplicates(neighbourhood)
-            neighbourhood = ensure_instance_in_neighbourhood(instance, neighbourhood)
-        except Exception as e:
-            raise RuntimeError(f"Error processing neighbourhood: {str(e)}")
+        return neighbourhood
+    
+    # Initialize the encoder/decoder based on the dataset descriptor
+    tabular_enc = ColumnTransformerEnc(dataset.descriptor)
+    
+    # Encode the input instance; [0] to get the first (and only) element of the list
+    z = tabular_enc.encode([instance])[0]
+    
+    # Initialize the Genetic neighbourhood generator 
+    gen = GeneticGenerator(bbox=bbox, dataset=dataset, encoder=tabular_enc)
+    
+    # Generate the neighbourhood in the encoded space
+    neighbourhood = gen.generate(z, neighbourhood_size, dataset.descriptor, tabular_enc)
+    
+    neighbourhood = remove_duplicates(neighbourhood)
+    neighbourhood = ensure_instance_in_neighbourhood(instance, neighbourhood)
 
-        # Decode the generated neighbourhood back to the original feature space
-        try:
-            neighb_train_X = tabular_enc.decode(neighbourhood)
-            neighb_train_X = ensure_instance_in_neighbourhood(instance, neighb_train_X)
-        except Exception as e:
-            raise RuntimeError(f"Error decoding neighbourhood: {str(e)}")
-        
-        # Get predictions from the black-box model on the decoded neighbourhood instances
-        try:
-            neighb_train_y = bbox.predict(neighb_train_X)
-        except Exception as e:
-            raise RuntimeError(f"Error predicting with black box model: {str(e)}")
-        
-        # Encode the target predictions
-        try:
-            neighb_train_yz = tabular_enc.encode_target_class(neighb_train_y.reshape(-1, 1)).squeeze()
-        except Exception as e:
-            raise RuntimeError(f"Error encoding target predictions: {str(e)}")
-        
-        return neighbourhood, neighb_train_X, neighb_train_y, neighb_train_yz
-    except Exception as e:
-        import logging
-        logging.error(f"Error in create_neighbourhood_with_lore: {str(e)}")
-        raise
+    # Decode the generated neighbourhood back to the original feature space
+    neighb_train_X = tabular_enc.decode(neighbourhood)
+    neighb_train_X = ensure_instance_in_neighbourhood(instance, neighb_train_X)
+    
+    # Get predictions from the black-box model on the decoded neighbourhood instances
+    neighb_train_y = bbox.predict(neighb_train_X)
+    
+    # Encode the target predictions
+    neighb_train_yz = tabular_enc.encode_target_class(neighb_train_y.reshape(-1, 1)).squeeze()
+    
+    return neighbourhood, neighb_train_X, neighb_train_y, neighb_train_yz
 
 
 def get_lore_decision_tree_surrogate(neighbour, neighb_train_yz):

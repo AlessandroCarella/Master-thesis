@@ -3,6 +3,7 @@ import sys
 import warnings
 import logging
 from logging.handlers import RotatingFileHandler
+import tensorflow as tf
 
 def configure_logging(log_level=None, log_file=None, clean_log=True):
     """
@@ -64,13 +65,9 @@ def configure_logging(log_level=None, log_file=None, clean_log=True):
     logging.getLogger('h5py._conv').setLevel(logging.ERROR)
     
     # Suppress TensorFlow warnings
-    try:
-        import tensorflow as tf
-        tf.get_logger().setLevel('ERROR')
-        # Disable TensorFlow deprecation warnings
-        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-    except ImportError:
-        pass  # TensorFlow not installed, skip this step
+    tf.get_logger().setLevel('ERROR')
+    # Disable TensorFlow deprecation warnings
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     
     # Suppress h5py warnings
     warnings.filterwarnings('ignore', category=FutureWarning, module='h5py')

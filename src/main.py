@@ -28,31 +28,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global exception handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Unhandled exception: {str(exc)}")
-    return JSONResponse(
-        status_code=500,
-        content={"error": "An unexpected error occurred. Please check the server logs."},
-    )
-
 # Include routers from separate modules
 app.include_router(health_router)
 app.include_router(dataset_router)
 app.include_router(model_router)
 app.include_router(explain_router)
 app.include_router(colors_router)
-
-@app.on_event("startup")
-async def startup_event():
-    logging.info("Application starting up")
-    # Create cache directory if it doesn't exist
-    os.makedirs("cache", exist_ok=True)
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logging.info("Application shutting down")
 
 if __name__ == "__main__":
     import uvicorn
