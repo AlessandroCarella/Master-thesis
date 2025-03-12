@@ -1,6 +1,6 @@
 import { createSection, createSurrogateInput } from "./inputs.js";
 
-function populateDatasetGrid(data) {
+export function populateDatasetGrid(data) {
     const container = document.getElementById("datasetGrid");
     container.className = "carousel-container";
     container.innerHTML = "";
@@ -27,7 +27,7 @@ function populateDatasetGrid(data) {
     container.appendChild(grid);
 }
 
-function populateClassifierGrid(data) {
+export function populateClassifierGrid(data) {
     const container = document.getElementById("classifierGrid");
     container.className = "carousel-container";
     container.innerHTML = "";
@@ -54,7 +54,7 @@ function populateClassifierGrid(data) {
     container.appendChild(grid);
 }
 
-function populateParameterForm(parameters) {
+export function populateParameterForm(parameters) {
     const form = document.getElementById("parameterForm");
     form.className = "parameter-form";
     form.innerHTML = "";
@@ -71,7 +71,7 @@ function populateParameterForm(parameters) {
     });
 }
 
-function populateSurrogateForm(container) {
+export function populateSurrogateForm(container) {
     const surrogateParameters = {
         neighbourhood_size: {
             label: "Neighbourhood Size",
@@ -87,6 +87,12 @@ function populateSurrogateForm(container) {
             default: 0.1,
             step: 0.01,
         },
+        includeOriginalDataset: {
+            label: "Include original dataset in scatter plot",
+            type: "select",
+            options: ["Yes", "No"],
+            default: "No",
+        },
     };
 
     const section = createSection(
@@ -99,10 +105,3 @@ function populateSurrogateForm(container) {
         createSurrogateInput(section, param, details);
     });
 }
-
-export {
-    populateDatasetGrid,
-    populateClassifierGrid,
-    populateParameterForm,
-    populateSurrogateForm,
-};

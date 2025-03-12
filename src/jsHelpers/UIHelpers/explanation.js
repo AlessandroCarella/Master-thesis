@@ -30,6 +30,7 @@ export function buildExplanationRequestData(
         neighbourhood_size: surrogateParams.neighbourhood_size,
         scatterPlotStep: surrogateParams.scatterPlotStep,
         scatterPlotMethod: scatterPlotMethod,
+        includeOriginalDataset: surrogateParams.includeOriginalDataset,
     };
 }
 

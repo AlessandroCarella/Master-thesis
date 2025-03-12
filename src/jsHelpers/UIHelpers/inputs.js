@@ -120,28 +120,52 @@ function createSurrogateInput(container, paramName, details) {
     const box = document.createElement("div");
     box.className = "feature-box numeric-feature";
 
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = details.step;
-    input.id = `surrogate-${paramName}`;
-    input.min = details.min;
-    input.max = details.max;
-    input.value = details.default;
+    if (details.type === "select") {
+        // Create select element for dropdown options
+        const select = document.createElement("select");
+        select.id = `surrogate-${paramName}`;
+        
+        details.options.forEach(option => {
+            const optionElement = document.createElement("option");
+            optionElement.value = option;
+            optionElement.textContent = option;
+            optionElement.selected = option === details.default;
+            select.appendChild(optionElement);
+        });
 
-    const stats = `Min: ${details.min}
-                  Max: ${details.max}
-                  Default: ${details.default}`;
+        box.innerHTML = `
+            <div class="feature-label">
+                ${details.label}
+                <span class="feature-type">Select</span>
+            </div>
+        `;
+        box.appendChild(select);
+    } else {
+        // Original numeric input
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = details.step;
+        input.id = `surrogate-${paramName}`;
+        input.min = details.min;
+        input.max = details.max;
+        input.value = details.default;
 
-    box.innerHTML = `
-        <div class="feature-label" title="${stats}">
-            ${details.label}
-            <span class="feature-type">Numeric</span>
-            <div class="feature-range">Range: ${details.min} - ${details.max}</div>
-        </div>
-    `;
-    box.appendChild(input);
+        const stats = `Min: ${details.min}
+                      Max: ${details.max}
+                      Default: ${details.default}`;
 
-    addNumericValidation(input, details);
+        box.innerHTML = `
+            <div class="feature-label" title="${stats}">
+                ${details.label}
+                <span class="feature-type">Numeric</span>
+                <div class="feature-range">Range: ${details.min} - ${details.max}</div>
+            </div>
+        `;
+        box.appendChild(input);
+
+        addNumericValidation(input, details);
+    }
+
     container.querySelector(".feature-section-content").appendChild(box);
 }
 

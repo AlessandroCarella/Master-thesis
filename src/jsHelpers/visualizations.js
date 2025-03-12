@@ -75,6 +75,7 @@ function buildVisualizationRequestData(selectedMethod) {
         dataset_name: window.appState.dataset_name,
         scatterPlotStep: surrogateParams.scatterPlotStep || 0.1,
         scatterPlotMethod: selectedMethod,
+        includeOriginalDataset: surrogateParams.includeOriginalDataset,
     };
 }
 
