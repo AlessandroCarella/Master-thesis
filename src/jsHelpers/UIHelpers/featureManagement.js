@@ -129,5 +129,6 @@ export function getSurrogateParameters() {
         scatterPlotStep: parseFloat(
             document.getElementById("surrogate-scatterPlotStep").value
         ),
+        includeOriginalDataset: document.getElementById("surrogate-includeOriginalDataset").value === "Yes"
     };
 }

@@ -22,12 +22,14 @@ class InstanceRequest(BaseModel):
     dataset_name: str
     neighbourhood_size: int
     scatterPlotStep: float
-    scatterPlotMethod: str = "umap"
+    scatterPlotMethod: str = "umap",
+    includeOriginalDataset: bool
 
 class VisualizationRequest(BaseModel):
     dataset_name: str
     scatterPlotStep: float
-    scatterPlotMethod: str = "umap"
+    scatterPlotMethod: str = "umap",
+    includeOriginalDataset: bool
 
 # ---------------- Helper Functions ---------------- #
 
@@ -35,7 +37,7 @@ def process_instance(request: InstanceRequest):
     """Process tabular data input."""
     return [request.instance[feature] for feature in global_state.feature_names]
     
-def generate_scatter_plot(request, feature_names, X, y, surrogate, class_names):
+def generate_scatter_plot(request, feature_names, X, y, surrogate, class_names, X_original=None, y_original=None):
     """Generate scatter plot visualization data using the provided parameters."""
     return create_scatter_plot_data(
         feature_names=feature_names,
@@ -44,7 +46,9 @@ def generate_scatter_plot(request, feature_names, X, y, surrogate, class_names):
         pretrained_tree=surrogate,
         class_names=class_names,
         step=request.scatterPlotStep,
-        method=request.scatterPlotMethod
+        method=request.scatterPlotMethod,
+        X_original=X_original, 
+        y_original=y_original
     )
 
 def generate_decision_tree_data(surrogate, feature_names, target_names):
@@ -62,18 +66,29 @@ def generate_decision_tree_data(surrogate, feature_names, target_names):
 async def update_visualization(request: VisualizationRequest):
     """
     Update visualization technique without regenerating the neighborhood.
-    """    
-    # Generate scatter plot visualization data
-    scatter_data = generate_scatter_plot(
-        request,
-        feature_names=global_state.feature_names,
-        X=global_state.neighb_train_X,
-        y=global_state.neighb_train_y,
-        surrogate=global_state.dt_surrogate,
-        class_names=global_state.target_names
-    )
-    if isinstance(scatter_data, JSONResponse):
-        return scatter_data
+    """ 
+    if not request.includeOriginalDataset:    
+        # Generate scatter plot visualization data
+        scatter_data = generate_scatter_plot(
+            request,
+            feature_names=global_state.feature_names,
+            X=global_state.neighb_train_X,
+            y=global_state.neighb_train_y,
+            surrogate=global_state.dt_surrogate,
+            class_names=global_state.target_names
+        )
+    else:
+        # Generate scatter plot visualization data
+        scatter_data = generate_scatter_plot(
+            request,
+            feature_names=global_state.feature_names,
+            X=global_state.neighb_train_X,
+            y=global_state.neighb_train_y,
+            surrogate=global_state.dt_surrogate,
+            class_names=global_state.target_names,
+            X_original=global_state.X_train,
+            y_original=global_state.y_train
+        )
 
     # Generate decision tree visualization data
     tree_data = generate_decision_tree_data(
@@ -81,9 +96,7 @@ async def update_visualization(request: VisualizationRequest):
         feature_names=global_state.feature_names,
         target_names=global_state.target_names
     )
-    if isinstance(tree_data, JSONResponse):
-        return tree_data
-
+    
     return {
         "status": "success",
         "message": "Visualization updated",
@@ -107,8 +120,11 @@ async def explain_instance(request: InstanceRequest):
         dataset=global_state.dataset,
         neighbourhood_size=request.neighbourhood_size,
     )
-
-    global_state.target_names = list(np.unique(neighb_train_y))
+    # Update global state with neighborhood data
+    global_state.neighborhood = neighbourhood
+    global_state.neighb_train_X = neighb_train_X
+    global_state.neighb_train_y = neighb_train_y
+    global_state.neighb_train_yz = neighb_train_yz
 
     # Create decision tree surrogate
     dt_surr = get_lore_decision_tree_surrogate(
@@ -116,13 +132,9 @@ async def explain_instance(request: InstanceRequest):
         neighb_train_yz=neighb_train_yz
     )
     
-    # Update global state with neighborhood data
-    global_state.neighborhood = neighbourhood
-    global_state.neighb_train_X = neighb_train_X
-    global_state.neighb_train_y = neighb_train_y
-    global_state.neighb_train_yz = neighb_train_yz
+    # Update global state with the decision tree surrogate
     global_state.dt_surrogate = dt_surr
-
+    
     # Generate decision tree visualization data
     tree_data = generate_decision_tree_data(
         surrogate=dt_surr,
@@ -130,16 +142,32 @@ async def explain_instance(request: InstanceRequest):
         target_names=global_state.target_names
     )
     
-    # Generate scatter plot visualization data
-    scatter_data = generate_scatter_plot(
-        request,
-        feature_names=global_state.feature_names,
-        X=neighb_train_X,
-        y=neighb_train_y,
-        surrogate=dt_surr,
-        class_names=global_state.target_names
-    )
-    
+    if not request.includeOriginalDataset:    
+        # Update global state with the target names
+        global_state.target_names = list(np.unique(neighb_train_y))
+
+        # Generate scatter plot visualization data
+        scatter_data = generate_scatter_plot(
+            request,
+            feature_names=global_state.feature_names,
+            X=neighb_train_X,
+            y=neighb_train_y,
+            surrogate=dt_surr,
+            class_names=global_state.target_names
+        )
+    else:
+        # Generate scatter plot visualization data
+        scatter_data = generate_scatter_plot(
+            request,
+            feature_names=global_state.feature_names,
+            X=neighb_train_X,
+            y=neighb_train_y,
+            surrogate=dt_surr,
+            class_names=global_state.target_names,
+            X_original=global_state.X_train,
+            y_original=global_state.y_train
+        )
+
     return {
         "status": "success",
         "message": "Instance explained",

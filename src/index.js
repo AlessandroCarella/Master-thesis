@@ -197,7 +197,7 @@ window.explainInstance = async () => {
             surrogateParams,
             appState
         );
-
+        
         const result = await fetchExplanation(requestData);
 
         // Now fetch the colors based on the neighborhood data

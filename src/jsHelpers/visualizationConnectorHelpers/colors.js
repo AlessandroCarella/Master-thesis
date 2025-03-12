@@ -18,6 +18,8 @@ export const colorScheme = {
         active: 1.0,
         inactive: 1,
         hover: 1,
+        neighPoint:1,
+        datasetPoint:0.5,
     },
 };
 

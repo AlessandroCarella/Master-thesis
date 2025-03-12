@@ -278,7 +278,7 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, method='mds', step=0.1, random_state=42, **kwargs):
+def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, X_original, y_original, method='mds', step=0.1, random_state=42, **kwargs):
     """
     Generate visualization data and decision boundaries for a pre-trained decision tree
     using either PCA or t-SNE dimensionality reduction.
@@ -309,7 +309,18 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
     dict
         Visualization data including transformed coordinates, original data, and decision boundaries
     """
+    # Concatenate X_original and y_original to X and y when provided
+    original_points = []
+    if X_original is not None and y_original is not None:
+        # Create original_points indicator array
+        original_points = [True] * len(X_original) + [False] * len(X)
         
+        # Concatenate the data
+        X = np.vstack((X_original, X))
+        y = np.concatenate((y_original, y))
+    else:
+        original_points = [False] * len (X)
+     
     # Transform data
     X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state, **kwargs)
     
@@ -372,6 +383,7 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
         "xAxisLabel": x_axis_label,
         "yAxisLabel": y_axis_label,
         "method": method,
+        "originalPoints": original_points,
     }
     
     return visualization_data

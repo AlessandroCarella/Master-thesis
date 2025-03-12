@@ -127,17 +127,13 @@ def train_model_generalized(dataset: TabularDataset, target_name: str, classifie
     
     # Split the dataset into training and testing subsets
     X_train, X_test, y_train, y_test = split_dataset(dataset, numeric_indices, categorical_indices, target_name)
-    global_state.X_train = X_train
-    global_state.y_train = y_train
-    global_state.X_test = X_test
-    global_state.y_test = y_test
 
     # Create a pipeline that applies preprocessing and then the classifier
     model = make_pipeline(preprocessor, classifier)
     model.fit(X_train, y_train)
     
     # Return the black-box wrapper for the trained model
-    return sklearn_classifier_bbox.sklearnBBox(model)
+    return sklearn_classifier_bbox.sklearnBBox(model), X_train, X_test, y_train, y_test
 
 
 def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_name:str, classifier:any, classifier_name:str, cache_dir='cache'):
@@ -171,13 +167,18 @@ def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_na
     )
     
     if os.path.exists(cache_file):
-        classifier_bbox = joblib.load(cache_file)
+        classifier_bbox, X_train, X_test, y_train, y_test = joblib.load(cache_file)
         logging.info(f"Loaded classifier for {dataset_name} from cache.")
     else:
-        classifier_bbox = train_model_generalized(dataset, target_name, classifier)
-        joblib.dump(classifier_bbox, cache_file)
+        classifier_bbox, X_train, X_test, y_train, y_test = train_model_generalized(dataset, target_name, classifier)
+        joblib.dump((classifier_bbox, X_train, X_test, y_train, y_test), cache_file)
         logging.info(f"Cached classifier for {dataset_name} to file.")
         
+    global_state.X_train = X_train
+    global_state.y_train = y_train
+    global_state.X_test = X_test
+    global_state.y_test = y_test
+
     return classifier_bbox
 
 

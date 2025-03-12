@@ -32,7 +32,7 @@ export function createPoints(
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", 1)
-        .style("opacity", colorScheme.opacity.hover)
+        .style("opacity", (d, i) => data.originalPoints[i] ? colorScheme.opacity.datasetPoint : colorScheme.opacity.neighPoint)
         .on("mouseover", (event, d) => {
             showTooltip(event, data, tooltip);
             d3.select(event.currentTarget)

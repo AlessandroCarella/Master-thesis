@@ -75,7 +75,7 @@ export function populateSurrogateForm(container) {
     const surrogateParameters = {
         neighbourhood_size: {
             label: "Neighbourhood Size",
-            min: 2,
+            min: 15,
             max: 10000,
             default: 500,
             step: 10,

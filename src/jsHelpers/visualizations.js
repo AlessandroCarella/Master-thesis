@@ -73,7 +73,7 @@ function buildVisualizationRequestData(selectedMethod) {
     const surrogateParams = getSurrogateParameters();
     return {
         dataset_name: window.appState.dataset_name,
-        scatterPlotStep: surrogateParams.scatterPlotStep || 0.1,
+        scatterPlotStep: surrogateParams.scatterPlotStep,
         scatterPlotMethod: selectedMethod,
         includeOriginalDataset: surrogateParams.includeOriginalDataset,
     };
