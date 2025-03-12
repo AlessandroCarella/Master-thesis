@@ -79,10 +79,10 @@ function createNodeTooltipContent(d) {
             } > ${d.data.threshold.toFixed(2)}`
         );
         content.push(`<strong>Feature Index:</strong> ${d.data.feature_index}`);
+        content.push(`<strong>Impurity:</strong> ${d.data.impurity.toFixed(4)}`);
     }
 
     // Common information for both node types
-    content.push(`<strong>Impurity:</strong> ${d.data.impurity.toFixed(4)}`);
     content.push(`<strong>Samples:</strong> ${d.data.n_samples}`);
 
     // Add weighted samples if available
@@ -100,17 +100,19 @@ function createNodeTooltipContent(d) {
         }
     }
 
-    // Add class distribution if available (summarized)
-    if (d.data.value && d.data.value.length > 0 && d.data.value[0].length > 0) {
-        const valueArray = d.data.value[0];
-        if (valueArray.length > 1) {
-            const total = valueArray.reduce((sum, val) => sum + val, 0);
-            const distribution = valueArray
-                .map((val) => ((val / total) * 100).toFixed(1) + "%")
-                .join(", ");
-            content.push(
-                `<strong>Class Distribution:</strong> [${distribution}]`
-            );
+    if (!d.data.is_leaf) {
+        // Add class distribution if available (summarized)
+        if (d.data.value && d.data.value.length > 0 && d.data.value[0].length > 0) {
+            const valueArray = d.data.value[0];
+            if (valueArray.length > 1) {
+                const total = valueArray.reduce((sum, val) => sum + val, 0);
+                const distribution = valueArray
+                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
+                    .join(", ");
+                content.push(
+                    `<strong>Class Distribution:</strong> [${distribution}]`
+                );
+            }
         }
     }
 

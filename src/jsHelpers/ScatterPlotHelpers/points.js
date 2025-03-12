@@ -1,6 +1,9 @@
-import { colorScheme, setOriginalPointsNeighPointsBoolArray } from "../visualizationConnector.js";
+import {
+    colorScheme,
+    setOriginalPointsNeighPointsBoolArray,
+} from "../visualizationConnector.js";
 import { showTooltip, hideTooltip } from "./tooltip.js";
-import { togglePointColor } from "./tree.js"; // we'll export togglePointColor from treeHelper
+import { togglePointColor } from "./tree.js";
 
 export function createPoints(
     g,
@@ -11,9 +14,13 @@ export function createPoints(
     x,
     y
 ) {
-    setOriginalPointsNeighPointsBoolArray(data.originalPointsNeighPointsBoolArray)
+    setOriginalPointsNeighPointsBoolArray(
+        data.originalPointsNeighPointsBoolArray
+    );
 
-    const symbolGenerator = d3.symbol().size(100);
+    const defaultSymbolSize = 100;
+    const starSymbolSize = defaultSymbolSize * 1.5; 
+
     // Last elements rendered appear on top of everything else,
     // in fact the original instance is at the end of the list
     const lastIndex = data.transformedData.length - 1;
@@ -26,11 +33,14 @@ export function createPoints(
         .append("path")
         .attr("class", "point")
         .attr("transform", (d) => `translate(${x(d[0])},${y(d[1])})`)
-        .attr("d", (d, i) =>
-            symbolGenerator.type(
-                i === lastIndex ? d3.symbolStar : d3.symbolCircle
-            )()
-        )
+        .attr("d", (d, i) => {
+            // Use larger size for star symbol, default size for circles
+            const size = i === lastIndex ? starSymbolSize : defaultSymbolSize;
+            return d3
+                .symbol()
+                .size(size)
+                .type(i === lastIndex ? d3.symbolStar : d3.symbolCircle)();
+        })
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", 1)
