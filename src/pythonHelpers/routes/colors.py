@@ -68,6 +68,9 @@ def project_to_rgb(centroids):
     scaler = MinMaxScaler(feature_range=(0, 1))
     rgb_values = scaler.fit_transform(reduced_centroids)
     
+    # Extra safety: clip values to ensure they're in [0, 1]
+    rgb_values = np.clip(rgb_values, 0, 1)
+    
     # Create dictionary mapping labels to RGB colors
     colors = {label: rgb_values[i] for i, label in enumerate(labels)}
     return colors
