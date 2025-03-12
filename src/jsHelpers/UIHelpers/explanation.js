@@ -68,7 +68,10 @@ export const updateVisualizationUI = () => {
         <p id="y-axis-label"></p>
       </div>
       <div class="visualization-container">
-        <h2>Surrogate Model</h2>
+        <div class="visualization-header">
+          <h2>Surrogate Model</h2>
+          <div></div> <!-- Empty div to maintain consistent layout -->
+        </div>
         <div id="tree-plot"></div>
       </div>
     </div>

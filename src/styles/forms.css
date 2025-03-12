@@ -116,3 +116,13 @@
 .feature-box input[type="number"].invalid:focus {
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
+
+#surrogateContainer .feature-box {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Fix alignment for select type inputs */
+#surrogateContainer .feature-box select {
+    margin-top: auto; /* Push the select input to align with numeric inputs */
+}

@@ -49,6 +49,8 @@
 
 #scatter-plot,
 #tree-plot {
+    flex: 1;
+    margin-top: 0;
     width: 100%;
     overflow: hidden;
 }
@@ -101,6 +103,7 @@
     align-items: center;
     margin-bottom: 1rem;
     width: 100%;
+    min-height: 60px;
 }
 
 .scatter-plot-controls {
