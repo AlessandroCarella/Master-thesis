@@ -91,7 +91,7 @@ export function populateSurrogateForm(container) {
             label: "Include original dataset in scatter plot",
             type: "select",
             options: ["Yes", "No"],
-            default: "No",
+            default: "Yes",
         },
     };
 

@@ -4,7 +4,6 @@ import {
     getScatterPlotVisualization,
     getTreeVisualization,
     handleTreeNodeClick,
-    getSelectedNode,
 } from "../visualizationConnector.js";
 import { calculateNodeRadius } from "./metrics.js";
 
@@ -29,7 +28,6 @@ export function addNodes(
         .style("fill", (d) => getNodeColor(d, colorMap))
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("stroke", colorScheme.ui.nodeStroke)
-        .style("opacity", colorScheme.opacity.hover)
         .on("mouseover", (event, d) =>
             handleMouseOver(event, d, tooltip, metrics)
         )
@@ -63,15 +61,7 @@ export function handleMouseOver(event, d, tooltip, metrics) {
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
 
-    if (d !== getSelectedNode()) {
-        // is leaf
-        if (typeof d.children === "undefined") {
-            d3.select(event.currentTarget).style(
-                "stroke",
-                colorScheme.ui.highlight
-            );
-        }
-    }
+    d3.select(event.currentTarget).style("stroke", colorScheme.ui.highlight);
 }
 
 function createNodeTooltipContent(d) {
@@ -135,35 +125,8 @@ export function handleMouseMove(event, tooltip) {
 
 export function handleMouseOut(event, d, tooltip, metrics) {
     tooltip.style("visibility", "hidden");
-
-    // Only reset styles if this isn't the selected node
-    if (d !== getSelectedNode()) {
-        const selectedNode = getSelectedNode();
-        if (selectedNode) {
-            // Check if this node is in the path from selected leaf to root
-            let isInPath = false;
-            let current = selectedNode;
-            while (current) {
-                if (current === d) {
-                    isInPath = true;
-                    break;
-                }
-                current = current.parent;
-            }
-
-            // Only reset styles if the node is not in the highlighted path
-            if (!isInPath) {
-                d3.select(event.currentTarget)
-                    .style("stroke", colorScheme.ui.nodeStroke)
-                    .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-                    .style("opacity", colorScheme.opacity.hover);
-            }
-        } else {
-            // If no node is selected, reset styles as before
-            d3.select(event.currentTarget)
-                .style("stroke", colorScheme.ui.nodeStroke)
-                .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-                .style("opacity", colorScheme.opacity.hover);
-        }
-    }
+    d3.select(event.currentTarget)
+        .style("stroke", colorScheme.ui.nodeStroke)
+        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+        .style("opacity", colorScheme.opacity.hover);
 }

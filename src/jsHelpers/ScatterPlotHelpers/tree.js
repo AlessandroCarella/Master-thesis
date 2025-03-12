@@ -90,7 +90,6 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     // Reset all points to their original colors first
     d3.selectAll("path.point")
         .style("fill", (d, i) => colorMap[data.targets[i]])
-        .style("opacity", colorScheme.opacity.hover);
 
     const index = data.transformedData.indexOf(d);
     const originalFeatures = data.originalData[index];
@@ -106,7 +105,6 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     window.lastClickedPoint = node;
     d3.select(node)
         .style("fill", colorScheme.ui.highlight)
-        .style("opacity", colorScheme.opacity.active);
 
     // Find and highlight the corresponding path in the decision tree
     if (treeVisualization && treeVisualization.treeData) {

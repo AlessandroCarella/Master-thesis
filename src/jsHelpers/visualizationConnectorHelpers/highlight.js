@@ -1,3 +1,4 @@
+import { getOriginalPointsNeighPointsBoolArrayValAti } from "../visualizationConnector.js";
 import { colorScheme, generateColorMap } from "./colors.js";
 
 // Determine if a point belongs to a leaf node's decision path
@@ -44,7 +45,11 @@ export function resetHighlights(treeVis, scatterPlotVis) {
         ]);
         scatterPlotVis.points
             .style("fill", (d, i) => colorMap[scatterPlotVis.data.targets[i]])
-            .style("opacity", colorScheme.opacity.hover);
+            .style("opacity", (d, i) =>
+                getOriginalPointsNeighPointsBoolArrayValAti(i)
+                    ? colorScheme.opacity.datasetPoint
+                    : colorScheme.opacity.neighPoint
+            );
     }
 }
 
@@ -62,12 +67,6 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
                 ? colorScheme.ui.highlight
                 : colorMap[scatterPlotVis.data.targets[i]];
         })
-        .style("opacity", (d, i) => {
-            const originalData = scatterPlotVis.data.originalData[i];
-            return pointBelongsToLeaf(d, originalData, leafNode)
-                ? colorScheme.opacity.active
-                : colorScheme.opacity.inactive;
-        });
 }
 
 // Highlights a single node
@@ -78,7 +77,7 @@ export function highlightNode(contentGroup, node, metrics) {
         .select("circle")
         .style("stroke", colorScheme.ui.highlight)
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.active);
+        .style("opacity", colorScheme.opacity.default);
 }
 
 // Highlights the link between two nodes
@@ -171,16 +170,4 @@ export function highlightPointsForDescendants(node, scatterPlotVis) {
 
             return colorMap[scatterPlotVis.data.targets[i]];
         })
-        .style("opacity", (d, i) => {
-            const originalData = scatterPlotVis.data.originalData[i];
-
-            // Check if point belongs to any of the leaf nodes
-            for (const leafNode of leafNodes) {
-                if (pointBelongsToLeaf(d, originalData, leafNode)) {
-                    return colorScheme.opacity.active;
-                }
-            }
-
-            return colorScheme.opacity.inactive;
-        });
 }

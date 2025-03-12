@@ -15,11 +15,11 @@ export const colorScheme = {
     },
     // Opacity settings
     opacity: {
-        active: 1.0,
-        inactive: 1,
-        hover: 1,
+        default:1,
         neighPoint:1,
-        datasetPoint:0.5,
+        datasetPoint:0.3,
+        originalInstancePath:0.5,
+        hidden:0
     },
 };
 

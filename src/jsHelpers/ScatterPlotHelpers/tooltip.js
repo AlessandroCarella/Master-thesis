@@ -1,3 +1,5 @@
+import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
+
 export function createTooltip() {
     return d3
         .select("body")
@@ -41,9 +43,9 @@ function showTooltipContent(event, tooltip, content) {
         .style("top", `${event.pageY - 28}px`)
         .transition()
         .duration(200)
-        .style("opacity", 1);
+        .style("opacity", colorScheme.opacity.default);
 }
 
 export function hideTooltip(tooltip) {
-    tooltip.transition().duration(500).style("opacity", 0);
+    tooltip.transition().duration(500).style("opacity", colorScheme.opacity.hidden);
 }

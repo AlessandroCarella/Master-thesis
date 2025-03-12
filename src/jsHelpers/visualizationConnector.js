@@ -39,17 +39,6 @@ export function getTreeVisualization() {
     return treeVisualization;
 }
 
-// Store the currently selected node
-let selectedNode = null;
-
-export function getSelectedNode() {
-    return selectedNode;
-}
-
-export function setSelectedNode(node) {
-    selectedNode = node;
-}
-
 // Store the currently explained instance
 let explainedInstance = null;
 
@@ -61,6 +50,7 @@ export function setExplainedInstance(instance) {
     explainedInstance = instance;
 }
 
+let selectedNode = null;
 // Main handler for a tree node click event
 // Additional parameters are passed for the required elements (e.g. contentGroup, tree metrics, etc.)
 export function handleTreeNodeClick(
@@ -111,4 +101,14 @@ export function highlightInstancePathInTree(instance) {
 
     // Highlight the path in the visualization
     highlightInstancePath(contentGroup, pathNodeIds);
+}
+
+let originalPointsNeighPointsBoolArray = null;
+
+export function getOriginalPointsNeighPointsBoolArrayValAti(i) {
+    return originalPointsNeighPointsBoolArray[i];
+}
+
+export function setOriginalPointsNeighPointsBoolArray(value) {
+    originalPointsNeighPointsBoolArray = value;
 }

@@ -87,7 +87,7 @@ export function highlightInstancePath(
                     `${baseStrokeWidth + highlightStrokeWidth}px`
                 )
                 .style("fill", "none")
-                .style("opacity", 0.5)
+                .style("opacity", colorScheme.opacity.originalInstancePath)
                 .lower();
 
             originalPath.classed("instance-path", true);

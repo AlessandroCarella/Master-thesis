@@ -1,4 +1,4 @@
-import { colorScheme } from "../visualizationConnector.js";
+import { colorScheme, setOriginalPointsNeighPointsBoolArray } from "../visualizationConnector.js";
 import { showTooltip, hideTooltip } from "./tooltip.js";
 import { togglePointColor } from "./tree.js"; // we'll export togglePointColor from treeHelper
 
@@ -11,6 +11,8 @@ export function createPoints(
     x,
     y
 ) {
+    setOriginalPointsNeighPointsBoolArray(data.originalPointsNeighPointsBoolArray)
+
     const symbolGenerator = d3.symbol().size(100);
     // Last elements rendered appear on top of everything else,
     // in fact the original instance is at the end of the list
@@ -32,18 +34,24 @@ export function createPoints(
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", 1)
-        .style("opacity", (d, i) => data.originalPoints[i] ? colorScheme.opacity.datasetPoint : colorScheme.opacity.neighPoint)
+        .style("opacity", (d, i) =>
+            data.originalPointsNeighPointsBoolArray[i]
+                ? colorScheme.opacity.datasetPoint
+                : colorScheme.opacity.neighPoint
+        )
         .on("mouseover", (event, d) => {
             showTooltip(event, data, tooltip);
-            d3.select(event.currentTarget)
-                .style("opacity", colorScheme.opacity.active)
-                .style("stroke", colorScheme.ui.highlight);
+            d3.select(event.currentTarget).style(
+                "stroke",
+                colorScheme.ui.highlight
+            );
         })
         .on("mouseout", (event) => {
             hideTooltip(tooltip);
-            d3.select(event.currentTarget)
-                .style("opacity", colorScheme.opacity.hover)
-                .style("stroke", colorScheme.ui.nodeStroke);
+            d3.select(event.currentTarget).style(
+                "stroke",
+                colorScheme.ui.nodeStroke
+            );
         })
         .on("click", function (event, d) {
             togglePointColor(this, d, data, colorMap, treeVisualization);
