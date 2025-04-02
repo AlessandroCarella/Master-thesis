@@ -1,4 +1,3 @@
-# routes/dataset.py
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -6,6 +5,10 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from matplotlib.colors import rgb2hex
+from sklearn.manifold import TSNE, MDS
+import logging
+logging.getLogger('numba').setLevel(logging.WARNING)
+import umap
 
 from pythonHelpers.routes.state import global_state
 
@@ -44,12 +47,13 @@ def compute_centroids(X, y):
     
     return centroids
 
-def project_to_rgb(centroids):
+def project_to_rgb(centroids, method, random_state=42):
     """
-    Project centroids to RGB color space.
+    Project centroids to RGB color space using specified dimensionality reduction method.
     
     Parameters:
     - centroids: Dictionary mapping class labels to centroids
+    - method: Dimensionality reduction method to use ('pca', 'umap', 'tsne', or 'mds')
     
     Returns:
     - Dictionary mapping class labels to RGB colors
@@ -57,10 +61,40 @@ def project_to_rgb(centroids):
     labels = list(centroids.keys())
     centroid_matrix = np.array([centroids[label] for label in labels])
     
-    # Use PCA to reduce to 3 dimensions
+    # Use the specified method to reduce to 3 dimensions if necessary
     if centroid_matrix.shape[1] > 3:
-        pca = PCA(n_components=3)
-        reduced_centroids = pca.fit_transform(centroid_matrix)
+        method = method.lower()
+
+        if method == "pca":
+            reducer = PCA(n_components=3)
+            reduced_centroids = reducer.fit_transform(centroid_matrix)
+        
+        elif method == "tsne":
+            # For t-SNE, perplexity should be smaller than n_samples - 1
+            tsne_params = {
+                'perplexity': min(5, len(centroid_matrix)-1),
+                'early_exaggeration': 12.0,
+                'learning_rate': 'auto',
+                'n_iter': 1000,
+                'n_iter_without_progress': 300
+            }
+            reducer = TSNE(n_components=2, random_state=random_state, **tsne_params)
+            reduced_centroids = reducer.fit_transform(centroid_matrix)
+        
+        elif method == "umap":
+            # Set min_dist to a small value for better spread in the embedding
+            # Set n_neighbors small for this small dataset
+            reducer = umap.UMAP(n_components=3, random_state=random_state)
+            reduced_centroids = reducer.fit_transform(centroid_matrix)
+        
+        elif method == "mds":
+            reducer = MDS(n_components=3, random_state=random_state)
+            reduced_centroids = reducer.fit_transform(centroid_matrix)
+        
+        else:
+            # Default to PCA if an invalid method is specified
+            reducer = PCA(n_components=3)
+            reduced_centroids = reducer.fit_transform(centroid_matrix)
     else:
         reduced_centroids = centroid_matrix
     
@@ -76,7 +110,7 @@ def project_to_rgb(centroids):
     return colors
 
 @router.get("/get-classes-colors")
-async def get_colors():
+async def get_colors(method):
     if len(global_state.target_names) > 10:
         # Compute centroids using the neighborhood data
         centroids = compute_centroids(
@@ -84,8 +118,8 @@ async def get_colors():
             global_state.neighb_train_y
         )
             
-        # Project centroids to RGB space
-        colors = project_to_rgb(centroids)
+        # Project centroids to RGB space using the specified method
+        colors = project_to_rgb(centroids, method)
             
         # Convert to hex
         return [rgb2hex(color) for color in colors.values()]

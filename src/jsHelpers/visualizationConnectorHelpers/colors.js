@@ -24,9 +24,9 @@ export const colorScheme = {
 };
 
 // Fetch colors from API
-export async function initializeColors() {
+export async function initializeColors(method = 'umap') {
     try {
-        const colors = await fetchClassColors();
+        const colors = await fetchClassColors(method);
         colorScheme.classColors = colors;
     } catch (error) {
         console.error("Failed to fetch class colors:", error);

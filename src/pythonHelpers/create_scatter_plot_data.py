@@ -12,7 +12,7 @@ import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 import umap
 
-def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
+def preprocess_data(X, method, random_state):
     """
     Standardize the data and apply dimensionality reduction (PCA, t-SNE, UMAP, or MDS).
     
@@ -20,14 +20,12 @@ def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
     -----------
     X : array-like
         Input features
-    method : str, default='pca'
+    method : str
         Dimensionality reduction method ('pca', 'tsne', 'umap', or 'mds')
     n_components : int, default=2
         Number of components
     random_state : int, default=42
         Random state for reproducibility
-    **kwargs : dict
-        Additional keyword arguments for the dimensionality reduction method
         
     Returns:
     --------
@@ -38,7 +36,7 @@ def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
     X_scaled = scaler.fit_transform(X)
     
     if method.lower() == 'pca':
-        model = PCA(n_components=n_components)
+        model = PCA(n_components=2)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'tsne':
         # Default t-SNE parameters
@@ -49,14 +47,13 @@ def preprocess_data(X, method, n_components=2, random_state=42, **kwargs):
             'n_iter': 1000,
             'n_iter_without_progress': 300
         }
-        tsne_params.update(kwargs)
-        model = TSNE(n_components=n_components, random_state=random_state, **tsne_params)
+        model = TSNE(n_components=2, random_state=random_state, **tsne_params)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'umap':
-        model = umap.UMAP(n_components=n_components, random_state=random_state, **kwargs)
+        model = umap.UMAP(n_components=2, random_state=random_state)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'mds':
-        model = MDS(n_components=n_components, random_state=random_state, **kwargs)
+        model = MDS(n_components=2, random_state=random_state)
         X_transformed = model.fit_transform(X_scaled)
     else:
         raise ValueError(f"Unsupported method: {method}. Use 'pca', 'tsne', 'umap', or 'mds'.")
@@ -278,7 +275,7 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, X_original, y_original, method='mds', step=0.1, random_state=42, **kwargs):
+def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, X_original, y_original, method='umap', step=0.1, random_state=42):
     """
     Generate visualization data and decision boundaries for a pre-trained decision tree
     using either PCA or t-SNE dimensionality reduction.
@@ -295,14 +292,12 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
         Pre-trained decision tree classifier on original (non-PCA) data
     class_names : list
         List of class names
-    method : str, default='pca'
+    method : str, default='umap'
         Dimensionality reduction method ('pca', 'tsne', 'umap', or 'mds')
     step : float, default=0.1
         Step size for decision boundary grid
     random_state : int, default=42
         Random state for reproducibility
-    **kwargs : dict
-        Additional parameters for the dimensionality reduction method
         
     Returns:
     --------
@@ -322,7 +317,7 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
         originalPointsNeighPointsBoolArray = [False] * len (X)
      
     # Transform data
-    X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state, **kwargs)
+    X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state)
     
     # Filter transformed points and original data
     filtered_transformed_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(

@@ -36,8 +36,8 @@ export const fetchExplanation = async (requestData) =>
         body: JSON.stringify(requestData),
     });
 
-export const fetchClassColors = () =>
-    fetchJSON(`${API_BASE}/get-classes-colors`);
+export const fetchClassColors = (method = 'umap') =>
+    fetchJSON(`${API_BASE}/get-classes-colors?method=${method}`);
 
 export async function fetchVisualizationUpdate(requestData) {
     try {

@@ -200,9 +200,14 @@ window.explainInstance = async () => {
         
         const result = await fetchExplanation(requestData);
 
-        // Now fetch the colors based on the neighborhood data
-        // that was just populated by the explanation
-        await initializeColors();
+        // Get the current scatter plot method
+        const methodElement = document.querySelector(
+            'input[name="scatterPlotMethod"]:checked'
+        );
+        const currentMethod = methodElement ? methodElement.value : 'umap';
+
+        // Now fetch the colors based on the neighborhood data and current method
+        await initializeColors(currentMethod);
 
         setGlobalColorMap(result.uniqueClasses);
 
