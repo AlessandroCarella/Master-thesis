@@ -16,18 +16,19 @@ export function applyCustomPositioning(root, instancePath) {
         node.y = LAYOUT_CONFIG.startY + (i * LAYOUT_CONFIG.mainSpacing);
     });
     
-    // For each main path node, position its non-main-path children at 45-degree angles
-    mainPathNodes.forEach(mainNode => {
+    // For each main path node, position its non-main-path children at alternating up/down angles
+    mainPathNodes.forEach((mainNode, mainNodeIndex) => {
         const nonMainChildren = mainNode.children ? mainNode.children.filter(child => !child.data.isMainPath) : [];
         
         if (nonMainChildren.length > 0) {
-            // Position children at 45-degree angles
+            // Position children at alternating up/down angles based on main node index
             nonMainChildren.forEach((child, index) => {
-                // Determine if this is left or right child
-                const isLeft = child.data.node_id === mainNode.data.left_child;
+                // Alternate direction based on the main node's position in the sequence
+                // Even indices (0, 2, 4...) go up, odd indices (1, 3, 5...) go down
+                const goUp = mainNodeIndex % 2 === 0;
                 
-                // Calculate 45-degree position with consistent distance
-                const angle = isLeft ? ANGLES.branchLeft : ANGLES.branchRight; // -45° or +45°
+                // Calculate angle: up is negative (upward), down is positive (downward)
+                const angle = goUp ? ANGLES.branchLeft : ANGLES.branchRight; // -45° (up) or +45° (down)
                 
                 child.x = mainNode.x + Math.sin(angle) * LAYOUT_CONFIG.branchDistance;
                 child.y = mainNode.y + Math.cos(angle) * LAYOUT_CONFIG.branchDistance;
