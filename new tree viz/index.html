@@ -58,11 +58,24 @@
             display: flex;
             justify-content: center;
             gap: 20px;
+            flex-wrap: wrap;
         }
 
-        .layout-button {
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-label {
+            font-weight: bold;
+            color: #333;
+            margin-right: 10px;
+        }
+
+        .data-button {
             padding: 12px 24px;
-            background-color: #69b3a2;
+            background-color: #6c5ce7;
             color: white;
             border: none;
             border-radius: 4px;
@@ -71,188 +84,145 @@
             transition: all 0.3s ease;
         }
 
-        .layout-button:hover {
-            background-color: #4a9080;
+        .data-button:hover {
+            background-color: #5a4fcf;
         }
 
-        .layout-button.active {
-            background-color: #ff6b6b;
-            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        .data-button.active {
+            background-color: #fd79a8;
         }
 
-        .layout-button.active:hover {
-            background-color: #e55555;
+        .data-button.active:hover {
+            background-color: #e84393;
         }
     </style>
 </head>
 <body>
     <h1>Decision Tree Visualization</h1>
     <div class="controls">
-        <button id="depth-aligned-btn" class="layout-button" onclick="setLayout('depthAligned')">
-            Depth-Aligned Layout
-        </button>
-        <button id="horizontal-path-btn" class="layout-button active" onclick="setLayout('horizontalInstancePath')">
-            Horizontal Instance Path
-        </button>
+        <div class="control-group">
+            <span class="control-label">Data Set:</span>
+            <button id="dataset1-btn" class="data-button active" onclick="setDataset('dataset1')">
+                Dataset 1
+            </button>
+            <button id="dataset2-btn" class="data-button" onclick="setDataset('dataset2')">
+                Dataset 2
+            </button>
+            <button id="dataset3-btn" class="data-button" onclick="setDataset('dataset3')">
+                Dataset 3
+            </button>
+        </div>
     </div>
     <div id="tree-container"></div>
     
     <script>
         let treeData, instanceData, nodeMap;
-        let currentLayoutMethod = "depthAligned";
+        let currentDataset = "dataset1";
         
-        // Layout methods registry - add new methods here
-        const layoutMethods = {
-            // Horizontal instance path layout (original method)
-            horizontalInstancePath: function(allPaths, width, height, instancePath) {
-                const positions = {};
-                const margin = { top: 40, right: 40, bottom: 100, left: 40 };
-                const availableWidth = width - margin.left - margin.right;
-                const availableHeight = height - margin.top - margin.bottom;
-                
-                // Find the instance path
-                let instancePathData = null;
-                let otherPaths = [];
-                
-                for (const path of allPaths) {
-                    if (arraysEqual(path, instancePath)) {
-                        instancePathData = path;
-                    } else {
-                        otherPaths.push(path);
-                    }
+        // Depth-aligned layout function
+        function depthAlignedLayout(allPaths, width, height, instancePath) {
+            const positions = {};
+            const margin = { top: 40, right: 40, bottom: 100, left: 40 };
+            const availableWidth = width - margin.left - margin.right;
+            const availableHeight = height - margin.top - margin.bottom;
+            
+            // Create depth mapping: depth 0 = root, depth 1 = first level, etc.
+            const maxDepth = Math.max(...allPaths.map(path => path.length - 1));
+            const depthToX = {};
+            
+            // Calculate x-coordinates for each depth level
+            for (let depth = 0; depth <= maxDepth; depth++) {
+                depthToX[depth] = margin.left + (depth * (availableWidth / maxDepth));
+            }
+            
+            // Position the instance path at the bottom
+            const bottomY = height - margin.bottom;
+            instancePath.forEach((nodeId, depth) => {
+                positions[nodeId] = {
+                    id: nodeId,
+                    x: depthToX[depth],
+                    y: bottomY,
+                    label: getNodeLabel(nodeId)
+                };
+            });
+            
+            // Find other paths and group them
+            let otherPaths = [];
+            for (const path of allPaths) {
+                if (!arraysEqual(path, instancePath)) {
+                    otherPaths.push(path);
                 }
+            }
+            
+            // Sort other paths by branch point (where they diverge from instance path)
+            const sortedOtherPaths = otherPaths.sort((pathA, pathB) => {
+                const branchPointA = findBranchPoint(pathA, instancePath);
+                const branchPointB = findBranchPoint(pathB, instancePath);
+                return branchPointA - branchPointB;
+            });
+            
+            // Position other paths above the instance path
+            const availableSpaceAbove = availableHeight - 100;
+            
+            sortedOtherPaths.forEach((path, pathIndex) => {
+                const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
                 
-                // Position the instance path at the bottom as a straight horizontal line
-                if (instancePathData) {
-                    const bottomY = height - margin.bottom;
-                    instancePathData.forEach((nodeId, nodeIndex) => {
-                        const x = margin.left + (nodeIndex * (availableWidth / Math.max(1, instancePathData.length - 1)));
+                path.forEach((nodeId, depth) => {
+                    // Only position nodes that aren't already positioned (shared nodes with instance path)
+                    if (!positions[nodeId]) {
                         positions[nodeId] = {
                             id: nodeId,
-                            x: x,
-                            y: bottomY,
+                            x: depthToX[depth], // Align with same tree depth
+                            y: y,
                             label: getNodeLabel(nodeId)
                         };
-                    });
-                }
-                
-                // Sort other paths based on where they branch off from the main path
-                const sortedOtherPaths = otherPaths.sort((pathA, pathB) => {
-                    const branchPointA = findBranchPoint(pathA, instancePath);
-                    const branchPointB = findBranchPoint(pathB, instancePath);
-                    return branchPointA - branchPointB;
-                });
-                
-                // Position other paths above the main line
-                const availableSpaceAbove = availableHeight - 100;
-                sortedOtherPaths.forEach((path, pathIndex) => {
-                    const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
-                    
-                    path.forEach((nodeId, nodeIndex) => {
-                        if (!positions[nodeId]) {
-                            const x = margin.left + (nodeIndex * (availableWidth / Math.max(1, path.length - 1)));
-                            positions[nodeId] = {
-                                id: nodeId,
-                                x: x,
-                                y: y,
-                                label: getNodeLabel(nodeId)
-                            };
-                        }
-                    });
-                });
-                
-                return positions;
-            },
-            
-            // Depth-aligned layout (second method)
-            depthAligned: function(allPaths, width, height, instancePath) {
-                const positions = {};
-                const margin = { top: 40, right: 40, bottom: 100, left: 40 };
-                const availableWidth = width - margin.left - margin.right;
-                const availableHeight = height - margin.top - margin.bottom;
-                
-                // Create depth mapping: depth 0 = root, depth 1 = first level, etc.
-                const maxDepth = Math.max(...allPaths.map(path => path.length - 1));
-                const depthToX = {};
-                
-                // Calculate x-coordinates for each depth level
-                for (let depth = 0; depth <= maxDepth; depth++) {
-                    depthToX[depth] = margin.left + (depth * (availableWidth / maxDepth));
-                }
-                
-                // Position the instance path at the bottom
-                const bottomY = height - margin.bottom;
-                instancePath.forEach((nodeId, depth) => {
-                    positions[nodeId] = {
-                        id: nodeId,
-                        x: depthToX[depth],
-                        y: bottomY,
-                        label: getNodeLabel(nodeId)
-                    };
-                });
-                
-                // Find other paths and group them
-                let otherPaths = [];
-                for (const path of allPaths) {
-                    if (!arraysEqual(path, instancePath)) {
-                        otherPaths.push(path);
                     }
-                }
-                
-                // Sort other paths by branch point (where they diverge from instance path)
-                const sortedOtherPaths = otherPaths.sort((pathA, pathB) => {
-                    const branchPointA = findBranchPoint(pathA, instancePath);
-                    const branchPointB = findBranchPoint(pathB, instancePath);
-                    return branchPointA - branchPointB;
                 });
-                
-                // Position other paths above the instance path
-                const availableSpaceAbove = availableHeight - 100;
-                
-                sortedOtherPaths.forEach((path, pathIndex) => {
-                    const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
-                    
-                    path.forEach((nodeId, depth) => {
-                        // Only position nodes that aren't already positioned (shared nodes with instance path)
-                        if (!positions[nodeId]) {
-                            positions[nodeId] = {
-                                id: nodeId,
-                                x: depthToX[depth], // Align with same tree depth
-                                y: y,
-                                label: getNodeLabel(nodeId)
-                            };
-                        }
-                    });
-                });
-                
-                return positions;
-            }
-        };
+            });
+            
+            return positions;
+        }
         
-        function setLayout(layoutType) {
-            currentLayoutMethod = layoutType;
+        function setDataset(dataset) {
+            currentDataset = dataset;
             
             // Update button states
-            document.querySelectorAll('.layout-button').forEach(btn => {
+            document.querySelectorAll('.data-button').forEach(btn => {
                 btn.classList.remove('active');
             });
             
-            if (layoutType === 'depthAligned') {
-                document.getElementById('horizontal-path-btn').classList.add('active');
-            }else if (layoutType === 'horizontalInstancePath') {
-            document.getElementById('depth-aligned-btn').classList.add('active');
+            if (dataset === 'dataset1') {
+                document.getElementById('dataset1-btn').classList.add('active');
+            } else if (dataset === 'dataset2') {
+                document.getElementById('dataset2-btn').classList.add('active');
+            } else if (dataset === 'dataset3') {
+                document.getElementById('dataset3-btn').classList.add('active');
             }
             
-            // Apply the layout immediately
-            createVisualization();
+            // Reload and visualize with new dataset
+            loadAndVisualize();
         }
         
         async function loadAndVisualize() {
             try {
+                // Determine which files to load based on current dataset
+                let treeFile, instanceFile;
+                
+                if (currentDataset === 'dataset1') {
+                    treeFile = './data/tree.json';
+                    instanceFile = './data/instance.json';
+                } else if (currentDataset === 'dataset2') {
+                    treeFile = './data/tree2.json';
+                    instanceFile = './data/instance2.json';
+                } else if (currentDataset === 'dataset3') {
+                    treeFile = './data/tree3.json';
+                    instanceFile = './data/instance3.json';
+                }
+                
                 // Load data files
                 const [tree, instance] = await Promise.all([
-                    d3.json('./data/tree.json'),
-                    d3.json('./data/instance.json')
+                    d3.json(treeFile),
+                    d3.json(instanceFile)
                 ]);
                 
                 treeData = tree;
@@ -267,7 +237,29 @@
                 createVisualization();
             } catch (error) {
                 console.error('Error loading data:', error);
+                // Display error message in the container
+                const container = d3.select("#tree-container");
+                container.selectAll("*").remove();
+                container.append("div")
+                    .style("display", "flex")
+                    .style("align-items", "center")
+                    .style("justify-content", "center")
+                    .style("height", "100%")
+                    .style("color", "#ff6b6b")
+                    .style("font-size", "18px")
+                    .text(`Error loading data files. Please ensure ${getDatasetFiles(currentDataset)} exist in the ./data/ directory.`);
             }            
+        }
+        
+        function getDatasetFiles(dataset) {
+            if (dataset === 'dataset1') {
+                return 'tree.json and instance.json';
+            } else if (dataset === 'dataset2') {
+                return 'tree2.json and instance2.json';
+            } else if (dataset === 'dataset3') {
+                return 'tree3.json and instance3.json';
+            }
+            return 'the required data files';
         }
     
         function createVisualization() {
@@ -288,11 +280,8 @@
             // Process tree data to get all paths
             const allPaths = getAllPathsFromFlatTree(nodeMap);
             
-            // Get the selected layout method or use default
-            const layoutMethod = layoutMethods[currentLayoutMethod];
-            
-            // Create node positions using the selected layout method
-            const nodePositions = layoutMethod(allPaths, width, height, instancePath);
+            // Create node positions using the depth-aligned layout
+            const nodePositions = depthAlignedLayout(allPaths, width, height, instancePath);
             
             // Create links
             const links = createLinks(allPaths, nodePositions);

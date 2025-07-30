@@ -167,6 +167,12 @@ async def explain_instance(request: InstanceRequest):
             X_original=global_state.X_train,
             y_original=global_state.y_train
         )
+    
+    import json
+    with open ("tree.json", "w") as f:
+        json.dump(tree_data, f)
+    with open ("instance.json", "w") as f:
+        json.dump(instance_values, f)
 
     return {
         "status": "success",
