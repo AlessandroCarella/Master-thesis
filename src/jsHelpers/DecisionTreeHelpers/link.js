@@ -13,6 +13,9 @@ export function createSplitPath({ source, target }, SETTINGS) {
 }
 
 export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
+    console.log(treeData)
+    console.log(treeData.data)
+    console.log(treeData.data.n_samples)
     contentGroup
         .selectAll(".link")
         .data(treeData.links())
@@ -21,7 +24,7 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .attr("class", "link")
         .attr("data-source-id", (d) => d.source.data.node_id)
         .attr("data-target-id", (d) => d.target.data.node_id)
-        .style("stroke-width", `${metrics.linkStrokeWidth}px`)
+        .style("stroke-width", (d) => `${(d.target.data.weighted_n_samples/treeData.data.n_samples)* 3* metrics.linkStrokeWidth}px`)
         .attr("d", (d) => createSplitPath(d, SETTINGS))
         .style("fill", "none")
         .style("stroke", colorScheme.ui.linkStroke);
