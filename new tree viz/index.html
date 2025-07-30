@@ -5,12 +5,468 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decision Tree Visualization</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        #tree-container {
+            width: 1000px;
+            height: 1000px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 0 auto;
+        }
+        
+        .node {
+            fill: #69b3a2;
+            stroke: #333;
+            stroke-width: 2px;
+        }
+        
+        .node.highlighted {
+            fill: #ff6b6b;
+            stroke: #d63031;
+            stroke-width: 3px;
+        }
+        
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2px;
+        }
+        
+        .link.highlighted {
+            stroke: #ff6b6b;
+            stroke-width: 4px;
+        }
+        
+        .node-label {
+            text-anchor: middle;
+            font-size: 12px;
+            fill: #333;
+            pointer-events: none;
+        }
+
+        .controls {
+            margin: 20px auto;
+            width: 1000px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .layout-button {
+            padding: 12px 24px;
+            background-color: #69b3a2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .layout-button:hover {
+            background-color: #4a9080;
+        }
+
+        .layout-button.active {
+            background-color: #ff6b6b;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .layout-button.active:hover {
+            background-color: #e55555;
+        }
+    </style>
 </head>
 <body>
+    <h1>Decision Tree Visualization</h1>
+    <div class="controls">
+        <button id="depth-aligned-btn" class="layout-button" onclick="setLayout('depthAligned')">
+            Depth-Aligned Layout
+        </button>
+        <button id="horizontal-path-btn" class="layout-button active" onclick="setLayout('horizontalInstancePath')">
+            Horizontal Instance Path
+        </button>
+    </div>
     <div id="tree-container"></div>
-    <div class="tooltip"></div>
-
-    <script type="module" src="script.js"></script>
+    
+    <script>
+        let treeData, instanceData, nodeMap;
+        let currentLayoutMethod = "depthAligned";
+        
+        // Layout methods registry - add new methods here
+        const layoutMethods = {
+            // Horizontal instance path layout (original method)
+            horizontalInstancePath: function(allPaths, width, height, instancePath) {
+                const positions = {};
+                const margin = { top: 40, right: 40, bottom: 100, left: 40 };
+                const availableWidth = width - margin.left - margin.right;
+                const availableHeight = height - margin.top - margin.bottom;
+                
+                // Find the instance path
+                let instancePathData = null;
+                let otherPaths = [];
+                
+                for (const path of allPaths) {
+                    if (arraysEqual(path, instancePath)) {
+                        instancePathData = path;
+                    } else {
+                        otherPaths.push(path);
+                    }
+                }
+                
+                // Position the instance path at the bottom as a straight horizontal line
+                if (instancePathData) {
+                    const bottomY = height - margin.bottom;
+                    instancePathData.forEach((nodeId, nodeIndex) => {
+                        const x = margin.left + (nodeIndex * (availableWidth / Math.max(1, instancePathData.length - 1)));
+                        positions[nodeId] = {
+                            id: nodeId,
+                            x: x,
+                            y: bottomY,
+                            label: getNodeLabel(nodeId)
+                        };
+                    });
+                }
+                
+                // Sort other paths based on where they branch off from the main path
+                const sortedOtherPaths = otherPaths.sort((pathA, pathB) => {
+                    const branchPointA = findBranchPoint(pathA, instancePath);
+                    const branchPointB = findBranchPoint(pathB, instancePath);
+                    return branchPointA - branchPointB;
+                });
+                
+                // Position other paths above the main line
+                const availableSpaceAbove = availableHeight - 100;
+                sortedOtherPaths.forEach((path, pathIndex) => {
+                    const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
+                    
+                    path.forEach((nodeId, nodeIndex) => {
+                        if (!positions[nodeId]) {
+                            const x = margin.left + (nodeIndex * (availableWidth / Math.max(1, path.length - 1)));
+                            positions[nodeId] = {
+                                id: nodeId,
+                                x: x,
+                                y: y,
+                                label: getNodeLabel(nodeId)
+                            };
+                        }
+                    });
+                });
+                
+                return positions;
+            },
+            
+            // Depth-aligned layout (second method)
+            depthAligned: function(allPaths, width, height, instancePath) {
+                const positions = {};
+                const margin = { top: 40, right: 40, bottom: 100, left: 40 };
+                const availableWidth = width - margin.left - margin.right;
+                const availableHeight = height - margin.top - margin.bottom;
+                
+                // Create depth mapping: depth 0 = root, depth 1 = first level, etc.
+                const maxDepth = Math.max(...allPaths.map(path => path.length - 1));
+                const depthToX = {};
+                
+                // Calculate x-coordinates for each depth level
+                for (let depth = 0; depth <= maxDepth; depth++) {
+                    depthToX[depth] = margin.left + (depth * (availableWidth / maxDepth));
+                }
+                
+                // Position the instance path at the bottom
+                const bottomY = height - margin.bottom;
+                instancePath.forEach((nodeId, depth) => {
+                    positions[nodeId] = {
+                        id: nodeId,
+                        x: depthToX[depth],
+                        y: bottomY,
+                        label: getNodeLabel(nodeId)
+                    };
+                });
+                
+                // Find other paths and group them
+                let otherPaths = [];
+                for (const path of allPaths) {
+                    if (!arraysEqual(path, instancePath)) {
+                        otherPaths.push(path);
+                    }
+                }
+                
+                // Sort other paths by branch point (where they diverge from instance path)
+                const sortedOtherPaths = otherPaths.sort((pathA, pathB) => {
+                    const branchPointA = findBranchPoint(pathA, instancePath);
+                    const branchPointB = findBranchPoint(pathB, instancePath);
+                    return branchPointA - branchPointB;
+                });
+                
+                // Position other paths above the instance path
+                const availableSpaceAbove = availableHeight - 100;
+                
+                sortedOtherPaths.forEach((path, pathIndex) => {
+                    const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
+                    
+                    path.forEach((nodeId, depth) => {
+                        // Only position nodes that aren't already positioned (shared nodes with instance path)
+                        if (!positions[nodeId]) {
+                            positions[nodeId] = {
+                                id: nodeId,
+                                x: depthToX[depth], // Align with same tree depth
+                                y: y,
+                                label: getNodeLabel(nodeId)
+                            };
+                        }
+                    });
+                });
+                
+                return positions;
+            }
+        };
+        
+        function setLayout(layoutType) {
+            currentLayoutMethod = layoutType;
+            
+            // Update button states
+            document.querySelectorAll('.layout-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (layoutType === 'depthAligned') {
+                document.getElementById('horizontal-path-btn').classList.add('active');
+            }else if (layoutType === 'horizontalInstancePath') {
+            document.getElementById('depth-aligned-btn').classList.add('active');
+            }
+            
+            // Apply the layout immediately
+            createVisualization();
+        }
+        
+        async function loadAndVisualize() {
+            try {
+                // Load data files
+                const [tree, instance] = await Promise.all([
+                    d3.json('./data/tree.json'),
+                    d3.json('./data/instance.json')
+                ]);
+                
+                treeData = tree;
+                instanceData = instance;
+                
+                // Create node lookup map
+                nodeMap = new Map();
+                treeData.forEach(node => {
+                    nodeMap.set(node.node_id, node);
+                });
+                
+                createVisualization();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }            
+        }
+    
+        function createVisualization() {
+            // Clear previous visualization if any
+            d3.select("#tree-container").selectAll("*").remove();
+            
+            const container = d3.select("#tree-container");
+            const width = 1000;
+            const height = 1000;
+            
+            const svg = container.append("svg")
+                .attr("width", width)
+                .attr("height", height);
+            
+            // Trace the path for the instance
+            const instancePath = traceInstancePath(instanceData, nodeMap);
+            
+            // Process tree data to get all paths
+            const allPaths = getAllPathsFromFlatTree(nodeMap);
+            
+            // Get the selected layout method or use default
+            const layoutMethod = layoutMethods[currentLayoutMethod];
+            
+            // Create node positions using the selected layout method
+            const nodePositions = layoutMethod(allPaths, width, height, instancePath);
+            
+            // Create links
+            const links = createLinks(allPaths, nodePositions);
+            
+            // Draw links
+            svg.selectAll(".link")
+                .data(links)
+                .enter()
+                .append("line")
+                .attr("class", d => `link ${isLinkHighlighted(d, instancePath) ? 'highlighted' : ''}`)
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+            
+            // Draw nodes
+            const nodes = Object.values(nodePositions);
+            svg.selectAll(".node")
+                .data(nodes)
+                .enter()
+                .append("circle")
+                .attr("class", d => `node ${instancePath.includes(d.id) ? 'highlighted' : ''}`)
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y)
+                .attr("r", 8);
+            
+            // Add labels
+            svg.selectAll(".node-label")
+                .data(nodes)
+                .enter()
+                .append("text")
+                .attr("class", "node-label")
+                .attr("x", d => d.x)
+                .attr("y", d => d.y + 25)
+                .text(d => d.label);
+        }
+        
+        function traceInstancePath(instance, nodeMap) {
+            const path = [];
+            let currentNodeId = 0; // Start from root
+            
+            while (currentNodeId !== null) {
+                const node = nodeMap.get(currentNodeId);
+                if (!node) break;
+                
+                path.push(currentNodeId);
+                
+                if (node.is_leaf) {
+                    break;
+                }
+                
+                // Determine which child to follow based on instance values
+                const featureName = node.feature_name;
+                const threshold = node.threshold;
+                const instanceValue = instance[featureName];
+                
+                // Decision logic based on feature type
+                let goLeft = false;
+                
+                if (typeof threshold === 'number') {
+                    // Numerical threshold
+                    goLeft = instanceValue <= threshold;
+                } else {
+                    // Categorical threshold
+                    if (featureName === 'education') {
+                        const educationLevels = ['high_school', 'college', 'master', 'phd'];
+                        const instanceLevel = educationLevels.indexOf(instanceValue);
+                        const thresholdLevel = educationLevels.indexOf(threshold);
+                        goLeft = instanceLevel <= thresholdLevel;
+                    } else if (featureName === 'employment') {
+                        goLeft = instanceValue === threshold;
+                    } else if (featureName === 'location') {
+                        goLeft = instanceValue === threshold;
+                    } else {
+                        // Default string comparison
+                        goLeft = instanceValue === threshold;
+                    }
+                }
+                
+                currentNodeId = goLeft ? node.left_child : node.right_child;
+            }
+            
+            return path;
+        }
+        
+        function getAllPathsFromFlatTree(nodeMap) {
+            const paths = [];
+            
+            function traverseNode(nodeId, currentPath) {
+                const node = nodeMap.get(nodeId);
+                if (!node) return;
+                
+                const newPath = [...currentPath, nodeId];
+                
+                if (node.is_leaf) {
+                    paths.push(newPath);
+                } else {
+                    if (node.left_child !== null) {
+                        traverseNode(node.left_child, newPath);
+                    }
+                    if (node.right_child !== null) {
+                        traverseNode(node.right_child, newPath);
+                    }
+                }
+            }
+            
+            traverseNode(0, []); // Start from root (node_id 0)
+            return paths;
+        }
+        
+        function findBranchPoint(path, instancePath) {
+            let branchPoint = 0;
+            const minLength = Math.min(path.length, instancePath.length);
+            
+            for (let i = 0; i < minLength; i++) {
+                if (path[i] === instancePath[i]) {
+                    branchPoint = i;
+                } else {
+                    break;
+                }
+            }
+            
+            return branchPoint;
+        }
+        
+        function createLinks(allPaths, nodePositions) {
+            const links = [];
+            const addedLinks = new Set();
+            
+            allPaths.forEach(path => {
+                for (let i = 0; i < path.length - 1; i++) {
+                    const sourceId = path[i];
+                    const targetId = path[i + 1];
+                    const linkId = `${sourceId}-${targetId}`;
+                    
+                    if (!addedLinks.has(linkId)) {
+                        addedLinks.add(linkId);
+                        links.push({
+                            source: nodePositions[sourceId],
+                            target: nodePositions[targetId],
+                            sourceId: sourceId,
+                            targetId: targetId
+                        });
+                    }
+                }
+            });
+            
+            return links;
+        }
+        
+        function isLinkHighlighted(link, instancePath) {
+            const sourceIndex = instancePath.indexOf(link.sourceId);
+            const targetIndex = instancePath.indexOf(link.targetId);
+            return sourceIndex !== -1 && targetIndex !== -1 && Math.abs(sourceIndex - targetIndex) === 1;
+        }
+        
+        function getNodeLabel(nodeId) {
+            const node = nodeMap.get(nodeId);
+            if (node) {
+                if (node.is_leaf) {
+                    return node.class_label || 'Leaf';
+                } else {
+                    return node.feature_name || `Node ${nodeId}`;
+                }
+            }
+            return `Node ${nodeId}`;
+        }
+        
+        function arraysEqual(arr1, arr2) {
+            return arr1.length === arr2.length && arr1.every((val, i) => val === arr2[i]);
+        }
+        
+        // Initialize the visualization
+        loadAndVisualize();
+    </script>
 </body>
 </html>
