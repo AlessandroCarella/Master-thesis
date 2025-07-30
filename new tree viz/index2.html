@@ -14,11 +14,12 @@
         }
         
         #tree-container {
-            width: 100%;
-            height: 80vh;
+            width: 1000px;
+            height: 1000px;
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 0 auto;
         }
         
         .node {
@@ -63,8 +64,8 @@
             try {
                 // Load data files
                 const [tree, instance] = await Promise.all([
-                    // d3.json('./data/tree.json'),
-                    // d3.json('./data/instance.json')
+                    d3.json('./data/tree.json'),
+                    d3.json('./data/instance.json')
                 ]);
                 
                 treeData = tree;
@@ -73,136 +74,29 @@
                 createVisualization();
             } catch (error) {
                 console.error('Error loading data:', error);
-                // Create sample data for demonstration
-                createSampleData();
-                createVisualization();
-            }
+            }            
         }
-        
-        function createSampleData() {
-            // Sample tree structure for demonstration with more nodes
-            treeData = {
-                "id": "root",
-                "feature": "age",
-                "threshold": 30,
-                "children": [
-                    {
-                        "id": "node1",
-                        "feature": "income",
-                        "threshold": 50000,
-                        "children": [
-                            {
-                                "id": "node4",
-                                "feature": "credit_score",
-                                "threshold": 700,
-                                "children": [
-                                    {"id": "leaf1", "class": "Approved", "value": 0.9},
-                                    {"id": "leaf2", "class": "Rejected", "value": 0.1}
-                                ]
-                            },
-                            {
-                                "id": "node5",
-                                "feature": "employment",
-                                "threshold": "stable",
-                                "children": [
-                                    {"id": "leaf3", "class": "Pending", "value": 0.6},
-                                    {"id": "leaf4", "class": "Rejected", "value": 0.4}
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "id": "node2",
-                        "feature": "education",
-                        "threshold": "college",
-                        "children": [
-                            {
-                                "id": "node6",
-                                "feature": "debt_ratio",
-                                "threshold": 0.3,
-                                "children": [
-                                    {"id": "leaf5", "class": "Approved", "value": 0.8},
-                                    {"id": "leaf6", "class": "Pending", "value": 0.5}
-                                ]
-                            },
-                            {
-                                "id": "node3",
-                                "feature": "experience",
-                                "threshold": 5,
-                                "children": [
-                                    {
-                                        "id": "node7",
-                                        "feature": "location",
-                                        "threshold": "urban",
-                                        "children": [
-                                            {"id": "leaf7", "class": "Approved", "value": 0.95},
-                                            {"id": "leaf8", "class": "Approved", "value": 0.85}
-                                        ]
-                                    },
-                                    {
-                                        "id": "node8",
-                                        "feature": "savings",
-                                        "threshold": 10000,
-                                        "children": [
-                                            {"id": "leaf9", "class": "Approved", "value": 0.75},
-                                            {"id": "leaf10", "class": "Pending", "value": 0.45}
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "id": "node9",
-                        "feature": "marital_status",
-                        "threshold": "married",
-                        "children": [
-                            {
-                                "id": "node10",
-                                "feature": "dependents",
-                                "threshold": 2,
-                                "children": [
-                                    {"id": "leaf11", "class": "Approved", "value": 0.7},
-                                    {"id": "leaf12", "class": "Pending", "value": 0.55}
-                                ]
-                            },
-                            {
-                                "id": "node11",
-                                "feature": "property_owner",
-                                "threshold": "yes",
-                                "children": [
-                                    {"id": "leaf13", "class": "Approved", "value": 0.9},
-                                    {"id": "leaf14", "class": "Rejected", "value": 0.3}
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            };
-            
-            // Sample instance that follows a specific path through the deeper tree
-            instanceData = {
-                "age": 35,
-                "education": "master",
-                "experience": 8,
-                "location": "urban",
-                "path": ["root", "node2", "node3", "node7", "leaf7"]
-            };
-        }
-        
+    
         function createVisualization() {
             const container = d3.select("#tree-container");
-            const containerRect = container.node().getBoundingClientRect();
-            const width = containerRect.width;
-            const height = containerRect.height;
+            const width = 1000;
+            const height = 1000;
             
             const svg = container.append("svg")
                 .attr("width", width)
                 .attr("height", height);
             
-            // Process tree data to get all paths and assign levels
-            const allPaths = getAllPaths(treeData);
-            const instancePath = instanceData.path || [];
+            // Create node lookup map
+            const nodeMap = new Map();
+            treeData.forEach(node => {
+                nodeMap.set(node.node_id, node);
+            });
+            
+            // Trace the path for the instance
+            const instancePath = traceInstancePath(instanceData, nodeMap);
+            
+            // Process tree data to get all paths
+            const allPaths = getAllPathsFromFlatTree(nodeMap);
             
             // Create node positions
             const nodePositions = calculateNodePositions(allPaths, width, height, instancePath);
@@ -243,20 +137,76 @@
                 .text(d => d.label);
         }
         
-        function getAllPaths(node, currentPath = []) {
-            const paths = [];
-            const newPath = [...currentPath, node.id];
+        function traceInstancePath(instance, nodeMap) {
+            const path = [];
+            let currentNodeId = 0; // Start from root
             
-            if (!node.children || node.children.length === 0) {
-                // This is a leaf node
-                paths.push(newPath);
-            } else {
-                // Continue with children
-                for (const child of node.children) {
-                    paths.push(...getAllPaths(child, newPath));
+            while (currentNodeId !== null) {
+                const node = nodeMap.get(currentNodeId);
+                if (!node) break;
+                
+                path.push(currentNodeId);
+                
+                if (node.is_leaf) {
+                    break;
+                }
+                
+                // Determine which child to follow based on instance values
+                const featureName = node.feature_name;
+                const threshold = node.threshold;
+                const instanceValue = instance[featureName];
+                
+                // Decision logic based on feature type
+                let goLeft = false;
+                
+                if (typeof threshold === 'number') {
+                    // Numerical threshold
+                    goLeft = instanceValue <= threshold;
+                } else {
+                    // Categorical threshold
+                    if (featureName === 'education') {
+                        const educationLevels = ['high_school', 'college', 'master', 'phd'];
+                        const instanceLevel = educationLevels.indexOf(instanceValue);
+                        const thresholdLevel = educationLevels.indexOf(threshold);
+                        goLeft = instanceLevel <= thresholdLevel;
+                    } else if (featureName === 'employment') {
+                        goLeft = instanceValue === threshold;
+                    } else if (featureName === 'location') {
+                        goLeft = instanceValue === threshold;
+                    } else {
+                        // Default string comparison
+                        goLeft = instanceValue === threshold;
+                    }
+                }
+                
+                currentNodeId = goLeft ? node.left_child : node.right_child;
+            }
+            
+            return path;
+        }
+        
+        function getAllPathsFromFlatTree(nodeMap) {
+            const paths = [];
+            
+            function traverseNode(nodeId, currentPath) {
+                const node = nodeMap.get(nodeId);
+                if (!node) return;
+                
+                const newPath = [...currentPath, nodeId];
+                
+                if (node.is_leaf) {
+                    paths.push(newPath);
+                } else {
+                    if (node.left_child !== null) {
+                        traverseNode(node.left_child, newPath);
+                    }
+                    if (node.right_child !== null) {
+                        traverseNode(node.right_child, newPath);
+                    }
                 }
             }
             
+            traverseNode(0, []); // Start from root (node_id 0)
             return paths;
         }
         
@@ -282,7 +232,7 @@
             if (instancePathData) {
                 const bottomY = height - margin.bottom;
                 instancePathData.forEach((nodeId, nodeIndex) => {
-                    const x = margin.left + (nodeIndex * (availableWidth / (instancePathData.length - 1)));
+                    const x = margin.left + (nodeIndex * (availableWidth / Math.max(1, instancePathData.length - 1)));
                     positions[nodeId] = {
                         id: nodeId,
                         x: x,
@@ -296,20 +246,17 @@
             const sortedOtherPaths = otherPaths.sort((pathA, pathB) => {
                 const branchPointA = findBranchPoint(pathA, instancePath);
                 const branchPointB = findBranchPoint(pathB, instancePath);
-                
-                // Paths that branch earlier should be higher (smaller y), 
-                // paths that branch later should be lower (larger y)
                 return branchPointA - branchPointB;
             });
             
-            // Position other paths above the main line, with earlier branches higher up
-            const availableSpaceAbove = availableHeight - 100; // Leave space for the main line
+            // Position other paths above the main line
+            const availableSpaceAbove = availableHeight - 100;
             sortedOtherPaths.forEach((path, pathIndex) => {
                 const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
                 
                 path.forEach((nodeId, nodeIndex) => {
                     if (!positions[nodeId]) {
-                        const x = margin.left + (nodeIndex * (availableWidth / (path.length - 1)));
+                        const x = margin.left + (nodeIndex * (availableWidth / Math.max(1, path.length - 1)));
                         positions[nodeId] = {
                             id: nodeId,
                             x: x,
@@ -324,7 +271,6 @@
         }
         
         function findBranchPoint(path, instancePath) {
-            // Find at which depth this path branches off from the instance path
             let branchPoint = 0;
             const minLength = Math.min(path.length, instancePath.length);
             
@@ -371,27 +317,20 @@
         }
         
         function getNodeLabel(nodeId) {
-            // Find node in tree data and return appropriate label
-            const node = findNodeById(treeData, nodeId);
+            const nodeMap = new Map();
+            treeData.forEach(node => {
+                nodeMap.set(node.node_id, node);
+            });
+            
+            const node = nodeMap.get(nodeId);
             if (node) {
-                if (node.children && node.children.length > 0) {
-                    return `${node.feature}`;
+                if (node.is_leaf) {
+                    return node.class_label || 'Leaf';
                 } else {
-                    return `${node.class || 'Leaf'}`;
+                    return node.feature_name || `Node ${nodeId}`;
                 }
             }
-            return nodeId;
-        }
-        
-        function findNodeById(node, id) {
-            if (node.id === id) return node;
-            if (node.children) {
-                for (const child of node.children) {
-                    const found = findNodeById(child, id);
-                    if (found) return found;
-                }
-            }
-            return null;
+            return `Node ${nodeId}`;
         }
         
         function arraysEqual(arr1, arr2) {
