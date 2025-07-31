@@ -54,7 +54,7 @@
         
         .node-label {
             text-anchor: middle;
-            font-size: 12px;
+            font-size: 11px;
             fill: #333;
             pointer-events: none;
             dominant-baseline: middle;
@@ -307,7 +307,7 @@
             const minSamples = Math.min(...Array.from(nodeMap.values()).map(n => n.n_samples || 0));
             
             // Normalize the stroke width between 1 and 10 pixels
-            const minStroke = 1;
+            const minStroke = 0.1;
             const maxStroke = 10;
             
             if (maxSamples === minSamples) {
@@ -538,15 +538,24 @@
                         .style("top", `${event.pageY - 28}px`);
                 });
             
-            // Add labels inside the rectangles
-            g.selectAll(".node-label")
+            // Add labels inside the rectangles with proper line breaks
+            g.selectAll(".node-label-group")
                 .data(nodes)
                 .enter()
-                .append("text")
-                .attr("class", "node-label")
-                .attr("x", d => d.x)
-                .attr("y", d => d.y)
-                .text(d => d.label);
+                .append("g")
+                .attr("class", "node-label-group")
+                .each(function(d) {
+                    const group = d3.select(this);
+                    const lines = getNodeLabelLines(d.id);
+                    
+                    lines.forEach((line, index) => {
+                        group.append("text")
+                            .attr("class", "node-label")
+                            .attr("x", d.x)
+                            .attr("y", d.y + (index - (lines.length - 1) / 2) * 14) // 14px line spacing
+                            .text(line);
+                    });
+                });
         }
         
         function traceInstancePath(instance, nodeMap) {
@@ -658,6 +667,21 @@
                 }
             }
             return `Node ${nodeId}`;
+        }
+        
+        function getNodeLabelLines(nodeId) {
+            const node = nodeMap.get(nodeId);
+            if (node) {
+                if (node.is_leaf) {
+                    return [node.class_label || 'Unknown'];
+                } else {
+                    return [
+                        `${node.feature_name} > ${parseFloat(node.threshold).toFixed(3)}`,
+                        `Instance: ${instanceData[node.feature_name]}`
+                    ];
+                }
+            }
+            return [`Node ${nodeId}`];
         }
         
         function arraysEqual(arr1, arr2) {
