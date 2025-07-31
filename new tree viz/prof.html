@@ -104,25 +104,27 @@
             background-color: #e84393;
         }
 
-        .tooltip {
+        .decision-tree-tooltip {
             position: absolute;
-            background-color: rgba(0, 0, 0, 0.9);
-            color: white;
+            background-color: white;
+            color: black;
             padding: 12px;
-            border-radius: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             font-size: 12px;
-            line-height: 1.4;
             pointer-events: none;
-            z-index: 1000;
+            white-space: normal;
             max-width: 300px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+            opacity: 1;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .tooltip-header {
             font-weight: bold;
             margin-bottom: 8px;
-            border-bottom: 1px solid #555;
+            border-bottom: 1px solid #ddd;
             padding-bottom: 4px;
         }
 
@@ -133,7 +135,7 @@
         .tooltip-distribution {
             margin-top: 8px;
             padding-top: 4px;
-            border-top: 1px solid #555;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
@@ -316,35 +318,55 @@
             return Math.max(minStroke, normalizedWidth);
         }
 
-        function formatTooltipContent(nodeId) {
+        function createTooltip() {
+            return d3
+                .select("body")
+                .append("div")
+                .attr("class", "decision-tree-tooltip")
+                .style("opacity", 0);
+        }
+
+        function showTooltip(event, nodeId, tooltip) {
             const node = nodeMap.get(nodeId);
-            if (!node) return "Node information not available";
+            if (!node) return;
             
-            let content = '<div class="tooltip-header">';
+            let tooltipContent = '<div class="tooltip-header">';
             
             if (node.is_leaf) {
-                content += `Leaf Node: ${node.class_label || 'Unknown'}`;
-                content += '</div>';
+                tooltipContent += `<strong>Leaf Node: ${node.class_label || 'Unknown'}</strong>`;
             } else {
-                content += `Split: ${node.feature_name} > ${node.threshold}`;
-                content += '</div>';
-                content += `<div class="tooltip-line">Feature Index: ${node.feature_index || 'N/A'}</div>`;
-                content += `<div class="tooltip-line">Impurity: ${node.impurity ? node.impurity.toFixed(4) : 'N/A'}</div>`;    
+                tooltipContent += `<strong>Split: ${node.feature_name} > ${node.threshold}</strong>`;
             }
             
-            content += `<div class="tooltip-line">Samples: ${node.n_samples || 0}</div>`;
+            tooltipContent += '</div>';
+            
+            tooltipContent += `<div class="tooltip-line">Feature Index: ${node.feature_index || 'N/A'}</div>`;
+            tooltipContent += `<div class="tooltip-line">Impurity: ${node.impurity ? node.impurity.toFixed(4) : 'N/A'}</div>`;
+            tooltipContent += `<div class="tooltip-line">Samples: ${node.n_samples || 0}</div>`;
             
             if (node.value && Array.isArray(node.value)) {
                 const total = node.value.reduce((sum, val) => sum + val, 0);
                 const percentages = node.value.map(val => ((val / total) * 100).toFixed(1));
                 
-                content += '<div class="tooltip-distribution">';
-                content += '<div style="font-weight: bold;">Class Distribution:</div>';
-                content += `<div>[${percentages.join('%, ')}%]</div>`;
-                content += '</div>';
+                tooltipContent += '<div class="tooltip-distribution">';
+                tooltipContent += '<div style="font-weight: bold;">Class Distribution:</div>';
+                tooltipContent += `<div>[${percentages.join('%, ')}%]</div>`;
+                tooltipContent += '</div>';
             }
-            
-            return content;
+
+            tooltip
+                .html(tooltipContent)
+                .style("left", `${event.pageX + 15}px`)
+                .style("top", `${event.pageY - 28}px`)
+                .transition()
+                .duration(200)
+                .style("opacity", 1);
+        }
+
+        function hideTooltip(tooltip) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
         }
         
         function setDataset(dataset) {
@@ -435,9 +457,7 @@
             const containerHeight = 1000;
             
             // Create tooltip
-            const tooltip = d3.select("body").append("div")
-                .attr("class", "tooltip")
-                .style("opacity", 0);
+            const tooltip = createTooltip();
             
             // Trace the path for the instance
             const instancePath = traceInstancePath(instanceData, nodeMap);
@@ -507,21 +527,15 @@
                 .attr("ry", 4)
                 .attr("fill", d => getNodeColor(d.id))
                 .on("mouseover", function(event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-                    tooltip.html(formatTooltipContent(d.id))
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
+                    showTooltip(event, d.id, tooltip);
                 })
-                .on("mouseout", function(d) {
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
+                .on("mouseout", function(event, d) {
+                    hideTooltip(tooltip);
                 })
-                .on("mousemove", function(event) {
-                    tooltip.style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
+                .on("mousemove", function(event, d) {
+                    tooltip
+                        .style("left", `${event.pageX + 15}px`)
+                        .style("top", `${event.pageY - 28}px`);
                 });
             
             // Add labels inside the rectangles
