@@ -20,16 +20,19 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin: 0 auto;
+            cursor: grab;
+        }
+        
+        #tree-container:active {
+            cursor: grabbing;
         }
         
         .node {
-            fill: #69b3a2;
             stroke: #333;
             stroke-width: 2px;
         }
         
         .node.highlighted {
-            fill: #ff6b6b;
             stroke: #d63031;
             stroke-width: 3px;
         }
@@ -37,12 +40,10 @@
         .link {
             fill: none;
             stroke: #999;
-            stroke-width: 2px;
         }
         
         .link.highlighted {
             stroke: #ff6b6b;
-            stroke-width: 4px;
         }
         
         .node-label {
@@ -50,6 +51,7 @@
             font-size: 12px;
             fill: #333;
             pointer-events: none;
+            dominant-baseline: middle;
         }
 
         .controls {
@@ -98,7 +100,6 @@
     </style>
 </head>
 <body>
-    <h1>Decision Tree Visualization</h1>
     <div class="controls">
         <div class="control-group">
             <span class="control-label">Data Set:</span>
@@ -119,24 +120,67 @@
         let treeData, instanceData, nodeMap;
         let currentDataset = "dataset1";
         
+        // Color palette for class nodes
+        const DEFAULT_COLORS = [
+            "#8dd3c7",
+            "#ffffb3",
+            "#bebada",
+            "#fb8072",
+            "#80b1d3",
+            "#fdb462",
+            "#b3de69",
+            "#fccde5",
+            "#d9d9d9",
+            "#bc80bd",
+        ];
+        
+        const SPLIT_NODE_COLOR = "#cccccc";
+        
         // Depth-aligned layout function
         function depthAlignedLayout(allPaths, width, height, instancePath) {
             const positions = {};
-            const margin = { top: 40, right: 40, bottom: 100, left: 40 };
-            const availableWidth = width - margin.left - margin.right;
-            const availableHeight = height - margin.top - margin.bottom;
+            
+            // Calculate total number of unique nodes
+            const allNodes = new Set();
+            allPaths.forEach(path => {
+                path.forEach(nodeId => allNodes.add(nodeId));
+            });
+            const totalNodes = allNodes.size;
+            
+            // Scale dimensions based on number of nodes
+            const nodeScaleFactor = Math.max(1, Math.sqrt(totalNodes / 100)); // Scale factor based on node count
+            const minSpacing = 100; // Minimum spacing between nodes
+            const nodeSpacing = minSpacing * nodeScaleFactor;
+            
+            // Calculate required dimensions
+            const maxDepth = Math.max(...allPaths.map(path => path.length - 1));
+            const requiredWidth = (maxDepth + 1) * nodeSpacing * 2; // Extra space for horizontal spread
+            const requiredHeight = allPaths.length * nodeSpacing * 1.5; // Extra space for vertical spread
+            
+            // Use the larger of provided dimensions or required dimensions
+            const effectiveWidth = Math.max(width, requiredWidth);
+            const effectiveHeight = Math.max(height, requiredHeight);
+            
+            const margin = { 
+                top: 100 * nodeScaleFactor, 
+                right: 100 * nodeScaleFactor, 
+                bottom: 100 * nodeScaleFactor, 
+                left: 100 * nodeScaleFactor 
+            };
+            
+            const availableWidth = effectiveWidth - margin.left - margin.right;
+            const availableHeight = effectiveHeight - margin.top - margin.bottom;
             
             // Create depth mapping: depth 0 = root, depth 1 = first level, etc.
-            const maxDepth = Math.max(...allPaths.map(path => path.length - 1));
             const depthToX = {};
             
-            // Calculate x-coordinates for each depth level
+            // Calculate x-coordinates for each depth level with better spacing
             for (let depth = 0; depth <= maxDepth; depth++) {
                 depthToX[depth] = margin.left + (depth * (availableWidth / maxDepth));
             }
             
             // Position the instance path at the bottom
-            const bottomY = height - margin.bottom;
+            const bottomY = effectiveHeight - margin.bottom;
             instancePath.forEach((nodeId, depth) => {
                 positions[nodeId] = {
                     id: nodeId,
@@ -161,11 +205,12 @@
                 return branchPointA - branchPointB;
             });
             
-            // Position other paths above the instance path
-            const availableSpaceAbove = availableHeight - 100;
+            // Position other paths above the instance path with scaled spacing
+            const availableSpaceAbove = availableHeight - (margin.bottom * 2);
+            const pathSpacing = Math.max(nodeSpacing, availableSpaceAbove / Math.max(1, sortedOtherPaths.length));
             
             sortedOtherPaths.forEach((path, pathIndex) => {
-                const y = margin.top + (pathIndex * (availableSpaceAbove / Math.max(1, sortedOtherPaths.length - 1)));
+                const y = margin.top + (pathIndex * pathSpacing);
                 
                 path.forEach((nodeId, depth) => {
                     // Only position nodes that aren't already positioned (shared nodes with instance path)
@@ -180,7 +225,57 @@
                 });
             });
             
-            return positions;
+            // Return positions along with the effective dimensions for the visualization
+            return {
+                positions: positions,
+                width: effectiveWidth,
+                height: effectiveHeight
+            };
+        }
+        
+        function getNodeColor(nodeId) {
+            const node = nodeMap.get(nodeId);
+            if (!node) return SPLIT_NODE_COLOR;
+            
+            if (node.is_leaf) {
+                // For leaf nodes, use class label to determine color
+                const classLabel = node.class_label || 'unknown';
+                
+                // Get all unique class labels from the tree
+                const uniqueClasses = [...new Set(
+                    Array.from(nodeMap.values())
+                        .filter(n => n.is_leaf)
+                        .map(n => n.class_label || 'unknown')
+                )].sort(); // Sort for consistency
+                
+                const colorIndex = uniqueClasses.indexOf(classLabel);
+                return DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
+            } else {
+                // Split nodes use the specified gray color
+                return SPLIT_NODE_COLOR;
+            }
+        }
+        
+        function getStrokeWidth(sourceNodeId) {
+            const node = nodeMap.get(sourceNodeId);
+            if (!node || typeof node.n_samples !== 'number') {
+                return 2; // Default stroke width
+            }
+            
+            // Find the maximum n_samples value in the tree for normalization
+            const maxSamples = Math.max(...Array.from(nodeMap.values()).map(n => n.n_samples || 0));
+            const minSamples = Math.min(...Array.from(nodeMap.values()).map(n => n.n_samples || 0));
+            
+            // Normalize the stroke width between 1 and 10 pixels
+            const minStroke = 1;
+            const maxStroke = 10;
+            
+            if (maxSamples === minSamples) {
+                return (minStroke + maxStroke) / 2; // Return middle value if all samples are the same
+            }
+            
+            const normalizedWidth = minStroke + ((node.n_samples - minSamples) / (maxSamples - minSamples)) * (maxStroke - minStroke);
+            return Math.max(minStroke, normalizedWidth);
         }
         
         function setDataset(dataset) {
@@ -267,12 +362,8 @@
             d3.select("#tree-container").selectAll("*").remove();
             
             const container = d3.select("#tree-container");
-            const width = 1000;
-            const height = 1000;
-            
-            const svg = container.append("svg")
-                .attr("width", width)
-                .attr("height", height);
+            const containerWidth = 1000;
+            const containerHeight = 1000;
             
             // Trace the path for the instance
             const instancePath = traceInstancePath(instanceData, nodeMap);
@@ -280,14 +371,36 @@
             // Process tree data to get all paths
             const allPaths = getAllPathsFromFlatTree(nodeMap);
             
-            // Create node positions using the depth-aligned layout
-            const nodePositions = depthAlignedLayout(allPaths, width, height, instancePath);
+            // Create node positions using the depth-aligned layout (returns both positions and dimensions)
+            const layoutResult = depthAlignedLayout(allPaths, containerWidth, containerHeight, instancePath);
+            const nodePositions = layoutResult.positions;
+            const effectiveWidth = layoutResult.width;
+            const effectiveHeight = layoutResult.height;
+            
+            const svg = container.append("svg")
+                .attr("width", containerWidth)
+                .attr("height", containerHeight)
+                .attr("viewBox", `0 0 ${effectiveWidth} ${effectiveHeight}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+            
+            // Create a group for all zoomable content
+            const g = svg.append("g");
+            
+            // Set up zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.9, 100]) // Allow zoom from 10% to 300%
+                .on("zoom", function(event) {
+                    g.attr("transform", event.transform);
+                });
+            
+            // Apply zoom to the SVG
+            svg.call(zoom);
             
             // Create links
             const links = createLinks(allPaths, nodePositions);
             
-            // Draw links
-            svg.selectAll(".link")
+            // Draw links with stroke width based on n_samples
+            g.selectAll(".link")
                 .data(links)
                 .enter()
                 .append("line")
@@ -295,27 +408,39 @@
                 .attr("x1", d => d.source.x)
                 .attr("y1", d => d.source.y)
                 .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
+                .attr("y2", d => d.target.y)
+                .attr("stroke-width", d => {
+                    const baseWidth = getStrokeWidth(d.sourceId);
+                    // If highlighted, make it slightly thicker
+                    return isLinkHighlighted(d, instancePath) ? baseWidth * 1.5 : baseWidth;
+                });
             
-            // Draw nodes
+            // Draw rectangular nodes
             const nodes = Object.values(nodePositions);
-            svg.selectAll(".node")
+            const rectWidth = 150;
+            const rectHeight = 100;
+            
+            g.selectAll(".node")
                 .data(nodes)
                 .enter()
-                .append("circle")
+                .append("rect")
                 .attr("class", d => `node ${instancePath.includes(d.id) ? 'highlighted' : ''}`)
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y)
-                .attr("r", 8);
+                .attr("x", d => d.x - rectWidth/2)
+                .attr("y", d => d.y - rectHeight/2)
+                .attr("width", rectWidth)
+                .attr("height", rectHeight)
+                .attr("rx", 4) // Rounded corners
+                .attr("ry", 4)
+                .attr("fill", d => getNodeColor(d.id));
             
-            // Add labels
-            svg.selectAll(".node-label")
+            // Add labels inside the rectangles
+            g.selectAll(".node-label")
                 .data(nodes)
                 .enter()
                 .append("text")
                 .attr("class", "node-label")
                 .attr("x", d => d.x)
-                .attr("y", d => d.y + 25)
+                .attr("y", d => d.y)
                 .text(d => d.label);
         }
         
@@ -338,28 +463,8 @@
                 const threshold = node.threshold;
                 const instanceValue = instance[featureName];
                 
-                // Decision logic based on feature type
-                let goLeft = false;
-                
-                if (typeof threshold === 'number') {
-                    // Numerical threshold
-                    goLeft = instanceValue <= threshold;
-                } else {
-                    // Categorical threshold
-                    if (featureName === 'education') {
-                        const educationLevels = ['high_school', 'college', 'master', 'phd'];
-                        const instanceLevel = educationLevels.indexOf(instanceValue);
-                        const thresholdLevel = educationLevels.indexOf(threshold);
-                        goLeft = instanceLevel <= thresholdLevel;
-                    } else if (featureName === 'employment') {
-                        goLeft = instanceValue === threshold;
-                    } else if (featureName === 'location') {
-                        goLeft = instanceValue === threshold;
-                    } else {
-                        // Default string comparison
-                        goLeft = instanceValue === threshold;
-                    }
-                }
+                // Decision logic based on feature type                
+                goLeft = instanceValue <= threshold;
                 
                 currentNodeId = goLeft ? node.left_child : node.right_child;
             }
@@ -440,11 +545,12 @@
         
         function getNodeLabel(nodeId) {
             const node = nodeMap.get(nodeId);
+            console.log(node)
             if (node) {
                 if (node.is_leaf) {
-                    return node.class_label || 'Leaf';
+                    return node.class_label;
                 } else {
-                    return node.feature_name || `Node ${nodeId}`;
+                    return `${node.feature_name} > ${node.threshold}\nInstance: ${instanceData[node.feature_name]}`;
                 }
             }
             return `Node ${nodeId}`;
