@@ -30,10 +30,16 @@
         .node {
             stroke: #333;
             stroke-width: 2px;
+            cursor: pointer;
         }
         
         .node.highlighted {
             stroke: #d63031;
+            stroke-width: 3px;
+        }
+        
+        .node:hover {
+            stroke: #0984e3;
             stroke-width: 3px;
         }
         
@@ -96,6 +102,38 @@
 
         .data-button.active:hover {
             background-color: #e84393;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-family: 'Courier New', monospace;
+        }
+
+        .tooltip-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 4px;
+        }
+
+        .tooltip-line {
+            margin: 4px 0;
+        }
+
+        .tooltip-distribution {
+            margin-top: 8px;
+            padding-top: 4px;
+            border-top: 1px solid #555;
         }
     </style>
 </head>
@@ -277,6 +315,37 @@
             const normalizedWidth = minStroke + ((node.n_samples - minSamples) / (maxSamples - minSamples)) * (maxStroke - minStroke);
             return Math.max(minStroke, normalizedWidth);
         }
+
+        function formatTooltipContent(nodeId) {
+            const node = nodeMap.get(nodeId);
+            if (!node) return "Node information not available";
+            
+            let content = '<div class="tooltip-header">';
+            
+            if (node.is_leaf) {
+                content += `Leaf Node: ${node.class_label || 'Unknown'}`;
+                content += '</div>';
+            } else {
+                content += `Split: ${node.feature_name} > ${node.threshold}`;
+                content += '</div>';
+                content += `<div class="tooltip-line">Feature Index: ${node.feature_index || 'N/A'}</div>`;
+                content += `<div class="tooltip-line">Impurity: ${node.impurity ? node.impurity.toFixed(4) : 'N/A'}</div>`;    
+            }
+            
+            content += `<div class="tooltip-line">Samples: ${node.n_samples || 0}</div>`;
+            
+            if (node.value && Array.isArray(node.value)) {
+                const total = node.value.reduce((sum, val) => sum + val, 0);
+                const percentages = node.value.map(val => ((val / total) * 100).toFixed(1));
+                
+                content += '<div class="tooltip-distribution">';
+                content += '<div style="font-weight: bold;">Class Distribution:</div>';
+                content += `<div>[${percentages.join('%, ')}%]</div>`;
+                content += '</div>';
+            }
+            
+            return content;
+        }
         
         function setDataset(dataset) {
             currentDataset = dataset;
@@ -365,6 +434,11 @@
             const containerWidth = 1000;
             const containerHeight = 1000;
             
+            // Create tooltip
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+            
             // Trace the path for the instance
             const instancePath = traceInstancePath(instanceData, nodeMap);
             
@@ -431,7 +505,24 @@
                 .attr("height", rectHeight)
                 .attr("rx", 4) // Rounded corners
                 .attr("ry", 4)
-                .attr("fill", d => getNodeColor(d.id));
+                .attr("fill", d => getNodeColor(d.id))
+                .on("mouseover", function(event, d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(formatTooltipContent(d.id))
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                })
+                .on("mousemove", function(event) {
+                    tooltip.style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                });
             
             // Add labels inside the rectangles
             g.selectAll(".node-label")
@@ -545,7 +636,6 @@
         
         function getNodeLabel(nodeId) {
             const node = nodeMap.get(nodeId);
-            console.log(node)
             if (node) {
                 if (node.is_leaf) {
                     return node.class_label;
