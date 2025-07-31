@@ -474,8 +474,6 @@
                 node.fx = startX;
                 node.fy = startY + (endY - startY) * (index / Math.max(pathLength - 1, 1));
             });
-            
-            console.log("Instance path:", fixedPath.map(n => `Node ${n.id} (${n.is_leaf ? n.class_label : n.feature_name})`));
         }
         
         function createForceGraph() {

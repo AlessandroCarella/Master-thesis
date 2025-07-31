@@ -157,7 +157,7 @@
     <div id="tree-container"></div>
     
     <script>
-        let treeData, instanceData, nodeMap;
+        let treeData, instanceData, hierarchyRoot;
         let currentDataset = "dataset1";
         
         // Color palette for class nodes
@@ -176,7 +176,7 @@
         
         const SPLIT_NODE_COLOR = "#cccccc";
         
-        // Depth-aligned layout function
+        // Depth-aligned layout function - UNCHANGED
         function depthAlignedLayout(allPaths, width, height, instancePath) {
             const positions = {};
             
@@ -273,21 +273,147 @@
             };
         }
         
+        // Convert flat tree array to hierarchical structure
+        function createHierarchy(flatTreeData) {
+            // Create a lookup map for easy access
+            const nodeMap = new Map();
+            flatTreeData.forEach(node => {
+                nodeMap.set(node.node_id, { ...node, children: [] });
+            });
+            
+            // Build the hierarchy by linking parents and children
+            let root = null;
+            nodeMap.forEach(node => {
+                if (node.node_id === 0) { // Root node
+                    root = node;
+                } else {
+                    // Find parent and add this node as a child
+                    const parent = findParent(node.node_id, nodeMap);
+                    if (parent) {
+                        parent.children.push(node);
+                    }
+                }
+            });
+            
+            // Create D3 hierarchy
+            const hierarchy = d3.hierarchy(root, d => d.children);
+            
+            // Apply tree layout (though we'll use our custom layout function)
+            const tree = d3.tree().size([800, 600]);
+            tree(hierarchy);
+            
+            return hierarchy;
+        }
+        
+        // Helper function to find parent node
+        function findParent(nodeId, nodeMap) {
+            for (const [parentId, parentNode] of nodeMap) {
+                if (parentNode.left_child === nodeId || parentNode.right_child === nodeId) {
+                    return parentNode;
+                }
+            }
+            return null;
+        }
+        
+        // Get node by ID from hierarchy
+        function getNodeById(nodeId) {
+            if (!hierarchyRoot) return null;
+            
+            function findInHierarchy(node) {
+                if (node.data.node_id === nodeId) return node.data;
+                if (node.children) {
+                    for (const child of node.children) {
+                        const found = findInHierarchy(child);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
+            
+            return findInHierarchy(hierarchyRoot);
+        }
+        
+        // Get all leaf nodes from hierarchy
+        function getAllLeaves() {
+            if (!hierarchyRoot) return [];
+            return hierarchyRoot.leaves().map(d => d.data);
+        }
+        
+        // Get all nodes from hierarchy
+        function getAllNodes() {
+            if (!hierarchyRoot) return [];
+            return hierarchyRoot.descendants().map(d => d.data);
+        }
+        
+        // Get path from root to a specific node
+        function getPathToNode(targetNodeId) {
+            if (!hierarchyRoot) return [];
+            
+            function findPath(node, path = []) {
+                const currentPath = [...path, node.data.node_id];
+                
+                if (node.data.node_id === targetNodeId) {
+                    return currentPath;
+                }
+                
+                if (node.children) {
+                    for (const child of node.children) {
+                        const foundPath = findPath(child, currentPath);
+                        if (foundPath.length > 0) return foundPath;
+                    }
+                }
+                
+                return [];
+            }
+            
+            return findPath(hierarchyRoot);
+        }
+        
+        // Get tree depth
+        function getTreeDepth() {
+            return hierarchyRoot ? hierarchyRoot.height : 0;
+        }
+        
+        // Get tree statistics
+        function getTreeStats() {
+            if (!hierarchyRoot) return {};
+            
+            const allNodes = getAllNodes();
+            const leaves = getAllLeaves();
+            
+            return {
+                totalNodes: allNodes.length,
+                leafNodes: leaves.length,
+                internalNodes: allNodes.length - leaves.length,
+                maxDepth: getTreeDepth(),
+                classDistribution: getClassDistribution(leaves)
+            };
+        }
+        
+        // Get class distribution from leaf nodes
+        function getClassDistribution(leaves) {
+            const distribution = {};
+            leaves.forEach(leaf => {
+                const className = leaf.class_label || 'unknown';
+                distribution[className] = (distribution[className] || 0) + 1;
+            });
+            return distribution;
+        }
+        
+        // Get all unique class labels
+        function getUniqueClasses() {
+            const leaves = getAllLeaves();
+            return [...new Set(leaves.map(leaf => leaf.class_label || 'unknown'))].sort();
+        }
+        
         function getNodeColor(nodeId) {
-            const node = nodeMap.get(nodeId);
+            const node = getNodeById(nodeId);
             if (!node) return SPLIT_NODE_COLOR;
             
             if (node.is_leaf) {
                 // For leaf nodes, use class label to determine color
                 const classLabel = node.class_label || 'unknown';
-                
-                // Get all unique class labels from the tree
-                const uniqueClasses = [...new Set(
-                    Array.from(nodeMap.values())
-                        .filter(n => n.is_leaf)
-                        .map(n => n.class_label || 'unknown')
-                )].sort(); // Sort for consistency
-                
+                const uniqueClasses = getUniqueClasses();
                 const colorIndex = uniqueClasses.indexOf(classLabel);
                 return DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
             } else {
@@ -297,25 +423,26 @@
         }
         
         function getStrokeWidth(sourceNodeId) {
-            const node = nodeMap.get(sourceNodeId);
+            const node = getNodeById(sourceNodeId);
             if (!node || typeof node.n_samples !== 'number') {
                 return 2; // Default stroke width
             }
             
             // Find the maximum n_samples value in the tree for normalization
-            const maxSamples = Math.max(...Array.from(nodeMap.values()).map(n => n.n_samples || 0));
-            const minSamples = Math.min(...Array.from(nodeMap.values()).map(n => n.n_samples || 0));
+            const allNodes = getAllNodes();
+            const maxSamples = Math.max(...allNodes.map(n => n.n_samples || 0));
+            const minSamples = Math.min(...allNodes.map(n => n.n_samples || 0));
             
             // Normalize the stroke width between 1 and 10 pixels
             const minStroke = 0.1;
             const maxStroke = 10;
             
             if (maxSamples === minSamples) {
-                return (minStroke + maxStroke) / 2; // Return middle value if all samples are the same
+                return (minStroke + maxStroke) / 2;
             }
             
             const normalizedWidth = minStroke + ((node.n_samples - minSamples) / (maxSamples - minSamples)) * (maxStroke - minStroke);
-            return Math.max(minStroke, normalizedWidth);
+            return normalizedWidth;
         }
 
         function createTooltip() {
@@ -327,21 +454,23 @@
         }
 
         function showTooltip(event, nodeId, tooltip) {
-            const node = nodeMap.get(nodeId);
+            const node = getNodeById(nodeId);
             if (!node) return;
             
             let tooltipContent = '<div class="tooltip-header">';
             
             if (node.is_leaf) {
                 tooltipContent += `<strong>Leaf Node: ${node.class_label || 'Unknown'}</strong>`;
+                tooltipContent += '</div>';
             } else {
                 tooltipContent += `<strong>Split: ${node.feature_name} > ${node.threshold}</strong>`;
+                tooltipContent += '</div>';
+                tooltipContent += `<div class="tooltip-line">Feature Index: ${node.feature_index || 'N/A'}</div>`;
+                tooltipContent += `<div class="tooltip-line">Impurity: ${node.impurity ? node.impurity.toFixed(4) : 'N/A'}</div>`;
             }
             
-            tooltipContent += '</div>';
             
-            tooltipContent += `<div class="tooltip-line">Feature Index: ${node.feature_index || 'N/A'}</div>`;
-            tooltipContent += `<div class="tooltip-line">Impurity: ${node.impurity ? node.impurity.toFixed(4) : 'N/A'}</div>`;
+            tooltipContent += `<div class="tooltip-line">Node ID: ${node.node_id}</div>`;
             tooltipContent += `<div class="tooltip-line">Samples: ${node.n_samples || 0}</div>`;
             
             if (node.value && Array.isArray(node.value)) {
@@ -351,6 +480,17 @@
                 tooltipContent += '<div class="tooltip-distribution">';
                 tooltipContent += '<div style="font-weight: bold;">Class Distribution:</div>';
                 tooltipContent += `<div>[${percentages.join('%, ')}%]</div>`;
+                tooltipContent += '</div>';
+            }
+
+            // Add tree statistics for root node
+            if (node.node_id === 0) {
+                const stats = getTreeStats();
+                tooltipContent += '<div class="tooltip-distribution">';
+                tooltipContent += '<div style="font-weight: bold;">Tree Statistics:</div>';
+                tooltipContent += `<div>Total Nodes: ${stats.totalNodes}</div>`;
+                tooltipContent += `<div>Leaf Nodes: ${stats.leafNodes}</div>`;
+                tooltipContent += `<div>Max Depth: ${stats.maxDepth}</div>`;
                 tooltipContent += '</div>';
             }
 
@@ -411,14 +551,15 @@
                     d3.json(instanceFile)
                 ]);
                 
+                // Store flat tree data for compatibility
                 treeData = tree;
                 instanceData = instance;
                 
-                // Create node lookup map
-                nodeMap = new Map();
-                treeData.forEach(node => {
-                    nodeMap.set(node.node_id, node);
-                });
+                // Create hierarchical structure using d3.hierarchy
+                hierarchyRoot = createHierarchy(tree);
+                
+                // Log tree statistics for debugging
+                console.log('Tree Statistics:', getTreeStats());
                 
                 createVisualization();
             } catch (error) {
@@ -460,12 +601,12 @@
             const tooltip = createTooltip();
             
             // Trace the path for the instance
-            const instancePath = traceInstancePath(instanceData, nodeMap);
+            const instancePath = traceInstancePath(instanceData);
             
-            // Process tree data to get all paths
-            const allPaths = getAllPathsFromFlatTree(nodeMap);
+            // Process tree data to get all paths using the hierarchy
+            const allPaths = getAllPathsFromHierarchy();
             
-            // Create node positions using the depth-aligned layout (returns both positions and dimensions)
+            // Create node positions using the depth-aligned layout (UNCHANGED)
             const layoutResult = depthAlignedLayout(allPaths, containerWidth, containerHeight, instancePath);
             const nodePositions = layoutResult.positions;
             const effectiveWidth = layoutResult.width;
@@ -482,7 +623,7 @@
             
             // Set up zoom behavior
             const zoom = d3.zoom()
-                .scaleExtent([0.9, 100]) // Allow zoom from 10% to 300%
+                .scaleExtent([0.9, 100])
                 .on("zoom", function(event) {
                     g.attr("transform", event.transform);
                 });
@@ -504,9 +645,7 @@
                 .attr("x2", d => d.target.x)
                 .attr("y2", d => d.target.y)
                 .attr("stroke-width", d => {
-                    const baseWidth = getStrokeWidth(d.sourceId);
-                    // If highlighted, make it slightly thicker
-                    return isLinkHighlighted(d, instancePath) ? baseWidth * 1.5 : baseWidth;
+                    return getStrokeWidth(d.sourceId);
                 });
             
             // Draw rectangular nodes
@@ -523,7 +662,7 @@
                 .attr("y", d => d.y - rectHeight/2)
                 .attr("width", rectWidth)
                 .attr("height", rectHeight)
-                .attr("rx", 4) // Rounded corners
+                .attr("rx", 4)
                 .attr("ry", 4)
                 .attr("fill", d => getNodeColor(d.id))
                 .on("mouseover", function(event, d) {
@@ -552,62 +691,66 @@
                         group.append("text")
                             .attr("class", "node-label")
                             .attr("x", d.x)
-                            .attr("y", d.y + (index - (lines.length - 1) / 2) * 14) // 14px line spacing
+                            .attr("y", d.y + (index - (lines.length - 1) / 2) * 14)
                             .text(line);
                     });
                 });
         }
         
-        function traceInstancePath(instance, nodeMap) {
+        function traceInstancePath(instance) {
             const path = [];
-            let currentNodeId = 0; // Start from root
+            let currentNode = hierarchyRoot;
             
-            while (currentNodeId !== null) {
-                const node = nodeMap.get(currentNodeId);
-                if (!node) break;
+            while (currentNode) {
+                path.push(currentNode.data.node_id);
                 
-                path.push(currentNodeId);
-                
-                if (node.is_leaf) {
+                if (currentNode.data.is_leaf || !currentNode.children) {
                     break;
                 }
                 
                 // Determine which child to follow based on instance values
-                const featureName = node.feature_name;
-                const threshold = node.threshold;
+                const featureName = currentNode.data.feature_name;
+                const threshold = currentNode.data.threshold;
                 const instanceValue = instance[featureName];
                 
                 // Decision logic based on feature type                
-                goLeft = instanceValue <= threshold;
+                const goLeft = instanceValue <= threshold;
                 
-                currentNodeId = goLeft ? node.left_child : node.right_child;
+                // Find the appropriate child using the hierarchy structure
+                currentNode = currentNode.children.find(child => {
+                    const childNodeId = child.data.node_id;
+                    const parentData = currentNode.data;
+                    
+                    if (goLeft) {
+                        return childNodeId === parentData.left_child;
+                    } else {
+                        return childNodeId === parentData.right_child;
+                    }
+                });
             }
             
             return path;
         }
         
-        function getAllPathsFromFlatTree(nodeMap) {
+        function getAllPathsFromHierarchy() {
             const paths = [];
             
-            function traverseNode(nodeId, currentPath) {
-                const node = nodeMap.get(nodeId);
-                if (!node) return;
+            function traverseNode(node, currentPath) {
+                const newPath = [...currentPath, node.data.node_id];
                 
-                const newPath = [...currentPath, nodeId];
-                
-                if (node.is_leaf) {
+                if (node.data.is_leaf || !node.children || node.children.length === 0) {
                     paths.push(newPath);
                 } else {
-                    if (node.left_child !== null) {
-                        traverseNode(node.left_child, newPath);
-                    }
-                    if (node.right_child !== null) {
-                        traverseNode(node.right_child, newPath);
-                    }
+                    node.children.forEach(child => {
+                        traverseNode(child, newPath);
+                    });
                 }
             }
             
-            traverseNode(0, []); // Start from root (node_id 0)
+            if (hierarchyRoot) {
+                traverseNode(hierarchyRoot, []);
+            }
+            
             return paths;
         }
         
@@ -658,7 +801,7 @@
         }
         
         function getNodeLabel(nodeId) {
-            const node = nodeMap.get(nodeId);
+            const node = getNodeById(nodeId);
             if (node) {
                 if (node.is_leaf) {
                     return node.class_label;
@@ -670,7 +813,7 @@
         }
         
         function getNodeLabelLines(nodeId) {
-            const node = nodeMap.get(nodeId);
+            const node = getNodeById(nodeId);
             if (node) {
                 if (node.is_leaf) {
                     return [node.class_label || 'Unknown'];

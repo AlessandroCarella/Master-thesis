@@ -13,9 +13,6 @@ export function createSplitPath({ source, target }, SETTINGS) {
 }
 
 export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
-    console.log(treeData)
-    console.log(treeData.data)
-    console.log(treeData.data.n_samples)
     contentGroup
         .selectAll(".link")
         .data(treeData.links())
