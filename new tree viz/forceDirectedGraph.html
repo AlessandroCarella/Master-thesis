@@ -28,16 +28,29 @@
             margin-bottom: 10px;
         }
         
-        .file-input {
+        .dataset-selector {
             margin-bottom: 20px;
             text-align: center;
         }
         
-        .file-input input[type="file"] {
-            padding: 10px;
-            border: 2px dashed #ccc;
+        .dataset-selector label {
+            font-weight: bold;
+            color: #555;
+            margin-right: 10px;
+        }
+        
+        .dataset-selector select {
+            padding: 8px 15px;
+            border: 2px solid #ddd;
             border-radius: 5px;
-            background: #fafafa;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .dataset-selector select:focus {
+            outline: none;
+            border-color: #4a90e2;
         }
         
         .controls {
@@ -158,18 +171,34 @@
             font-style: italic;
             color: #666;
         }
+        
+        .loading {
+            color: #4a90e2;
+        }
+        
+        .error {
+            color: #e74c3c;
+        }
+        
+        .success {
+            color: #2ecc71;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Decision Tree Force-Directed Graph</h1>
         
-        <div class="file-input">
-            <input type="file" id="fileInput" accept=".json" />
-            <p>Select the tree.json file to visualize the decision tree</p>
+        <div class="dataset-selector">
+            <label for="datasetSelect">Choose Dataset:</label>
+            <select id="datasetSelect">
+                <option value="dataset1">Dataset 1 (tree.json + instance.json)</option>
+                <option value="dataset2">Dataset 2 (tree2.json + instance2.json)</option>
+                <option value="dataset3">Dataset 3 (tree3.json + instance3.json)</option>
+            </select>
         </div>
         
-        <div id="status" class="status">Please select a JSON file to begin.</div>
+        <div id="status" class="status">Select a dataset to begin visualization.</div>
         
         <div class="controls" style="display: none;" id="controls">
             <div class="control-group">
@@ -226,23 +255,10 @@
         let links = [];
         let fixedPath = [];
         let fixedPathLinks = [];
-        
-        // Specific instance to trace through the tree
-        const instanceData = {
-            "alcohol": 13.05,
-            "malic_acid": 1.87,
-            "ash": 2.36,
-            "alcalinity_of_ash": 19.5,
-            "magnesium": 98,
-            "total_phenols": 2.35,
-            "flavanoids": 2.13,
-            "nonflavanoid_phenols": 0.34,
-            "proanthocyanins": 1.56,
-            "color_intensity": 4.69,
-            "hue": 0.96,
-            "od280/od315_of_diluted_wines": 2.78,
-            "proline": 673.5
-        };
+        let treeData = [];
+        let instanceData = {};
+        let nodeMap = new Map();
+        let currentDataset = 'dataset1';
         
         // Initialize SVG
         svg = d3.select("#graph");
@@ -263,25 +279,10 @@
         // Tooltip
         const tooltip = d3.select("#tooltip");
         
-        // File input handler
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const treeData = JSON.parse(e.target.result);
-                        processTreeData(treeData);
-                        document.getElementById('status').textContent = `Loaded ${treeData.length} nodes successfully!`;
-                        document.getElementById('controls').style.display = 'flex';
-                        document.getElementById('graph-container').style.display = 'block';
-                        document.getElementById('legend').style.display = 'flex';
-                    } catch (error) {
-                        document.getElementById('status').textContent = 'Error parsing JSON file: ' + error.message;
-                    }
-                };
-                reader.readAsText(file);
-            }
+        // Dataset selector handler
+        document.getElementById('datasetSelect').addEventListener('change', function(event) {
+            currentDataset = event.target.value;
+            loadAndVisualize();
         });
         
         // Control handlers
@@ -313,7 +314,64 @@
             }
         });
         
-        function processTreeData(treeData) {
+        async function loadAndVisualize() {
+            try {
+                const statusElement = document.getElementById('status');
+                statusElement.className = 'status loading';
+                statusElement.textContent = `Loading ${currentDataset}...`;
+                
+                // Determine which files to load based on current dataset
+                let treeFile, instanceFile;
+                
+                if (currentDataset === 'dataset1') {
+                    treeFile = './data/tree.json';
+                    instanceFile = './data/instance.json';
+                } else if (currentDataset === 'dataset2') {
+                    treeFile = './data/tree2.json';
+                    instanceFile = './data/instance2.json';
+                } else if (currentDataset === 'dataset3') {
+                    treeFile = './data/tree3.json';
+                    instanceFile = './data/instance3.json';
+                }
+                
+                // Load data files
+                const [tree, instance] = await Promise.all([
+                    d3.json(treeFile),
+                    d3.json(instanceFile)
+                ]);
+                
+                treeData = tree;
+                instanceData = instance;
+                
+                // Create node lookup map
+                nodeMap = new Map();
+                treeData.forEach(node => {
+                    nodeMap.set(node.node_id, node);
+                });
+                
+                // Process and visualize the data
+                processTreeData();
+                
+                statusElement.className = 'status success';
+                statusElement.textContent = `Successfully loaded ${currentDataset} with ${treeData.length} nodes!`;
+                document.getElementById('controls').style.display = 'flex';
+                document.getElementById('graph-container').style.display = 'block';
+                document.getElementById('legend').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                const statusElement = document.getElementById('status');
+                statusElement.className = 'status error';
+                statusElement.textContent = `Error loading ${currentDataset}: ${error.message}`;
+                
+                // Hide controls and graph on error
+                document.getElementById('controls').style.display = 'none';
+                document.getElementById('graph-container').style.display = 'none';
+                document.getElementById('legend').style.display = 'none';
+            }
+        }
+        
+        function processTreeData() {
             // Create nodes array
             nodes = treeData.map(node => ({
                 id: node.node_id,
@@ -359,6 +417,11 @@
             
             // Start from root (node_id = 0)
             let currentNode = nodes.find(n => n.id === 0);
+            if (!currentNode) {
+                console.error('Root node not found');
+                return;
+            }
+            
             fixedPath.push(currentNode);
             
             // Follow the path that the instance would take
@@ -366,6 +429,11 @@
                 const featureName = currentNode.feature_name;
                 const threshold = currentNode.threshold;
                 const featureValue = instanceData[featureName];
+                
+                if (featureValue === undefined) {
+                    console.warn(`Feature ${featureName} not found in instance data`);
+                    break;
+                }
                 
                 let nextNodeId;
                 
@@ -379,6 +447,10 @@
                 if (nextNodeId === null) break;
                 
                 const nextNode = nodes.find(n => n.id === nextNodeId);
+                if (!nextNode) {
+                    console.warn(`Node ${nextNodeId} not found`);
+                    break;
+                }
                 
                 // Add link to fixed path
                 const link = links.find(l => l.source === currentNode.id && l.target === nextNodeId);
@@ -400,7 +472,7 @@
             
             fixedPath.forEach((node, index) => {
                 node.fx = startX;
-                node.fy = startY + (endY - startY) * (index / (pathLength - 1));
+                node.fy = startY + (endY - startY) * (index / Math.max(pathLength - 1, 1));
             });
             
             console.log("Instance path:", fixedPath.map(n => `Node ${n.id} (${n.is_leaf ? n.class_label : n.feature_name})`));
@@ -555,6 +627,9 @@
             d.fx = null;
             d.fy = null;
         }
+        
+        // Load the initial dataset
+        loadAndVisualize();
     </script>
 </body>
 </html>
