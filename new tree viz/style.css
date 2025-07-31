@@ -1,0 +1,129 @@
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+}
+
+#tree-container {
+    width: 1000px;
+    height: 1000px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+}
+
+#tree-container:active {
+    cursor: grabbing;
+}
+
+.node {
+    stroke: #333;
+    stroke-width: 2px;
+    cursor: pointer;
+}
+
+.node.highlighted {
+    stroke: #d63031;
+    stroke-width: 3px;
+}
+
+.node:hover {
+    stroke: #0984e3;
+    stroke-width: 3px;
+}
+
+.link {
+    fill: none;
+    stroke: #999;
+}
+
+.link.highlighted {
+    stroke: #ff6b6b;
+}
+
+.node-label {
+    text-anchor: middle;
+    fill: #333;
+    pointer-events: none;
+    dominant-baseline: middle;
+}
+
+.controls {
+    margin: 20px auto;
+    width: 1000px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.control-label {
+    font-weight: bold;
+    color: #333;
+    margin-right: 10px;
+}
+
+.data-button {
+    padding: 12px 24px;
+    background-color: #6c5ce7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.data-button:hover {
+    background-color: #5a4fcf;
+}
+
+.data-button.active {
+    background-color: #fd79a8;
+}
+
+.data-button.active:hover {
+    background-color: #e84393;
+}
+
+.decision-tree-tooltip {
+    position: absolute;
+    background-color: white;
+    color: black;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    white-space: normal;
+    max-width: 300px;
+    line-height: 1.4;
+    opacity: 1;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+}
+
+.tooltip-line {
+    margin: 4px 0;
+}
+
+.tooltip-distribution {
+    margin-top: 8px;
+    padding-top: 4px;
+    border-top: 1px solid #ddd;
+}

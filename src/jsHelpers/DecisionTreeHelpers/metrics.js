@@ -90,3 +90,12 @@ export function calculateInitialTransform(treeData, SETTINGS) {
     transform.k = k;
     return transform;
 }
+
+export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth) {
+    // This method differs from the get linkStrokeWidth() in calculateMetrics because this is used for
+    // determining the size of the link based on the number of samples that go from one node to the next
+    const ratio = weighted_n_samples / totalSamples;
+    const strokeWidth = ratio * 3 * linkStrokeWidth;
+
+    return strokeWidth;
+}

@@ -1,4 +1,5 @@
 import { colorScheme } from "../visualizationConnector.js";
+import { getStrokeWidth } from "./metrics.js"
 
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;
@@ -21,7 +22,7 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .attr("class", "link")
         .attr("data-source-id", (d) => d.source.data.node_id)
         .attr("data-target-id", (d) => d.target.data.node_id)
-        .style("stroke-width", (d) => `${(d.target.data.weighted_n_samples/treeData.data.n_samples)* 3* metrics.linkStrokeWidth}px`)
+        .style("stroke-width", (d) => `${getStrokeWidth(d.target.data.weighted_n_samples, treeData.data.n_samples, metrics.linkStrokeWidth)}px`)
         .attr("d", (d) => createSplitPath(d, SETTINGS))
         .style("fill", "none")
         .style("stroke", colorScheme.ui.linkStroke);
