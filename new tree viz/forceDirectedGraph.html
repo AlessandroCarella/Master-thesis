@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Tree Force-Directed Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .file-input {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .file-input input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="range"] {
+            width: 100px;
+        }
+        
+        #graph {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        
+        .node {
+            cursor: pointer;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+        
+        .node.decision {
+            fill: #4a90e2;
+        }
+        
+        .node.leaf-class_0 {
+            fill: #e74c3c;
+        }
+        
+        .node.leaf-class_1 {
+            fill: #2ecc71;
+        }
+        
+        .node.leaf-class_2 {
+            fill: #f39c12;
+        }
+        
+        .node.fixed-path {
+            stroke: #ff6b35;
+            stroke-width: 4px;
+            stroke-dasharray: 3,3;
+        }
+        
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+        }
+        
+        .link.fixed-path {
+            stroke: #ff6b35;
+            stroke-width: 4px;
+            stroke-opacity: 1;
+        }
+        
+        .node-label {
+            font-size: 10px;
+            text-anchor: middle;
+            pointer-events: none;
+            fill: #333;
+            font-weight: bold;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        
+        .legend {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+        
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Decision Tree Force-Directed Graph</h1>
+        
+        <div class="file-input">
+            <input type="file" id="fileInput" accept=".json" />
+            <p>Select the tree.json file to visualize the decision tree</p>
+        </div>
+        
+        <div id="status" class="status">Please select a JSON file to begin.</div>
+        
+        <div class="controls" style="display: none;" id="controls">
+            <div class="control-group">
+                <label for="chargeSlider">Node Repulsion:</label>
+                <input type="range" id="chargeSlider" min="-500" max="-50" value="-150" />
+                <span id="chargeValue">-150</span>
+            </div>
+            <div class="control-group">
+                <label for="linkSlider">Link Distance:</label>
+                <input type="range" id="linkSlider" min="20" max="200" value="80" />
+                <span id="linkValue">80</span>
+            </div>
+            <div class="control-group">
+                <label for="collisionSlider">Collision Radius:</label>
+                <input type="range" id="collisionSlider" min="10" max="50" value="25" />
+                <span id="collisionValue">25</span>
+            </div>
+        </div>
+        
+        <div id="graph-container" style="display: none;">
+            <svg id="graph" width="1160" height="600"></svg>
+        </div>
+        
+        <div class="legend" id="legend" style="display: none;">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #4a90e2;"></div>
+                <span>Decision Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #e74c3c;"></div>
+                <span>Class 0 (Leaf)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #2ecc71;"></div>
+                <span>Class 1 (Leaf)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #f39c12;"></div>
+                <span>Class 2 (Leaf)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: transparent; border: 3px dashed #ff6b35;"></div>
+                <span>Instance Path</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        let simulation;
+        let svg, g;
+        let nodes = [];
+        let links = [];
+        let fixedPath = [];
+        let fixedPathLinks = [];
+        
+        // Specific instance to trace through the tree
+        const instanceData = {
+            "alcohol": 13.05,
+            "malic_acid": 1.87,
+            "ash": 2.36,
+            "alcalinity_of_ash": 19.5,
+            "magnesium": 98,
+            "total_phenols": 2.35,
+            "flavanoids": 2.13,
+            "nonflavanoid_phenols": 0.34,
+            "proanthocyanins": 1.56,
+            "color_intensity": 4.69,
+            "hue": 0.96,
+            "od280/od315_of_diluted_wines": 2.78,
+            "proline": 673.5
+        };
+        
+        // Initialize SVG
+        svg = d3.select("#graph");
+        const width = +svg.attr("width");
+        const height = +svg.attr("height");
+        
+        g = svg.append("g");
+        
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 3])
+            .on("zoom", function(event) {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+        
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const treeData = JSON.parse(e.target.result);
+                        processTreeData(treeData);
+                        document.getElementById('status').textContent = `Loaded ${treeData.length} nodes successfully!`;
+                        document.getElementById('controls').style.display = 'flex';
+                        document.getElementById('graph-container').style.display = 'block';
+                        document.getElementById('legend').style.display = 'flex';
+                    } catch (error) {
+                        document.getElementById('status').textContent = 'Error parsing JSON file: ' + error.message;
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        // Control handlers
+        const chargeSlider = document.getElementById('chargeSlider');
+        const linkSlider = document.getElementById('linkSlider');
+        const collisionSlider = document.getElementById('collisionSlider');
+        
+        chargeSlider.addEventListener('input', function() {
+            document.getElementById('chargeValue').textContent = this.value;
+            if (simulation) {
+                simulation.force("charge").strength(+this.value);
+                simulation.alpha(0.3).restart();
+            }
+        });
+        
+        linkSlider.addEventListener('input', function() {
+            document.getElementById('linkValue').textContent = this.value;
+            if (simulation) {
+                simulation.force("link").distance(+this.value);
+                simulation.alpha(0.3).restart();
+            }
+        });
+        
+        collisionSlider.addEventListener('input', function() {
+            document.getElementById('collisionValue').textContent = this.value;
+            if (simulation) {
+                simulation.force("collision").radius(+this.value);
+                simulation.alpha(0.3).restart();
+            }
+        });
+        
+        function processTreeData(treeData) {
+            // Create nodes array
+            nodes = treeData.map(node => ({
+                id: node.node_id,
+                feature_name: node.feature_name,
+                threshold: node.threshold,
+                is_leaf: node.is_leaf,
+                class_label: node.class_label,
+                n_samples: node.n_samples,
+                impurity: node.impurity,
+                value: node.value,
+                left_child: node.left_child,
+                right_child: node.right_child
+            }));
+            
+            // Create links array
+            links = [];
+            treeData.forEach(node => {
+                if (node.left_child !== null) {
+                    links.push({
+                        source: node.node_id,
+                        target: node.left_child,
+                        type: 'left'
+                    });
+                }
+                if (node.right_child !== null) {
+                    links.push({
+                        source: node.node_id,
+                        target: node.right_child,
+                        type: 'right'
+                    });
+                }
+            });
+            
+            // Find the path for the specific instance
+            findInstancePath();
+            
+            createForceGraph();
+        }
+        
+        function findInstancePath() {
+            fixedPath = [];
+            fixedPathLinks = [];
+            
+            // Start from root (node_id = 0)
+            let currentNode = nodes.find(n => n.id === 0);
+            fixedPath.push(currentNode);
+            
+            // Follow the path that the instance would take
+            while (!currentNode.is_leaf) {
+                const featureName = currentNode.feature_name;
+                const threshold = currentNode.threshold;
+                const featureValue = instanceData[featureName];
+                
+                let nextNodeId;
+                
+                // Determine which path to take based on the threshold
+                if (featureValue <= threshold) {
+                    nextNodeId = currentNode.left_child;
+                } else {
+                    nextNodeId = currentNode.right_child;
+                }
+                
+                if (nextNodeId === null) break;
+                
+                const nextNode = nodes.find(n => n.id === nextNodeId);
+                
+                // Add link to fixed path
+                const link = links.find(l => l.source === currentNode.id && l.target === nextNodeId);
+                if (link) fixedPathLinks.push(link);
+                
+                fixedPath.push(nextNode);
+                currentNode = nextNode;
+            }
+            
+            // Mark fixed path nodes and links
+            fixedPath.forEach(node => node.isFixedPath = true);
+            fixedPathLinks.forEach(link => link.isFixedPath = true);
+            
+            // Position fixed path nodes in a vertical line
+            const pathLength = fixedPath.length;
+            const startY = height * 0.2;
+            const endY = height * 0.8;
+            const startX = width * 0.3;
+            
+            fixedPath.forEach((node, index) => {
+                node.fx = startX;
+                node.fy = startY + (endY - startY) * (index / (pathLength - 1));
+            });
+            
+            console.log("Instance path:", fixedPath.map(n => `Node ${n.id} (${n.is_leaf ? n.class_label : n.feature_name})`));
+        }
+        
+        function createForceGraph() {
+            // Clear previous graph
+            g.selectAll("*").remove();
+            
+            // Create simulation
+            simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links)
+                    .id(d => d.id)
+                    .distance(+linkSlider.value))
+                .force("charge", d3.forceManyBody()
+                    .strength(+chargeSlider.value))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide()
+                    .radius(+collisionSlider.value));
+            
+            // Create links
+            const link = g.append("g")
+                .selectAll("line")
+                .data(links)
+                .enter().append("line")
+                .attr("class", d => d.isFixedPath ? "link fixed-path" : "link")
+                .style("stroke-dasharray", d => {
+                    if (d.isFixedPath) return "0";
+                    return d.type === 'left' ? "0" : "5,5";
+                });
+            
+            // Create nodes
+            const node = g.append("g")
+                .selectAll("circle")
+                .data(nodes)
+                .enter().append("circle")
+                .attr("class", d => {
+                    let classes = "";
+                    if (d.is_leaf) {
+                        classes = `node leaf-${d.class_label}`;
+                    } else {
+                        classes = "node decision";
+                    }
+                    if (d.isFixedPath) {
+                        classes += " fixed-path";
+                    }
+                    return classes;
+                })
+                .attr("r", d => Math.sqrt(d.n_samples) * 2 + 5)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended))
+                .on("mouseover", function(event, d) {
+                    showTooltip(event, d);
+                })
+                .on("mouseout", hideTooltip);
+            
+            // Add labels
+            const labels = g.append("g")
+                .selectAll("text")
+                .data(nodes)
+                .enter().append("text")
+                .attr("class", "node-label")
+                .text(d => {
+                    if (d.is_leaf) {
+                        return d.class_label.replace('class_', 'C');
+                    } else {
+                        return d.feature_name ? d.feature_name.substring(0, 8) + (d.feature_name.length > 8 ? '...' : '') : 'Node';
+                    }
+                });
+            
+            // Update positions on simulation tick
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+                
+                labels
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y + 4);
+            });
+        }
+        
+        function showTooltip(event, d) {
+            let content = `<strong>Node ${d.id}</strong><br/>`;
+            content += `Samples: ${d.n_samples}<br/>`;
+            
+            if (d.is_leaf) {
+                content += `<strong>Leaf Node</strong><br/>`;
+                content += `Class: ${d.class_label}<br/>`;
+                content += `Class Distribution: [${d.value.join(', ')}]`;
+            } else {
+                content += `<strong>Decision Node</strong><br/>`;
+                content += `Feature: ${d.feature_name}<br/>`;
+                content += `Threshold: ${d.threshold.toFixed(3)}<br/>`;
+                content += `Impurity: ${d.impurity.toFixed(3)}<br/>`;
+                content += `Class Distribution: [${d.value.join(', ')}]`;
+                
+                // Show instance value and decision for fixed path nodes
+                if (d.isFixedPath && instanceData[d.feature_name] !== undefined) {
+                    const instanceValue = instanceData[d.feature_name];
+                    const decision = instanceValue <= d.threshold ? "LEFT" : "RIGHT";
+                    content += `<br/><strong style="color: #ff6b35;">Instance Value: ${instanceValue}</strong>`;
+                    content += `<br/><strong style="color: #ff6b35;">Decision: Go ${decision}</strong>`;
+                }
+            }
+            
+            if (d.isFixedPath) {
+                content += `<br/><strong style="color: #ff6b35;">Instance Path Node</strong>`;
+            }
+            
+            tooltip
+                .style("opacity", 1)
+                .html(content)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+        
+        function hideTooltip() {
+            tooltip.style("opacity", 0);
+        }
+        
+        function dragstarted(event, d) {
+            // Don't allow dragging of fixed path nodes
+            if (d.isFixedPath) return;
+            
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            // Don't allow dragging of fixed path nodes
+            if (d.isFixedPath) return;
+            
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            // Don't allow dragging of fixed path nodes
+            if (d.isFixedPath) return;
+            
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+    </script>
+</body>
+</html>
