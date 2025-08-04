@@ -17,7 +17,6 @@ import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter, loadingState } from "./jsHelpers/stateManagement.js";
 import {
     setExplainedInstance,
-    setGlobalColorMap,
 } from "./jsHelpers/visualizationConnector.js";
 
 // Import helper functions
@@ -57,7 +56,7 @@ import {
 } from "./jsHelpers/UIHelpers/explanation.js";
 
 import { scrollToElement } from "./jsHelpers/scroll.js";
-import { initializeColors } from "./jsHelpers/visualizationConnectorHelpers/colors.js";
+import { getGlobalColorMap, initializeColors, setGlobalColorMap } from "./jsHelpers/visualizationConnectorHelpers/colors.js";
 
 /********************************************
  *            GLOBAL STATE
@@ -240,7 +239,6 @@ window.getFeatureValues = getFeatureValues;
 window.resetFeatures = resetFeatures;
 window.appState = appState;
 window.getSurrogateParameters = getSurrogateParameters;
-window.fetchExplanation = fetchExplanation;
 window.showExplanationLoading = showExplanationLoading;
 window.updateVisualizationUI = updateVisualizationUI;
 window.buildExplanationRequestData = buildExplanationRequestData;

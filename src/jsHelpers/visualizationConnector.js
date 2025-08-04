@@ -1,7 +1,5 @@
 export {
     colorScheme,
-    setGlobalColorMap,
-    getGlobalColorMap,
     getNodeColor,
 } from "./visualizationConnectorHelpers/colors.js";
 

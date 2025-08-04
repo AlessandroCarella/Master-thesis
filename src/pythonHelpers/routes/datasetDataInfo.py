@@ -26,6 +26,7 @@ async def get_dataset_info(dataset_name_info: str):
     # Update global state
     global_state.dataset_name = dataset_info["name"]
     global_state.target_names = dataset_info["target_names"]
+    global_state.target_names.sort()
 
     return dataset_info
     

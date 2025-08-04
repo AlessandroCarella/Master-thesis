@@ -2,13 +2,13 @@
 
 import {
     setScatterPlotVisualization,
-    getGlobalColorMap,
 } from "./visualizationConnector.js";
 import { createTooltip } from "./ScatterPlotHelpers/tooltip.js";
 import { createZoom } from "./ScatterPlotHelpers/zoom.js";
 import { createAxes } from "./ScatterPlotHelpers/axis.js";
 import { drawVoronoi } from "./ScatterPlotHelpers/voronoi.js";
 import { createPoints } from "./ScatterPlotHelpers/points.js";
+import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 // Main function to create the scatter plot
 export function createScatterPlot(data, container, treeVis) {

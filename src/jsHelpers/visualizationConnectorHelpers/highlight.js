@@ -1,5 +1,5 @@
 import { getOriginalPointsNeighPointsBoolArrayValAti } from "../visualizationConnector.js";
-import { colorScheme, generateColorMap } from "./colors.js";
+import { colorScheme, getGlobalColorMap } from "./colors.js";
 
 // Determine if a point belongs to a leaf node's decision path
 export function pointBelongsToLeaf(point, originalData, leafNode) {
@@ -40,11 +40,8 @@ export function resetHighlights(treeVis, scatterPlotVis) {
 
     // Reset Scatter plot highlights
     if (scatterPlotVis && scatterPlotVis.points) {
-        const colorMap = generateColorMap([
-            ...new Set(scatterPlotVis.data.targets),
-        ]);
         scatterPlotVis.points
-            .style("fill", (d, i) => colorMap[scatterPlotVis.data.targets[i]])
+            .style("fill", (d, i) => getGlobalColorMap()[scatterPlotVis.data.targets[i]])
             .style("opacity", (d, i) =>
                 getOriginalPointsNeighPointsBoolArrayValAti(i)
                     ? colorScheme.opacity.datasetPoint
@@ -57,15 +54,12 @@ export function resetHighlights(treeVis, scatterPlotVis) {
 export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
     if (!scatterPlotVis || !scatterPlotVis.points) return;
 
-    const colorMap = generateColorMap([
-        ...new Set(scatterPlotVis.data.targets),
-    ]);
     scatterPlotVis.points
         .style("fill", (d, i) => {
             const originalData = scatterPlotVis.data.originalData[i];
             return pointBelongsToLeaf(d, originalData, leafNode)
                 ? colorScheme.ui.highlight
-                : colorMap[scatterPlotVis.data.targets[i]];
+                : getGlobalColorMap()[scatterPlotVis.data.targets[i]];
         })
 }
 
@@ -153,10 +147,6 @@ export function highlightPointsForDescendants(node, scatterPlotVis) {
 
     if (leafNodes.length === 0) return;
 
-    const colorMap = generateColorMap([
-        ...new Set(scatterPlotVis.data.targets),
-    ]);
-
     scatterPlotVis.points
         .style("fill", (d, i) => {
             const originalData = scatterPlotVis.data.originalData[i];
@@ -168,6 +158,6 @@ export function highlightPointsForDescendants(node, scatterPlotVis) {
                 }
             }
 
-            return colorMap[scatterPlotVis.data.targets[i]];
+            return getGlobalColorMap()[scatterPlotVis.data.targets[i]];
         })
 }

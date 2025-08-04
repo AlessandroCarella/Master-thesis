@@ -43,7 +43,7 @@ export function generateColorMap(classes) {
     }
 
     // Sort classes to ensure consistent ordering
-    const sortedClasses = [...new Set(classes)].sort();
+    const sortedClasses = [...new Set(classes)].sort((a, b) => b - a);
     const colorMap = {};
 
     sortedClasses.forEach((classLabel, index) => {

@@ -1,6 +1,5 @@
 import {
     setTreeVisualization,
-    getGlobalColorMap,
     highlightInstancePathInTree,
     getExplainedInstance,
 } from "./visualizationConnector.js";
@@ -21,6 +20,7 @@ import {
 import { addLinks } from "./DecisionTreeHelpers/link.js";
 import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
+import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 export function createTreeVisualization(rawTreeData) {
     if (!rawTreeData) {

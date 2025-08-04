@@ -1,4 +1,4 @@
-import { setGlobalColorMap } from "../visualizationConnector.js";
+import { setGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 
 export const resetUIDatasetSelection = (appState) => {
     // Hide classifier section

@@ -7,7 +7,7 @@ import {
 } from "./UIHelpers/explanation.js";
 import { getFeatureValues, getSurrogateParameters } from "./ui.js";
 import { fetchExplanation, fetchVisualizationUpdate } from "./API.js";
-import { initializeColors, setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
+import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 export function initializeVisualizations(data) {
     if (!data) {
@@ -61,7 +61,6 @@ async function handleScatterPlotMethodChange(event) {
         const result = await fetchVisualizationUpdate(requestData);
         
         // Update colors with the new method before updating visualizations
-        await initializeColors(event.target.value);
         setGlobalColorMap(result.uniqueClasses);
         
         updateVisualizationUI();

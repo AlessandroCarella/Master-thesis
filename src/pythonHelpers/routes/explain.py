@@ -67,6 +67,13 @@ async def update_visualization(request: VisualizationRequest):
     """
     Update visualization technique without regenerating the neighborhood.
     """ 
+    # Generate decision tree visualization data
+    tree_data = generate_decision_tree_data(
+        surrogate=global_state.dt_surrogate,
+        feature_names=global_state.feature_names,
+        target_names=global_state.target_names
+    )
+
     if not request.includeOriginalDataset:    
         # Generate scatter plot visualization data
         scatter_data = generate_scatter_plot(
@@ -89,13 +96,6 @@ async def update_visualization(request: VisualizationRequest):
             X_original=global_state.X_train,
             y_original=global_state.y_train
         )
-
-    # Generate decision tree visualization data
-    tree_data = generate_decision_tree_data(
-        surrogate=global_state.dt_surrogate,
-        feature_names=global_state.feature_names,
-        target_names=global_state.target_names
-    )
     
     return {
         "status": "success",
