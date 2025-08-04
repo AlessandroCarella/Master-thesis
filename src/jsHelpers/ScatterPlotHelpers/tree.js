@@ -3,14 +3,15 @@ import { colorScheme } from "../visualizationConnector.js";
 export function resetTreeHighlights(treeVisualization) {
     if (!treeVisualization || !treeVisualization.contentGroup) return;
 
-    // Reset link styles
+    // Reset link styles - use original sample-based stroke widths
     treeVisualization.contentGroup
         .selectAll(".link")
         .style("stroke", colorScheme.ui.linkStroke)
-        .style(
-            "stroke-width",
-            `${treeVisualization.metrics.linkStrokeWidth}px`
-        );
+        .style("stroke-width", function(d) {
+            // Use the stored original stroke width instead of base metrics
+            const originalWidth = d3.select(this).attr("data-original-stroke-width");
+            return originalWidth ? `${originalWidth}px` : `${treeVisualization.metrics.linkStrokeWidth}px`;
+        });
 
     // Reset node styles
     treeVisualization.contentGroup
@@ -39,10 +40,11 @@ export function highlightTreePath(path, treeVisualization) {
                     linkData.target === nextNode
             )
             .style("stroke", colorScheme.ui.highlight)
-            .style(
-                "stroke-width",
-                `${treeVisualization.metrics.linkStrokeWidth}px`
-            );
+            .style("stroke-width", function(d) {
+                // Use the stored original stroke width as base and add highlight thickness
+                const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
+                return `${baseWidth}px`; // Add small highlight thickness
+            });
     }
 
     // Highlight all nodes in the path

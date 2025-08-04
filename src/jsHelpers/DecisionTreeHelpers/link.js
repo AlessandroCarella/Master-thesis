@@ -22,7 +22,21 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .attr("class", "link")
         .attr("data-source-id", (d) => d.source.data.node_id)
         .attr("data-target-id", (d) => d.target.data.node_id)
-        .style("stroke-width", (d) => `${getStrokeWidth(d.target.data.weighted_n_samples, treeData.data.n_samples, metrics.linkStrokeWidth)}px`)
+        .each(function(d) {
+            // Calculate and store the original stroke width based on samples
+            const originalStrokeWidth = getStrokeWidth(
+                d.target.data.weighted_n_samples, 
+                treeData.data.n_samples, 
+                metrics.linkStrokeWidth
+            );
+            // Store as data attribute for later retrieval
+            d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
+        })
+        .style("stroke-width", function(d) {
+            console.log(d3.select(this).attr("data-original-stroke-width"))
+            // Use the stored original stroke width
+            return `${d3.select(this).attr("data-original-stroke-width")}px`;
+        })
         .attr("d", (d) => createSplitPath(d, SETTINGS))
         .style("fill", "none")
         .style("stroke", colorScheme.ui.linkStroke);
@@ -74,8 +88,9 @@ export function highlightInstancePath(
         .each(function () {
             const originalPath = d3.select(this);
             const pathD = originalPath.attr("d");
+            // Use the stored original stroke width instead of parseFloat
             const baseStrokeWidth = parseFloat(
-                originalPath.style("stroke-width")
+                originalPath.attr("data-original-stroke-width")
             );
 
             contentGroup

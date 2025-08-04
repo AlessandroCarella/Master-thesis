@@ -27,7 +27,11 @@ export function resetHighlights(treeVis, scatterPlotVis) {
         treeVis.contentGroup
             .selectAll(".link")
             .style("stroke", colorScheme.ui.linkStroke)
-            .style("stroke-width", `${treeVis.metrics.linkStrokeWidth}px`);
+            .style("stroke-width", function(d) {
+                // Use the stored original stroke width instead of base metrics
+                const originalWidth = d3.select(this).attr("data-original-stroke-width");
+                return `${originalWidth}px`;
+            });
 
         treeVis.contentGroup
             .selectAll(".node circle")
@@ -83,7 +87,11 @@ export function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
                 linkData.source === sourceNode && linkData.target === targetNode
         )
         .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", `${metrics.linkStrokeWidth}px`);
+        .style("stroke-width", function(d) {
+            // Use the stored original stroke width as base and add highlight thickness
+            const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
+            return `${baseWidth}px`; 
+        });
 }
 
 // For leaf nodes: highlights all the paths from the leaf to the root
