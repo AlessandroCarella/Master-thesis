@@ -1,11 +1,7 @@
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import MinMaxScaler
-from matplotlib.colors import rgb2hex
-from sklearn.manifold import TSNE, MDS
+# from matplotlib.colors import rgb2hex
 from skimage import color
 import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
@@ -67,11 +63,13 @@ def project_to_rgb(centroids, method, random_state=42):
         method = method.lower()
 
         if method == "pca":
+            from sklearn.decomposition import PCA
             reducer = PCA(n_components=3)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
         
         elif method == "tsne":
             # For t-SNE, perplexity should be smaller than n_samples - 1
+            from sklearn.manifold import TSNE
             tsne_params = {
                 'perplexity': min(5, len(centroid_matrix)-1),
                 'early_exaggeration': 12.0,
@@ -89,17 +87,20 @@ def project_to_rgb(centroids, method, random_state=42):
             reduced_centroids = reducer.fit_transform(centroid_matrix)
         
         elif method == "mds":
+            from sklearn.manifold import MDS
             reducer = MDS(n_components=3, random_state=random_state)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
         
         else:
             # Default to PCA if an invalid method is specified
+            from sklearn.decomposition import PCA
             reducer = PCA(n_components=3)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
     else:
         reduced_centroids = centroid_matrix
     
     # Scale to [0, 1] range for RGB
+    from sklearn.preprocessing import MinMaxScaler
     scaler = MinMaxScaler(feature_range=(0, 1))
     rgb_values = scaler.fit_transform(reduced_centroids)
     
@@ -167,10 +168,12 @@ def project_to_cielab(centroids, method, random_state=42):
             reduced_centroids = reducer.fit_transform(centroid_matrix)
         
         elif method == "mds":
+            from sklearn.manifold import MDS
             reducer = MDS(n_components=2, random_state=random_state)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
         
         else:
+            from sklearn.decomposition import PCA
             # Default to PCA if an invalid method is specified
             reducer = PCA(n_components=2)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
@@ -178,6 +181,7 @@ def project_to_cielab(centroids, method, random_state=42):
         reduced_centroids = centroid_matrix
         
     # Scale to [0, 1] range for color mapping
+    from sklearn.preprocessing import MinMaxScaler
     scaler = MinMaxScaler(feature_range=(0, 1))
     xy_values = scaler.fit_transform(reduced_centroids)
     

@@ -3,7 +3,9 @@ import sys
 import warnings
 import logging
 from logging.handlers import RotatingFileHandler
-import tensorflow as tf
+from tensorflow import get_logger
+from tensorflow import compat
+
 
 def configure_logging(log_level=None, log_file=None, clean_log=True):
     """
@@ -65,9 +67,9 @@ def configure_logging(log_level=None, log_file=None, clean_log=True):
     logging.getLogger('h5py._conv').setLevel(logging.ERROR)
     
     # Suppress TensorFlow warnings
-    tf.get_logger().setLevel('ERROR')
+    get_logger().setLevel('ERROR')
     # Disable TensorFlow deprecation warnings
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    compat.v1.logging.set_verbosity(compat.v1.logging.ERROR)
     
     # Suppress h5py warnings
     warnings.filterwarnings('ignore', category=FutureWarning, module='h5py')
@@ -75,4 +77,4 @@ def configure_logging(log_level=None, log_file=None, clean_log=True):
     # Suppress other common warnings
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow C++ level logs
     
-    logging.info(f"Logging configured with level {log_level}") 
+    logging.info(f"Logging configured with level {log_level}")

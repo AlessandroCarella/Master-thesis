@@ -4,9 +4,8 @@
     "description": "Webapp skeleton",
     "main": "index.js",
     "scripts": {
-        "start": "concurrently \"npm run start-server\" \"npm run wait-and-start-client\"",
+        "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
         "start-server": "py -m uvicorn main:app --reload",
-        "wait-and-start-client": "wait-on -H http://localhost:8000/health && npm run start-client",
         "start-client": "concurrently \"http-server -c-1\" \"cmd /c start http://localhost:8080\"",
         "postinstall": "pip install -r requirements.txt"
     },

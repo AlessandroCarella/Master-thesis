@@ -1,16 +1,11 @@
 import numpy as np
 import pandas as pd
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE, MDS
 from sklearn.preprocessing import StandardScaler
-from scipy.spatial import Voronoi
-from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import networkx as nx
-from sklearn.cluster import KMeans
 import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
-import umap
+from umap import UMAP
 
 def preprocess_data(X, method, random_state):
     """
@@ -36,9 +31,11 @@ def preprocess_data(X, method, random_state):
     X_scaled = scaler.fit_transform(X)
     
     if method.lower() == 'pca':
+        from sklearn.decomposition import PCA
         model = PCA(n_components=2)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'tsne':
+        from sklearn.manifold import TSNE
         # Default t-SNE parameters
         tsne_params = {
             'perplexity': min(30.0, X.shape[0] / 3),
@@ -50,9 +47,10 @@ def preprocess_data(X, method, random_state):
         model = TSNE(n_components=2, random_state=random_state, **tsne_params)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'umap':
-        model = umap.UMAP(n_components=2, random_state=random_state)
+        model = UMAP(n_components=2, random_state=random_state)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'mds':
+        from sklearn.manifold import MDS
         model = MDS(n_components=2, random_state=random_state)
         X_transformed = model.fit_transform(X_scaled)
     else:
@@ -126,6 +124,7 @@ def filter_points_by_class_kmeans(points, original_data, labels, threshold=500, 
             sampled_indices_local = rng.choice(n_points, size=sample_size, replace=False)
             sampled_points = class_points[sampled_indices_local]
             
+            from sklearn.cluster import KMeans
             kmeans = KMeans(n_clusters=threshold, random_state=random_state, n_init=10)
             kmeans.fit(sampled_points)
             centroids = kmeans.cluster_centers_
@@ -182,6 +181,7 @@ def create_voronoi_regions(xx, yy, Z, class_names):
     G = nx.Graph()
     
     # Compute the Voronoi diagram from grid coordinates
+    from scipy.spatial import Voronoi
     vor = Voronoi(np.c_[xx.ravel(), yy.ravel()])
     
     # Extract Voronoi regions and vertices
@@ -202,6 +202,7 @@ def create_voronoi_regions(xx, yy, Z, class_names):
         # Check for valid region (i.e., does not contain infinite points)
         if not -1 in region and len(region) > 0:
             # Create a polygon for the region using its vertex indices
+            from shapely.geometry import Polygon
             polygon = Polygon([vertices[i] for i in region])
             region_polygons.append(polygon)
             
