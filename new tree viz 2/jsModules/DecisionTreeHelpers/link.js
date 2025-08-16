@@ -88,8 +88,5 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath
             const isInPath = d3.select(this).attr("data-in-path") === "true";
             return isInPath ? colorScheme.ui.highlightStroke : colorScheme.ui.linkStroke;
         })
-        .style("opacity", function(d) {
-            const isInPath = d3.select(this).attr("data-in-path") === "true";
-            return isInPath ? 1 : 0.6;
-        });
+        .style("opacity", 1);
 }

@@ -11,7 +11,7 @@ const colorScheme = {
     },
     opacity: {
         hover: 1,
-        normal: 0.8,
+        normal: 1,
         pathHighlight: 1
     }
 };

@@ -1,4 +1,4 @@
-// DecisionTree.js - Updated with Linear Path Layout
+// DecisionTree.js - Updated with Linear Path Layout and Custom Color Palette
 import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
 import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
 import {
@@ -17,21 +17,41 @@ import { addLinks } from "./DecisionTreeHelpers/link.js";
 import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 
-// Default color map for classes
-const defaultColorMap = {
-    0: '#ff6b6b',  // Red
-    1: '#4ecdc4',  // Teal
-    2: '#45b7d1',  // Blue
-    3: '#96ceb4',  // Green
-    4: '#feca57',  // Yellow
-    5: '#ff9ff3',  // Pink
-    6: '#a55eea',  // Purple
-    7: '#26de81', // Light Green
-    // String-based class labels for datasets like iris
-    'setosa': '#ff6b6b',     // Red
-    'versicolor': '#4ecdc4', // Teal  
-    'virginica': '#45b7d1'   // Blue
-};
+// Custom color palette
+const colorPalette = [
+    "#8dd3c7",
+    "#ffffb3",
+    "#bebada",
+    "#fb8072",
+    "#80b1d3",
+    "#fdb462",
+    "#b3de69",
+    "#fccde5",
+    "#d9d9d9",
+    "#bc80bd"
+];
+
+// Function to create a color map from unique class labels
+function createColorMap(rawTreeData) {
+    // Extract all unique class labels from leaf nodes
+    const uniqueClasses = new Set();
+    rawTreeData.forEach(node => {
+        if (node.is_leaf && node.class_label !== undefined && node.class_label !== null) {
+            uniqueClasses.add(node.class_label);
+        }
+    });
+    
+    // Convert to array and sort for consistent ordering
+    const classArray = Array.from(uniqueClasses).sort();
+    
+    // Create color mapping
+    const colorMap = {};
+    classArray.forEach((classLabel, index) => {
+        colorMap[classLabel] = colorPalette[index % colorPalette.length];
+    });
+    
+    return colorMap;
+}
 
 // Function to trace the path through the decision tree for a given instance
 function traceInstancePath(rawTreeData, instanceData) {
@@ -87,7 +107,8 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
         return;
     }
 
-    const colorMap = defaultColorMap;
+    // Create dynamic color map from the data
+    const colorMap = createColorMap(rawTreeData);
     
     // Trace the instance path if instance data is provided
     let instancePath = [];
