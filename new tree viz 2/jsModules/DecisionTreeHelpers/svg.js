@@ -1,6 +1,8 @@
-// svg.js - Standalone Version
+// svg.js - Standalone Version with improved cleanup
 export function clearExistingSVG() {
     d3.select("#tree-plot svg").remove();
+    // Also remove any lingering tooltips
+    d3.selectAll('.decision-tree-tooltip').remove();
 }
 
 export function createSVGContainer(SETTINGS) {

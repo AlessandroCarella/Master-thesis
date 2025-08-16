@@ -119,7 +119,11 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
 
+    // Clear existing visualization and tooltips
     clearExistingSVG();
+    // Also remove any existing tooltips
+    d3.selectAll('.decision-tree-tooltip').remove();
+    
     const svg = createSVGContainer(SETTINGS);
     const contentGroup = createContentGroup(svg, SETTINGS);
     const tooltip = createTooltip();
