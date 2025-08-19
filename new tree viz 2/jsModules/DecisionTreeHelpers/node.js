@@ -232,7 +232,7 @@ export function addNodes(
         }
     });
 
-    // Add event handlers to both circles and rectangles
+    // Add common event handlers to both circles and rectangles
     nodes.selectAll("circle, rect")
         .attr("data-in-path", (d) => isNodeInPath(d.data.node_id, instancePath))
         .on("mouseover", (event, d) =>
@@ -241,7 +241,11 @@ export function addNodes(
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
             handleMouseOut(event, d, tooltip, metrics, instancePath, SETTINGS)
-        )
+        );
+
+    // Add context menu only to nodes that can be expanded or collapsed
+    nodes.selectAll("circle, rect")
+        .filter(d => d.hasHiddenChildren || d.isExpanded)
         .on("contextmenu", (event, d) => 
             createContextMenu(event, d, contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData)
         );

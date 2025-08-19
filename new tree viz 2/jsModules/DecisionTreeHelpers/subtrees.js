@@ -108,7 +108,10 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
                 originalNode.subtreeRoot = subtreeRoot; // Reference to subtree root for expansion
             } else {
                 originalNode.isHidden = false;
-                originalNode.hasHiddenChildren = true; // Mark that this node has hidden children
+                // Only mark as having hidden children if this node actually has children
+                // AND those children will be hidden
+                const hasActualChildren = originalNode.children && originalNode.children.length > 0;
+                originalNode.hasHiddenChildren = hasActualChildren;
             }
         }
     });
@@ -245,6 +248,8 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
         result.descendants().forEach(node => {
             node.isHidden = false;
             node.isInPath = false;
+            // In fallback mode, only mark nodes as having hidden children if they actually have children
+            node.hasHiddenChildren = false;
         });
         
         return result;
@@ -271,6 +276,10 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
         node.isInPath = node.isInPath || false;
         if (node.isHidden === undefined) {
             node.isHidden = false; // Default to visible for path nodes
+        }
+        // Ensure hasHiddenChildren is properly set for all nodes
+        if (node.hasHiddenChildren === undefined) {
+            node.hasHiddenChildren = false;
         }
     });
 
