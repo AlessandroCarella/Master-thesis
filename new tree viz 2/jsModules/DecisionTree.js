@@ -1,4 +1,4 @@
-// DecisionTree.js - Updated with Linear Path Layout and Custom Color Palette
+// DecisionTree.js - Updated with Linear Path Layout and Centralized Settings
 import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
 import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
 import {
@@ -17,26 +17,8 @@ import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 import { createLinearPathLayout } from "./DecisionTreeHelpers/subtrees.js";
 
-// Export constants for rectangle dimensions
-export const RECT_WIDTH = 150;
-export const RECT_HEIGHT = 100;
-
-// Custom color palette
-const colorPalette = [
-    "#8dd3c7",
-    "#ffffb3",
-    "#bebada",
-    "#fb8072",
-    "#80b1d3",
-    "#fdb462",
-    "#b3de69",
-    "#fccde5",
-    "#d9d9d9",
-    "#bc80bd"
-];
-
 // Function to create a color map from unique class labels
-function createColorMap(rawTreeData) {
+function createColorMap(rawTreeData, colorPalette) {
     // Extract all unique class labels from leaf nodes
     const uniqueClasses = new Set();
     rawTreeData.forEach(node => {
@@ -111,8 +93,8 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
         return;
     }
 
-    // Create dynamic color map from the data
-    const colorMap = createColorMap(rawTreeData);
+    // Create dynamic color map from the data using settings
+    const colorMap = createColorMap(rawTreeData, SETTINGS.visual.colorPalette);
     
     // Trace the instance path if instance data is provided
     let instancePath = [];

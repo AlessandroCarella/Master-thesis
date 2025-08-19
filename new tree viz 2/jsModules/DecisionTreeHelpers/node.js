@@ -1,30 +1,11 @@
 import { calculateNodeRadius } from "./metrics.js";
 
-// Constants for rectangle dimensions
-export const RECT_WIDTH = 150;
-export const RECT_HEIGHT = 100;
-
-// Color scheme for the visualization
-const colorScheme = {
-    ui: {
-        nodeStroke: '#333',
-        highlight: '#ff6b6b',
-        pathHighlight: '#ff4444',
-        pathHighlightStroke: '#cc0000'
-    },
-    opacity: {
-        hover: 1,
-        normal: 1,
-        pathHighlight: 1
-    }
-};
-
 // Function to get node color based on class
-export function getNodeColor(d, colorMap) {
+export function getNodeColor(d, colorMap, SETTINGS) {
     if (d.data.is_leaf && d.data.class_label !== undefined) {
-        return colorMap[d.data.class_label] || '#cccccc';
+        return colorMap[d.data.class_label] || SETTINGS.visual.colors.nodeDefaultLeaf;
     }
-    return '#e0e0e0'; // Default for non-leaf nodes
+    return SETTINGS.visual.colors.nodeDefault; // Default for non-leaf nodes
 }
 
 // Helper function to check if a node is in the instance path
@@ -62,18 +43,18 @@ export function addNodes(
         const element = d3.select(this);
         
         if (isInPath) {
-            // Rectangle for path nodes with fixed dimensions
+            // Rectangle for path nodes with settings-based dimensions
             element.append("rect")
-                .attr("x", -RECT_WIDTH / 2)
-                .attr("y", -RECT_HEIGHT / 2)
-                .attr("width", RECT_WIDTH)
-                .attr("height", RECT_HEIGHT)
-                .attr("rx", 8) // Rounded corners
-                .attr("ry", 8)
-                .style("fill", getNodeColor(d, colorMap))
-                .style("stroke-width", `${metrics.nodeBorderStrokeWidth * 1.5}px`)
-                .style("stroke", colorScheme.ui.pathHighlightStroke)
-                .style("opacity", colorScheme.opacity.pathHighlight);
+                .attr("x", -SETTINGS.visual.rectWidth / 2)
+                .attr("y", -SETTINGS.visual.rectHeight / 2)
+                .attr("width", SETTINGS.visual.rectWidth)
+                .attr("height", SETTINGS.visual.rectHeight)
+                .attr("rx", SETTINGS.visual.rectBorderRadius)
+                .attr("ry", SETTINGS.visual.rectBorderRadius)
+                .style("fill", getNodeColor(d, colorMap, SETTINGS))
+                .style("stroke-width", `${metrics.nodeBorderStrokeWidth * SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`)
+                .style("stroke", SETTINGS.visual.colors.pathHighlightStroke)
+                .style("opacity", SETTINGS.visual.opacity.pathHighlight);
 
             // Add text for path nodes
             if (!d.data.is_leaf) {
@@ -85,51 +66,52 @@ export function addNodes(
                 // Split condition text
                 element.append("text")
                     .attr("x", 0)
-                    .attr("y", -15)
+                    .attr("y", SETTINGS.visual.textOffsets.splitConditionY)
                     .attr("text-anchor", "middle")
-                    .style("font-size", "11px")
-                    .style("font-weight", "bold")
-                    .style("fill", "#333")
+                    .style("font-size", SETTINGS.visual.fonts.splitCondition.size)
+                    .style("font-weight", SETTINGS.visual.fonts.splitCondition.weight)
+                    .style("fill", SETTINGS.visual.fonts.splitCondition.color)
                     .text(`${featureName} ≤ ${threshold}`);
                 
                 // Instance value text
                 if (instanceValue !== null && instanceValue !== undefined) {
                     element.append("text")
                         .attr("x", 0)
-                        .attr("y", 5)
+                        .attr("y", SETTINGS.visual.textOffsets.instanceValueY)
                         .attr("text-anchor", "middle")
-                        .style("font-size", "10px")
-                        .style("fill", "#666")
+                        .style("font-size", SETTINGS.visual.fonts.instanceValue.size)
+                        .style("font-weight", SETTINGS.visual.fonts.instanceValue.weight)
+                        .style("fill", SETTINGS.visual.fonts.instanceValue.color)
                         .text(`Instance: ${typeof instanceValue === 'number' ? instanceValue.toFixed(2) : instanceValue}`);
                 }
             } else {
                 // Leaf node - show class prediction
                 element.append("text")
                     .attr("x", 0)
-                    .attr("y", -5)
+                    .attr("y", SETTINGS.visual.textOffsets.predictionLabelY)
                     .attr("text-anchor", "middle")
-                    .style("font-size", "12px")
-                    .style("font-weight", "bold")
-                    .style("fill", "#333")
+                    .style("font-size", SETTINGS.visual.fonts.predictionLabel.size)
+                    .style("font-weight", SETTINGS.visual.fonts.predictionLabel.weight)
+                    .style("fill", SETTINGS.visual.fonts.predictionLabel.color)
                     .text("PREDICTION");
                 
                 element.append("text")
                     .attr("x", 0)
-                    .attr("y", 15)
+                    .attr("y", SETTINGS.visual.textOffsets.predictionValueY)
                     .attr("text-anchor", "middle")
-                    .style("font-size", "14px")
-                    .style("font-weight", "bold")
-                    .style("fill", "#000")
+                    .style("font-size", SETTINGS.visual.fonts.predictionValue.size)
+                    .style("font-weight", SETTINGS.visual.fonts.predictionValue.weight)
+                    .style("fill", SETTINGS.visual.fonts.predictionValue.color)
                     .text(`${d.data.class_label}`);
             }
         } else {
             // Circle for non-path nodes
             element.append("circle")
                 .attr("r", baseRadius)
-                .style("fill", getNodeColor(d, colorMap))
+                .style("fill", getNodeColor(d, colorMap, SETTINGS))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-                .style("stroke", colorScheme.ui.nodeStroke)
-                .style("opacity", colorScheme.opacity.normal);
+                .style("stroke", SETTINGS.visual.colors.nodeStroke)
+                .style("opacity", SETTINGS.visual.opacity.normal);
         }
     });
 
@@ -137,17 +119,17 @@ export function addNodes(
     nodes.selectAll("circle, rect")
         .attr("data-in-path", (d) => isNodeInPath(d.data.node_id, instancePath))
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, metrics, instancePath)
+            handleMouseOver(event, d, tooltip, metrics, instancePath, SETTINGS)
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
-            handleMouseOut(event, d, tooltip, metrics, instancePath)
+            handleMouseOut(event, d, tooltip, metrics, instancePath, SETTINGS)
         );
 
     return nodes;
 }
 
-export function handleMouseOver(event, d, tooltip, metrics, instancePath = []) {
+export function handleMouseOver(event, d, tooltip, metrics, instancePath = [], SETTINGS) {
     // Extract tooltip content creation to a separate function
     const content = createNodeTooltipContent(d, instancePath);
 
@@ -158,7 +140,7 @@ export function handleMouseOver(event, d, tooltip, metrics, instancePath = []) {
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
 
-    d3.select(event.currentTarget).style("stroke", colorScheme.ui.highlight);
+    d3.select(event.currentTarget).style("stroke", SETTINGS.visual.colors.highlight);
 }
 
 function createNodeTooltipContent(d, instancePath = []) {
@@ -222,13 +204,13 @@ export function handleMouseMove(event, tooltip) {
         .style("top", event.pageY - 10 + "px");
 }
 
-export function handleMouseOut(event, d, tooltip, metrics, instancePath = []) {
+export function handleMouseOut(event, d, tooltip, metrics, instancePath = [], SETTINGS) {
     tooltip.style("visibility", "hidden");
     
     const isInPath = isNodeInPath(d.data.node_id, instancePath);
-    const strokeColor = isInPath ? colorScheme.ui.pathHighlightStroke : colorScheme.ui.nodeStroke;
-    const strokeWidth = isInPath ? `${metrics.nodeBorderStrokeWidth * 1.5}px` : `${metrics.nodeBorderStrokeWidth}px`;
-    const opacity = isInPath ? colorScheme.opacity.pathHighlight : colorScheme.opacity.normal;
+    const strokeColor = isInPath ? SETTINGS.visual.colors.pathHighlightStroke : SETTINGS.visual.colors.nodeStroke;
+    const strokeWidth = isInPath ? `${metrics.nodeBorderStrokeWidth * SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px` : `${metrics.nodeBorderStrokeWidth}px`;
+    const opacity = isInPath ? SETTINGS.visual.opacity.pathHighlight : SETTINGS.visual.opacity.normal;
     
     d3.select(event.currentTarget)
         .style("stroke", strokeColor)

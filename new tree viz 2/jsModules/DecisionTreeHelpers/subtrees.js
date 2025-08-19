@@ -1,5 +1,4 @@
 import { calculateSeparation } from './metrics.js';
-import { RECT_WIDTH } from '../DecisionTree.js';
 
 // Helper function to create a D3 hierarchy from a node and its descendants
 function createSubtreeHierarchy(node) {
@@ -53,9 +52,6 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     // For other nodes, we want them positioned relative to the root
     const rootHierarchyNode = layoutResult;
     
-    // Calculate vertical positioning
-    const verticalGap = 100; // Gap between path and subtree
-    
     // Apply the calculated offsets to position the subtree
     const hierarchyToOriginalMap = new Map();
     
@@ -96,12 +92,12 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
                 const distanceFromRoot = hierarchyNode.y - minY;
                 
                 // Position the root just above the path, and other nodes further up
-                originalNode.y = anchorY - verticalGap - distanceFromRoot;
+                originalNode.y = anchorY - SETTINGS.visual.verticalGap - distanceFromRoot;
             } else {
                 // For trees below the path, normal positioning
                 // Root should be closest to path, leaves further down
                 const distanceFromRoot = hierarchyNode.y - minY;
-                originalNode.y = anchorY + verticalGap + distanceFromRoot;
+                originalNode.y = anchorY + SETTINGS.visual.verticalGap + distanceFromRoot;
             }
             
             originalNode.isInPath = false;
@@ -109,26 +105,23 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     });
 }
 
-// Helper function to distribute path nodes horizontally with constant 100px spacing
-function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius) {
+// Helper function to distribute path nodes horizontally with constant spacing
+function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius, SETTINGS) {
     if (pathNodes.length === 0) return [];
     if (pathNodes.length === 1) return [totalWidth / 2];
     
-    // Constants for spacing
-    const RECT_MARGIN = 100; // Constant 100px margin between rectangles
-    
     // Calculate total width needed for all rectangles and margins
-    const totalRectWidth = pathNodes.length * RECT_WIDTH;
-    const totalMarginWidth = (pathNodes.length - 1) * RECT_MARGIN;
+    const totalRectWidth = pathNodes.length * SETTINGS.visual.rectWidth;
+    const totalMarginWidth = (pathNodes.length - 1) * SETTINGS.visual.rectMargin;
     const requiredWidth = totalRectWidth + totalMarginWidth;
     
     // Calculate starting position to center the entire group
-    const startX = (totalWidth - requiredWidth) / 2 + RECT_WIDTH / 2;
+    const startX = (totalWidth - requiredWidth) / 2 + SETTINGS.visual.rectWidth / 2;
     
     // Calculate positions with constant spacing
     const positions = [];
     for (let i = 0; i < pathNodes.length; i++) {
-        const x = startX + i * (RECT_WIDTH + RECT_MARGIN);
+        const x = startX + i * (SETTINGS.visual.rectWidth + SETTINGS.visual.rectMargin);
         positions.push(x);
     }
     
@@ -197,11 +190,12 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
 
     const centerY = SETTINGS.size.innerHeight / 2;
 
-    // Calculate horizontal positions for path nodes with constant 100px spacing
+    // Calculate horizontal positions for path nodes with spacing from settings
     const pathPositions = distributePathNodesHorizontally(
         pathNodes,
         SETTINGS.size.innerWidth,
-        metrics.nodeRadius
+        metrics.nodeRadius,
+        SETTINGS
     );
     
     // Position path nodes horizontally

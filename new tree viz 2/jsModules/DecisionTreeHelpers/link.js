@@ -1,14 +1,5 @@
 import { getStrokeWidth } from "./metrics.js";
 
-// Color scheme for the visualization
-const colorScheme = {
-    ui: {
-        linkStroke: '#999',
-        highlightStroke: '#ff4444',
-        highlightStrokeWidth: 4
-    }
-};
-
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;
     const { x: targetX, y: targetY } = target;
@@ -73,7 +64,7 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath
         .style("stroke-width", function(d) {
             const isInPath = d3.select(this).attr("data-in-path") === "true";
             if (isInPath) {
-                return `${colorScheme.ui.highlightStrokeWidth}px`;
+                return `${SETTINGS.visual.strokeWidth.highlightLink}px`;
             }
             // Use the stored original stroke width
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
@@ -82,7 +73,7 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath
         .style("fill", "none")
         .style("stroke", function(d) {
             const isInPath = d3.select(this).attr("data-in-path") === "true";
-            return isInPath ? colorScheme.ui.highlightStroke : colorScheme.ui.linkStroke;
+            return isInPath ? SETTINGS.visual.colors.highlightStroke : SETTINGS.visual.colors.linkStroke;
         })
         .style("opacity", 1);
 }
