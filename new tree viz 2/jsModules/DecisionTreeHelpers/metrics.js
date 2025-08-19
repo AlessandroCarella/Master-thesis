@@ -64,6 +64,8 @@ export function calculateNodeRadius(d, metrics) {
 }
 
 export function calculateInitialTransform(treeData, SETTINGS) {
+    // Use ALL nodes (including hidden ones) for calculating initial zoom
+    // This ensures the zoom is set as if the full tree was visible
     const allNodes = treeData.descendants();
     const [minX, maxX] = d3.extent(allNodes, (d) => d.x);
     const [minY, maxY] = d3.extent(allNodes, (d) => d.y);

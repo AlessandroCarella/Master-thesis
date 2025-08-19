@@ -1,4 +1,5 @@
 import { calculateNodeRadius } from "./metrics.js";
+import { expandSubtree, collapseSubtree } from "./subtrees.js";
 
 // Calculate optimal font size for multi-line labels inside a rectangle
 function calculateFontSize(lines, rectWidth, rectHeight) {
@@ -78,6 +79,69 @@ function getNodeTextLines(d, instanceData) {
     return lines;
 }
 
+// Create and show context menu
+function createContextMenu(event, d, contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData) {
+    // Remove any existing context menu
+    d3.select('.context-menu').remove();
+    
+    // Prevent default context menu
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Only show context menu for nodes that have hidden children
+    if (!d.hasHiddenChildren && !d.isExpanded) {
+        return;
+    }
+    
+    const menu = d3.select('body')
+        .append('div')
+        .attr('class', 'context-menu')
+        .style('position', 'absolute')
+        .style('left', (event.pageX + 5) + 'px')
+        .style('top', (event.pageY + 5) + 'px');
+    
+    if (d.hasHiddenChildren) {
+        menu.append('div')
+            .attr('class', 'context-menu-item')
+            .text('Expand Subtree')
+            .on('click', () => {
+                expandSubtree(d);
+                refreshVisualization(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
+                d3.select('.context-menu').remove();
+            });
+    }
+    
+    if (d.isExpanded) {
+        menu.append('div')
+            .attr('class', 'context-menu-item')
+            .text('Collapse Subtree')
+            .on('click', () => {
+                collapseSubtree(d);
+                refreshVisualization(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
+                d3.select('.context-menu').remove();
+            });
+    }
+    
+    // Add click listener to document to close menu
+    const closeMenu = () => {
+        d3.select('.context-menu').remove();
+        d3.select('body').on('click.context-menu', null);
+    };
+    
+    // Use a small delay to prevent immediate closing
+    setTimeout(() => {
+        d3.select('body').on('click.context-menu', closeMenu);
+    }, 10);
+}
+
+// Function to refresh the visualization after expand/collapse
+function refreshVisualization(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData) {
+    // Import the refreshVisualization function from DecisionTree.js
+    import('../DecisionTree.js').then(module => {
+        module.refreshVisualization();
+    });
+}
+
 export function addNodes(
     contentGroup,
     treeData,
@@ -88,9 +152,11 @@ export function addNodes(
     instancePath = [],
     instanceData = null
 ) {
+    const visibleNodes = treeData.descendants().filter(d => !d.isHidden);
+    
     const nodes = contentGroup
         .selectAll(".node")
-        .data(treeData.descendants())
+        .data(visibleNodes, d => d.data.node_id) // Use key function for proper data binding
         .join("g")
         .attr("class", "node")
         .attr("transform", (d) => `translate(${d.x},${d.y})`);
@@ -100,6 +166,9 @@ export function addNodes(
         const isInPath = isNodeInPath(d.data.node_id, instancePath);
         const baseRadius = calculateNodeRadius(d, metrics);
         const element = d3.select(this);
+        
+        // Clear any existing shapes
+        element.selectAll('*').remove();
         
         if (isInPath) {
             // Rectangle for path nodes with settings-based dimensions
@@ -140,12 +209,26 @@ export function addNodes(
             });
         } else {
             // Circle for non-path nodes
-            element.append("circle")
+            const circle = element.append("circle")
                 .attr("r", baseRadius)
                 .style("fill", getNodeColor(d, colorMap, SETTINGS))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
                 .style("stroke", SETTINGS.visual.colors.nodeStroke)
                 .style("opacity", SETTINGS.visual.opacity.normal);
+            
+            // Add indicator if node has hidden children
+            if (d.hasHiddenChildren) {
+                element.append("text")
+                    .attr("x", 0)
+                    .attr("y", 5)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .style("font-size", "12px")
+                    .style("font-weight", "bold")
+                    .style("fill", "#333")
+                    .style("pointer-events", "none")
+                    .text("...");
+            }
         }
     });
 
@@ -158,6 +241,9 @@ export function addNodes(
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
             handleMouseOut(event, d, tooltip, metrics, instancePath, SETTINGS)
+        )
+        .on("contextmenu", (event, d) => 
+            createContextMenu(event, d, contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData)
         );
 
     return nodes;
@@ -227,6 +313,13 @@ function createNodeTooltipContent(d, instancePath = []) {
                 );
             }
         }
+    }
+
+    // Add subtree information
+    if (d.hasHiddenChildren) {
+        content.push(`<strong>Subtree:</strong> Right-click to expand`);
+    } else if (d.isExpanded) {
+        content.push(`<strong>Subtree:</strong> Right-click to collapse`);
     }
 
     return content;

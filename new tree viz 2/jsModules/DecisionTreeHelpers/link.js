@@ -39,11 +39,15 @@ function isLinkInPath(link, instancePath) {
 }
 
 export function addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath = []) {
+    // Only create links between visible nodes
+    const visibleLinks = treeData.links().filter(link => 
+        !link.source.isHidden && !link.target.isHidden
+    );
+    
     contentGroup
         .selectAll(".link")
-        .data(treeData.links())
-        .enter()
-        .append("path")
+        .data(visibleLinks, d => `${d.source.data.node_id}-${d.target.data.node_id}`) // Use key function for proper data binding
+        .join("path")
         .attr("class", "link")
         .attr("data-source-id", (d) => d.source.data.node_id)
         .attr("data-target-id", (d) => d.target.data.node_id)

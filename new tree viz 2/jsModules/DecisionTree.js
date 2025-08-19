@@ -17,6 +17,9 @@ import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 import { createLinearPathLayout } from "./DecisionTreeHelpers/subtrees.js";
 
+// Global variables to store current visualization state
+let currentVisualizationState = null;
+
 // Function to create a color map from unique class labels
 function createColorMap(rawTreeData, colorPalette) {
     // Extract all unique class labels from leaf nodes
@@ -79,6 +82,33 @@ function traceInstancePath(rawTreeData, instanceData) {
     return path;
 }
 
+// Function to refresh the visualization after expand/collapse operations
+export function refreshVisualization() {
+    if (!currentVisualizationState) {
+        console.error("No visualization state stored for refresh");
+        return;
+    }
+    
+    const { 
+        contentGroup, 
+        treeData, 
+        metrics, 
+        SETTINGS, 
+        tooltip, 
+        colorMap, 
+        instancePath, 
+        instanceData 
+    } = currentVisualizationState;
+    
+    // Remove existing nodes and links
+    contentGroup.selectAll('.node').remove();
+    contentGroup.selectAll('.link').remove();
+    
+    // Re-add links and nodes with updated visibility
+    addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath);
+    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
+}
+
 export function createTreeVisualization(rawTreeData, instanceData = null) {
     if (!rawTreeData) {
         console.error("No tree data provided to createTreeVisualization");
@@ -132,6 +162,18 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
     );
 
     svg.call(zoom.transform, initialTransform);
+
+    // Store current visualization state for refresh operations
+    currentVisualizationState = {
+        contentGroup,
+        treeData,
+        metrics,
+        SETTINGS,
+        tooltip,
+        colorMap,
+        instancePath,
+        instanceData
+    };
 
     return { contentGroup, treeData, metrics, instancePath };
 }

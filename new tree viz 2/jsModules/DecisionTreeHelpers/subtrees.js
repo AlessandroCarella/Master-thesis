@@ -29,7 +29,7 @@ function createSubtreeLayout(subtreeRoot, metrics, SETTINGS) {
         .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, subtreeRoot));
 }
 
-// Position a subtree using D3 tree layout
+// Position a subtree using D3 tree layout (stores full layout but only shows root)
 function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, metrics, SETTINGS) {
     if (!subtreeRoot) return;
     
@@ -101,6 +101,15 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
             }
             
             originalNode.isInPath = false;
+            
+            // Mark all non-root subtree nodes as hidden initially
+            if (hierarchyNode !== rootHierarchyNode) {
+                originalNode.isHidden = true;
+                originalNode.subtreeRoot = subtreeRoot; // Reference to subtree root for expansion
+            } else {
+                originalNode.isHidden = false;
+                originalNode.hasHiddenChildren = true; // Mark that this node has hidden children
+            }
         }
     });
 }
@@ -134,10 +143,11 @@ function positionPathNodes(pathNodes, pathPositions, centerY) {
         node.x = pathPositions[index];
         node.y = centerY;
         node.isInPath = true;
+        node.isHidden = false;
     });
 }
 
-// Position all off-path subtrees using D3 tree layout
+// Position all off-path subtrees using D3 tree layout (only showing root nodes)
 function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETTINGS) {
     let globalOffPathCounter = 0;
     
@@ -149,7 +159,7 @@ function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETT
             !instancePath.includes(child.data.node_id)
         );
         
-        // Position each off-path subtree
+        // Position each off-path subtree (full layout calculated, but only root shown)
         offPathChildren.forEach(subtreeRoot => {
             const isAbove = globalOffPathCounter % 2 === 0;
             positionSubtreeWithD3Layout(
@@ -163,6 +173,50 @@ function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETT
             globalOffPathCounter++;
         });
     });
+}
+
+// Function to expand a subtree (show all hidden children)
+export function expandSubtree(subtreeRootNode) {
+    if (!subtreeRootNode.hasHiddenChildren) return;
+    
+    // Find all nodes that belong to this subtree and make them visible
+    function showDescendants(node) {
+        if (node.subtreeRoot === subtreeRootNode || node === subtreeRootNode) {
+            node.isHidden = false;
+            if (node.children) {
+                node.children.forEach(showDescendants);
+            }
+        }
+    }
+    
+    if (subtreeRootNode.children) {
+        subtreeRootNode.children.forEach(showDescendants);
+    }
+    
+    subtreeRootNode.hasHiddenChildren = false;
+    subtreeRootNode.isExpanded = true;
+}
+
+// Function to collapse a subtree (hide all children except root)
+export function collapseSubtree(subtreeRootNode) {
+    if (!subtreeRootNode.isExpanded) return;
+    
+    // Find all nodes that belong to this subtree and hide them (except root)
+    function hideDescendants(node) {
+        if (node !== subtreeRootNode && (node.subtreeRoot === subtreeRootNode || node === subtreeRootNode)) {
+            node.isHidden = true;
+            if (node.children) {
+                node.children.forEach(hideDescendants);
+            }
+        }
+    }
+    
+    if (subtreeRootNode.children) {
+        subtreeRootNode.children.forEach(hideDescendants);
+    }
+    
+    subtreeRootNode.hasHiddenChildren = true;
+    subtreeRootNode.isExpanded = false;
 }
 
 // Main function to create the linear path layout
@@ -185,7 +239,15 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
             .size([horizontalSpacing, verticalSpacing])
             .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, root));
         
-        return treeLayout(root);
+        const result = treeLayout(root);
+        
+        // Mark all nodes as visible in fallback mode
+        result.descendants().forEach(node => {
+            node.isHidden = false;
+            node.isInPath = false;
+        });
+        
+        return result;
     }
 
     const centerY = SETTINGS.size.innerHeight / 2;
@@ -201,18 +263,21 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
     // Position path nodes horizontally
     positionPathNodes(pathNodes, pathPositions, centerY);
     
-    // Position off-path subtrees using D3 tree layout
+    // Position off-path subtrees using D3 tree layout (only roots visible initially)
     positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETTINGS);
 
-    // Mark all nodes with path status
+    // Mark all nodes with path status and ensure visibility flags are set
     root.descendants().forEach(node => {
         node.isInPath = node.isInPath || false;
+        if (node.isHidden === undefined) {
+            node.isHidden = false; // Default to visible for path nodes
+        }
     });
 
     // Create links function for the root
     root.links = function() {
         return this.descendants()
-            .filter(node => node.parent)
+            .filter(node => node.parent && !node.isHidden && !node.parent.isHidden)
             .map(node => ({ source: node.parent, target: node }));
     };
 
