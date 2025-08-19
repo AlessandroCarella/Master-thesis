@@ -5,7 +5,7 @@ import scipy.stats as st
 from scipy.spatial.distance import jaccard
 import warnings
 
-from lore_sa.encoder_decoder import ColumnTransformerEnc
+from .encoder_decoder import ColumnTransformerEnc
 
 
 def vector2dict(x, feature_names):

@@ -1,6 +1,6 @@
-from lore_sa.dataset import Dataset
+from ..dataset import Dataset
 
-from lore_sa.logger import logger
+from ..logger import logger
 import pandas as pd
 from pandas import DataFrame
 import numpy as np
@@ -136,6 +136,11 @@ class TabularDataset(Dataset):
         df = pd.read_csv(filename, skipinitialspace=True, na_values='?', keep_default_na=True)
         if dropna:
             df.dropna(inplace=True)
+        # check if the class_name correspond to a categorical column
+        if class_name in df.select_dtypes(include=[np.number]).columns:
+            # force the column to be categorical
+            df[class_name] = df[class_name].astype(str)
+
         dataset_obj = cls(df, class_name=class_name)
         dataset_obj.filename = filename
         logger.info('{0} file imported'.format(filename))

@@ -48,7 +48,7 @@ class InvertableColumnTransformer(ColumnTransformer):
 
 class ColumnTransformerEnc(EncDec):
     """
-    It provides an interface to access One Hot enconding (https://en.wikipedia.org/wiki/One-hot) functions. 
+    It provides an interface to access One Hot enconding (https://en.wikipedia.org/wiki/One-hot) functions.
     It relies on OneHotEncoder class from sklearn
     """
 
@@ -241,4 +241,3 @@ class ColumnTransformerEnc(EncDec):
         :return:
         """
         return self.target_encoder.transform(X)
-

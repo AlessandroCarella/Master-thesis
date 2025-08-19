@@ -4,8 +4,8 @@ __all__ = ["Surrogate"]
 
 import numpy as np
 
-from lore_sa.dataset import Dataset
-from lore_sa.encoder_decoder import EncDec
+from ..dataset import Dataset
+from ..encoder_decoder import EncDec
 
 
 class Surrogate(ABC):

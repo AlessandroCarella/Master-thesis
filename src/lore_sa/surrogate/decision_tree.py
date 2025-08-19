@@ -6,8 +6,8 @@ from collections import defaultdict
 import numpy as np
 from sklearn.metrics import confusion_matrix
 
-from lore_sa.encoder_decoder import EncDec, ColumnTransformerEnc
-from lore_sa.logger import logger
+from ..encoder_decoder import EncDec, ColumnTransformerEnc
+from ..logger import logger
 from sklearn.tree._tree import TREE_LEAF
 from sklearn.tree import DecisionTreeClassifier
 import sklearn.model_selection
@@ -15,10 +15,9 @@ from sklearn.experimental import enable_halving_search_cv
 
 __all__ = ["Surrogate", "DecisionTreeSurrogate"]
 
-from lore_sa.rule import Expression, Rule
-from lore_sa.surrogate.surrogate import Surrogate
-from lore_sa.util import vector2dict, multilabel2str
-import lore_sa
+from ..rule import Expression, Rule
+from .surrogate import Surrogate
+from ..util import vector2dict, multilabel2str
 
 
 class DecisionTreeSurrogate(Surrogate):
@@ -80,6 +79,8 @@ class DecisionTreeSurrogate(Surrogate):
             self.dt.fit(Z, Yb)
 
         self.fidelity = self.dt.score(Z, Yb)
+        self.confusion_matrix = confusion_matrix(Yb, self.dt.predict(Z))
+        logger.info("Fidelity: {}".format(self.fidelity))
 
         return self.dt
 

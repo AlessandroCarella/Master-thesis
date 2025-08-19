@@ -1,4 +1,4 @@
-from lore_sa.bbox.bbox import AbstractBBox
+from .bbox import AbstractBBox
 
 __all__ = ["AbstractBBox","sklearnBBox"]
 class sklearnBBox(AbstractBBox):
