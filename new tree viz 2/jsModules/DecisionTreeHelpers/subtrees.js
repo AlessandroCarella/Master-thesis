@@ -1,5 +1,3 @@
-// subtrees.js - Subtree layout, positioning, and expand/collapse functionality
-
 import { calculateSeparation } from './metrics.js';
 
 // Helper function to create a D3 hierarchy from a node and its descendants
@@ -31,7 +29,76 @@ function createSubtreeLayout(subtreeRoot, metrics, SETTINGS) {
         .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, subtreeRoot));
 }
 
-// Position a subtree using D3 tree layout (stores full layout but only shows root)
+// Helper function to set up node expansion states with configurable initial depth
+function setupNodeExpansionStates(node, isSubtreeRoot = false, SETTINGS, currentDepth = 0) {
+    const maxInitialDepth = SETTINGS.tree.initialVisibleDepth;
+    
+    // Only non-leaf nodes can be expanded/collapsed
+    if (!node.data.is_leaf && node.children && node.children.length > 0) {
+        // If we're at or beyond the max initial depth, mark as having hidden children
+        if (currentDepth >= maxInitialDepth) {
+            node.hasHiddenChildren = true;
+            node.isExpanded = false;
+        } else {
+            // Within initial depth - show as expanded
+            node.hasHiddenChildren = false;
+            node.isExpanded = true;
+        }
+    } else {
+        node.hasHiddenChildren = false;
+        node.isExpanded = false;
+    }
+    
+    // Set initial visibility
+    if (isSubtreeRoot) {
+        node.isHidden = false;
+        // For subtree root, set visibility based on depth
+        if (node.children) {
+            node.children.forEach(child => {
+                setupNodeExpansionStatesRecursive(child, SETTINGS, currentDepth + 1, maxInitialDepth);
+            });
+        }
+    }
+}
+
+// Recursive helper to set up expansion states for all nodes in subtree
+function setupNodeExpansionStatesRecursive(node, SETTINGS, currentDepth, maxInitialDepth) {
+    // Set visibility based on depth
+    node.isHidden = currentDepth > maxInitialDepth;
+    
+    // Only non-leaf nodes can be expanded/collapsed
+    if (!node.data.is_leaf && node.children && node.children.length > 0) {
+        if (currentDepth >= maxInitialDepth) {
+            // At or beyond max depth - collapsed with hidden children
+            node.hasHiddenChildren = true;
+            node.isExpanded = false;
+        } else {
+            // Within initial depth - expanded
+            node.hasHiddenChildren = false;
+            node.isExpanded = true;
+        }
+    } else {
+        node.hasHiddenChildren = false;
+        node.isExpanded = false;
+    }
+    
+    // Continue recursively for all children
+    if (node.children) {
+        node.children.forEach(child => {
+            setupNodeExpansionStatesRecursive(child, SETTINGS, currentDepth + 1, maxInitialDepth);
+        });
+    }
+}
+
+// Helper function to recursively set visibility of descendants
+function setDescendantsHidden(node, hidden) {
+    node.isHidden = hidden;
+    if (node.children) {
+        node.children.forEach(child => setDescendantsHidden(child, hidden));
+    }
+}
+
+// Position a subtree using D3 tree layout with hierarchical expand/collapse
 function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, metrics, SETTINGS) {
     if (!subtreeRoot) return;
     
@@ -50,8 +117,6 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     const [minX, maxX] = d3.extent(nodes, d => d.x);
     const [minY, maxY] = d3.extent(nodes, d => d.y);
     
-    // For the root node, we want it positioned directly above/below the anchor
-    // For other nodes, we want them positioned relative to the root
     const rootHierarchyNode = layoutResult;
     
     // Apply the calculated offsets to position the subtree
@@ -86,37 +151,21 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
             
             if (isAbove) {
                 // For trees above the path, we want them to grow upward
-                // Root should be closest to the path (highest Y value in the subtree)
-                // Leaves should be furthest from the path (lowest Y values)
-                // Since smaller Y = higher on screen, we need to invert the layout
-                
-                // Calculate the distance from root for this node
                 const distanceFromRoot = hierarchyNode.y - minY;
-                
-                // Position the root just above the path, and other nodes further up
                 originalNode.y = anchorY - SETTINGS.visual.verticalGap - distanceFromRoot;
             } else {
                 // For trees below the path, normal positioning
-                // Root should be closest to path, leaves further down
                 const distanceFromRoot = hierarchyNode.y - minY;
                 originalNode.y = anchorY + SETTINGS.visual.verticalGap + distanceFromRoot;
             }
             
             originalNode.isInPath = false;
-            
-            // Mark all non-root subtree nodes as hidden initially
-            if (hierarchyNode !== rootHierarchyNode) {
-                originalNode.isHidden = true;
-                originalNode.subtreeRoot = subtreeRoot; // Reference to subtree root for expansion
-            } else {
-                originalNode.isHidden = false;
-                // Only mark as having hidden children if this node actually has children
-                // AND those children will be hidden
-                const hasActualChildren = originalNode.children && originalNode.children.length > 0;
-                originalNode.hasHiddenChildren = hasActualChildren;
-            }
+            originalNode.subtreeRoot = subtreeRoot; // Reference to subtree root for identification
         }
     });
+    
+    // Set up expansion states for all nodes in the subtree
+    setupNodeExpansionStates(subtreeRoot, true, SETTINGS);
 }
 
 // Helper function to distribute path nodes horizontally with constant spacing
@@ -152,7 +201,7 @@ function positionPathNodes(pathNodes, pathPositions, centerY) {
     });
 }
 
-// Position all off-path subtrees using D3 tree layout (only showing root nodes)
+// Position all off-path subtrees using D3 tree layout
 function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETTINGS) {
     let globalOffPathCounter = 0;
     
@@ -164,7 +213,7 @@ function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETT
             !instancePath.includes(child.data.node_id)
         );
         
-        // Position each off-path subtree (full layout calculated, but only root shown)
+        // Position each off-path subtree
         offPathChildren.forEach(subtreeRoot => {
             const isAbove = globalOffPathCounter % 2 === 0;
             positionSubtreeWithD3Layout(
@@ -180,48 +229,60 @@ function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETT
     });
 }
 
-// Function to expand a subtree (show all hidden children)
-export function expandSubtree(subtreeRootNode) {
-    if (!subtreeRootNode.hasHiddenChildren) return;
+// Function to expand a node (show the entire subtree below it)
+export function expandSubtree(node) {
+    if (!node.hasHiddenChildren || !node.children) return;
     
-    // Find all nodes that belong to this subtree and make them visible
-    function showDescendants(node) {
-        if (node.subtreeRoot === subtreeRootNode || node === subtreeRootNode) {
-            node.isHidden = false;
-            if (node.children) {
-                node.children.forEach(showDescendants);
-            }
+    // Show all descendants of this node
+    function showAllDescendants(currentNode) {
+        if (currentNode.children) {
+            currentNode.children.forEach(child => {
+                child.isHidden = false;
+                
+                // Set up expansion states for newly visible children
+                if (!child.data.is_leaf && child.children && child.children.length > 0) {
+                    child.hasHiddenChildren = false; // Mark as expanded since we're showing all descendants
+                    child.isExpanded = true;
+                }
+                
+                // Recursively show all descendants
+                showAllDescendants(child);
+            });
         }
     }
     
-    if (subtreeRootNode.children) {
-        subtreeRootNode.children.forEach(showDescendants);
-    }
+    // Show the entire subtree
+    showAllDescendants(node);
     
-    subtreeRootNode.hasHiddenChildren = false;
-    subtreeRootNode.isExpanded = true;
+    node.hasHiddenChildren = false;
+    node.isExpanded = true;
 }
 
-// Function to collapse a subtree (hide all children except root)
-export function collapseSubtree(subtreeRootNode) {
-    if (!subtreeRootNode.isExpanded) return;
+// Function to collapse a single node (hide its children and all descendants)
+export function collapseSubtree(node) {
+    if (!node.isExpanded || !node.children) return;
     
-    // Find all nodes that belong to this subtree and hide them (except root)
-    function hideDescendants(node) {
-        if (node !== subtreeRootNode && (node.subtreeRoot === subtreeRootNode || node === subtreeRootNode)) {
-            node.isHidden = true;
-            if (node.children) {
-                node.children.forEach(hideDescendants);
-            }
-        }
+    // Hide all descendants
+    node.children.forEach(child => {
+        setDescendantsHidden(child, true);
+        // Reset expansion states of hidden nodes
+        resetExpansionStates(child);
+    });
+    
+    node.hasHiddenChildren = true;
+    node.isExpanded = false;
+}
+
+// Helper function to reset expansion states when nodes are hidden
+function resetExpansionStates(node) {
+    if (!node.data.is_leaf && node.children && node.children.length > 0) {
+        node.hasHiddenChildren = true;
+        node.isExpanded = false;
     }
     
-    if (subtreeRootNode.children) {
-        subtreeRootNode.children.forEach(hideDescendants);
+    if (node.children) {
+        node.children.forEach(child => resetExpansionStates(child));
     }
-    
-    subtreeRootNode.hasHiddenChildren = true;
-    subtreeRootNode.isExpanded = false;
 }
 
 // Main function to create the linear path layout
@@ -250,7 +311,6 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
         result.descendants().forEach(node => {
             node.isHidden = false;
             node.isInPath = false;
-            // In fallback mode, only mark nodes as having hidden children if they actually have children
             node.hasHiddenChildren = false;
         });
         
@@ -270,7 +330,7 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
     // Position path nodes horizontally
     positionPathNodes(pathNodes, pathPositions, centerY);
     
-    // Position off-path subtrees using D3 tree layout (only roots visible initially)
+    // Position off-path subtrees with hierarchical expand/collapse
     positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETTINGS);
 
     // Mark all nodes with path status and ensure visibility flags are set
@@ -279,7 +339,6 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
         if (node.isHidden === undefined) {
             node.isHidden = false; // Default to visible for path nodes
         }
-        // Ensure hasHiddenChildren is properly set for all nodes
         if (node.hasHiddenChildren === undefined) {
             node.hasHiddenChildren = false;
         }

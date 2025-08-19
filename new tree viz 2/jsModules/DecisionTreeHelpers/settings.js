@@ -15,6 +15,7 @@ export function getVisualizationSettings() {
             minSplitWidth: 30,
             minSplitHeight: 25,
             levelHeightScale: 100,
+            initialVisibleDepth: 2, // Show subtree nodes up to this depth initially
             get radianAngle() {
                 return (this.splitAngle * Math.PI) / 180;
             },
