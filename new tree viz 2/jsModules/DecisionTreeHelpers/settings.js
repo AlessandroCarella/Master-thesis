@@ -80,41 +80,6 @@ export function getVisualizationSettings() {
             strokeWidth: {
                 highlightLink: 4,
                 pathHighlightMultiplier: 1.5 // Multiplier for path node border width
-            },
-            
-            // Font settings
-            fonts: {
-                splitCondition: {
-                    size: "14px",
-                    weight: "bold",
-                    color: "#333"
-                },
-                instanceValue: {
-                    size: "14px",
-                    weight: "normal",
-                    color: "#666"
-                },
-                predictionLabel: {
-                    size: "14px",
-                    weight: "bold",
-                    color: "#333"
-                },
-                predictionValue: {
-                    size: "14px",
-                    weight: "bold",
-                    color: "#000"
-                },
-                tooltip: {
-                    size: "14px"
-                }
-            },
-            
-            // Text positioning offsets
-            textOffsets: {
-                splitConditionY: -15,
-                instanceValueY: 5,
-                predictionLabelY: -5,
-                predictionValueY: 15
             }
         }
     };
