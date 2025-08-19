@@ -33,7 +33,6 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
         })
         .style("stroke-width", function(d) {
-            console.log(d3.select(this).attr("data-original-stroke-width"))
             // Use the stored original stroke width
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
         })

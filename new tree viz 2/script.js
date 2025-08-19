@@ -98,12 +98,6 @@ function initializeButtons() {
     });
 }
 
-// Initialize the application
-function init() {
-    initializeButtons();
-    updateButtonStates(currentTreeNumber);
-    loadTreeData(currentTreeNumber);
-}
-
-// Load tree when page loads
-init();
+initializeButtons();
+updateButtonStates(currentTreeNumber);
+loadTreeData(currentTreeNumber);

@@ -2,9 +2,8 @@
 import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
 import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
 import {
-    calculateMetrics,
-    createLinearPathLayout,
     calculateInitialTransform,
+    calculateMetrics,
 } from "./DecisionTreeHelpers/metrics.js";
 import {
     clearExistingSVG,
@@ -16,6 +15,7 @@ import {
 import { addLinks } from "./DecisionTreeHelpers/link.js";
 import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
+import { createLinearPathLayout } from "./DecisionTreeHelpers/subtrees.js";
 
 // Custom color palette
 const colorPalette = [

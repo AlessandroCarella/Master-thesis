@@ -22,7 +22,7 @@ export function createSplitPath({ source, target }, SETTINGS) {
         // Direct horizontal line for path connections
         return `M${sourceX},${sourceY} L${targetX},${targetY}`;
     } else if (isSourceInPath && !isTargetInPath) {
-        // Curved connection from path node to off-path subtree
+        // Vertical connection from path node to off-path subtree
         const midX = sourceX + (targetX - sourceX) * 0.5;
         const midY = sourceY + (targetY - sourceY) * 0.3;
         return `M${sourceX},${sourceY} Q${midX},${midY} ${targetX},${targetY}`;
@@ -30,7 +30,9 @@ export function createSplitPath({ source, target }, SETTINGS) {
         // Standard curved connection for off-path subtrees
         const midY = (sourceY + targetY) / 2;
         const controlX = sourceX + (targetX - sourceX) / 2;
-        const controlY = midY - Math.abs(targetX - sourceX) * 0.2;
+        const controlY =
+            midY -
+            Math.abs(targetX - sourceX) * Math.tan(SETTINGS.tree.radianAngle / 2);
         return `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`;
     }
 }

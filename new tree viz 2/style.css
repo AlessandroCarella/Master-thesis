@@ -77,20 +77,9 @@ h2 {
   overflow: hidden;
 }
 
-.tree-button:hover {
-  background: linear-gradient(135deg, #0056b3, #003d82);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
-}
-
 .tree-button.active {
   background: linear-gradient(135deg, #28a745, #1e7e34);
   box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
-}
-
-.tree-button.active:hover {
-  background: linear-gradient(135deg, #1e7e34, #155724);
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.5);
 }
 
 .tree-button:active {
@@ -107,10 +96,6 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-}
-
-button:hover {
-  background-color: #0056b3;
 }
 
 .info {
@@ -177,11 +162,4 @@ button:hover {
 
 .link {
   transition: all 0.2s ease;
-}
-
-/* Hover effects */
-.node:hover rect,
-.node:hover circle {
-  filter: drop-shadow(0px 0px 10px rgba(255, 107, 107, 0.8));
-  transform: scale(1.05);
 }
