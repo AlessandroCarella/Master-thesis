@@ -1,5 +1,9 @@
 import { calculateNodeRadius } from "./metrics.js";
 
+// Constants for rectangle dimensions
+export const RECT_WIDTH = 150;
+export const RECT_HEIGHT = 100;
+
 // Color scheme for the visualization
 const colorScheme = {
     ui: {
@@ -28,6 +32,12 @@ function isNodeInPath(nodeId, instancePath) {
     return instancePath && instancePath.includes(nodeId);
 }
 
+// Function to get instance value for a feature
+function getInstanceValue(featureName, instanceData) {
+    if (!instanceData || !featureName) return null;
+    return instanceData[featureName];
+}
+
 export function addNodes(
     contentGroup,
     treeData,
@@ -35,7 +45,8 @@ export function addNodes(
     SETTINGS,
     tooltip,
     colorMap,
-    instancePath = []
+    instancePath = [],
+    instanceData = null
 ) {
     const nodes = contentGroup
         .selectAll(".node")
@@ -51,21 +62,66 @@ export function addNodes(
         const element = d3.select(this);
         
         if (isInPath) {
-            // Rectangle for path nodes
-            const rectWidth = baseRadius * 3;
-            const rectHeight = baseRadius * 1.5;
-            
+            // Rectangle for path nodes with fixed dimensions
             element.append("rect")
-                .attr("x", -rectWidth / 2)
-                .attr("y", -rectHeight / 2)
-                .attr("width", rectWidth)
-                .attr("height", rectHeight)
-                .attr("rx", 4) // Rounded corners
-                .attr("ry", 4)
+                .attr("x", -RECT_WIDTH / 2)
+                .attr("y", -RECT_HEIGHT / 2)
+                .attr("width", RECT_WIDTH)
+                .attr("height", RECT_HEIGHT)
+                .attr("rx", 8) // Rounded corners
+                .attr("ry", 8)
                 .style("fill", getNodeColor(d, colorMap))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth * 1.5}px`)
                 .style("stroke", colorScheme.ui.pathHighlightStroke)
                 .style("opacity", colorScheme.opacity.pathHighlight);
+
+            // Add text for path nodes
+            if (!d.data.is_leaf) {
+                // Decision node - show split condition
+                const featureName = d.data.feature_name || 'Unknown';
+                const threshold = d.data.threshold !== undefined ? d.data.threshold.toFixed(2) : 'N/A';
+                const instanceValue = getInstanceValue(featureName, instanceData);
+                
+                // Split condition text
+                element.append("text")
+                    .attr("x", 0)
+                    .attr("y", -15)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "11px")
+                    .style("font-weight", "bold")
+                    .style("fill", "#333")
+                    .text(`${featureName} ≤ ${threshold}`);
+                
+                // Instance value text
+                if (instanceValue !== null && instanceValue !== undefined) {
+                    element.append("text")
+                        .attr("x", 0)
+                        .attr("y", 5)
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "10px")
+                        .style("fill", "#666")
+                        .text(`Instance: ${typeof instanceValue === 'number' ? instanceValue.toFixed(2) : instanceValue}`);
+                }
+            } else {
+                // Leaf node - show class prediction
+                element.append("text")
+                    .attr("x", 0)
+                    .attr("y", -5)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .style("font-weight", "bold")
+                    .style("fill", "#333")
+                    .text("PREDICTION");
+                
+                element.append("text")
+                    .attr("x", 0)
+                    .attr("y", 15)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "14px")
+                    .style("font-weight", "bold")
+                    .style("fill", "#000")
+                    .text(`${d.data.class_label}`);
+            }
         } else {
             // Circle for non-path nodes
             element.append("circle")

@@ -1,4 +1,5 @@
 import { calculateSeparation } from './metrics.js';
+import { RECT_WIDTH } from '../DecisionTree.js';
 
 // Helper function to create a D3 hierarchy from a node and its descendants
 function createSubtreeHierarchy(node) {
@@ -40,7 +41,7 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     // Apply D3 tree layout
     const treeLayout = createSubtreeLayout(hierarchy, metrics, SETTINGS);
     if (!treeLayout) return;
-    
+
     const layoutResult = treeLayout(hierarchy);
     
     // Get the bounds of the laid out subtree
@@ -108,13 +109,30 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     });
 }
 
-// Helper function to distribute path nodes horizontally
+// Helper function to distribute path nodes horizontally with constant 100px spacing
 function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius) {
     if (pathNodes.length === 0) return [];
     if (pathNodes.length === 1) return [totalWidth / 2];
     
-    const spacing = totalWidth / (pathNodes.length + 1);
-    return pathNodes.map((_, index) => spacing * (index + 1));
+    // Constants for spacing
+    const RECT_MARGIN = 100; // Constant 100px margin between rectangles
+    
+    // Calculate total width needed for all rectangles and margins
+    const totalRectWidth = pathNodes.length * RECT_WIDTH;
+    const totalMarginWidth = (pathNodes.length - 1) * RECT_MARGIN;
+    const requiredWidth = totalRectWidth + totalMarginWidth;
+    
+    // Calculate starting position to center the entire group
+    const startX = (totalWidth - requiredWidth) / 2 + RECT_WIDTH / 2;
+    
+    // Calculate positions with constant spacing
+    const positions = [];
+    for (let i = 0; i < pathNodes.length; i++) {
+        const x = startX + i * (RECT_WIDTH + RECT_MARGIN);
+        positions.push(x);
+    }
+    
+    return positions;
 }
 
 // Position path nodes in a horizontal line
@@ -179,7 +197,7 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
 
     const centerY = SETTINGS.size.innerHeight / 2;
 
-    // Calculate horizontal positions for path nodes
+    // Calculate horizontal positions for path nodes with constant 100px spacing
     const pathPositions = distributePathNodesHorizontally(
         pathNodes,
         SETTINGS.size.innerWidth,

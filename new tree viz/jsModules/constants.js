@@ -13,8 +13,8 @@ export const DEFAULT_COLORS = [
 
 export const SPLIT_NODE_COLOR = "#cccccc";
 
-export const CONTAINER_WIDTH = 1000;
-export const CONTAINER_HEIGHT = 1000;
+export const CONTAINER_WIDTH = 800;
+export const CONTAINER_HEIGHT = 800;
 
 export const RECT_WIDTH = 150;
 export const RECT_HEIGHT = 100;

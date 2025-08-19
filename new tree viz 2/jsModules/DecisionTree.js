@@ -17,6 +17,10 @@ import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 import { createLinearPathLayout } from "./DecisionTreeHelpers/subtrees.js";
 
+// Export constants for rectangle dimensions
+export const RECT_WIDTH = 150;
+export const RECT_HEIGHT = 100;
+
 // Custom color palette
 const colorPalette = [
     "#8dd3c7",
@@ -133,7 +137,8 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
 
     addBackgroundLayer(contentGroup, SETTINGS, metrics);
     addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath);
-    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath);
+    // Pass instanceData to addNodes function
+    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
 
     const initialTransform = calculateInitialTransform(treeData, SETTINGS);
     const zoom = initializeZoom(
