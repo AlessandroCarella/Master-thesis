@@ -1,3 +1,5 @@
+// subtrees.js - Subtree layout, positioning, and expand/collapse functionality
+
 import { calculateSeparation } from './metrics.js';
 
 // Helper function to create a D3 hierarchy from a node and its descendants

@@ -1,4 +1,3 @@
-// DecisionTree.js - Updated with Linear Path Layout and Centralized Settings
 import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
 import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
 import {
@@ -16,6 +15,7 @@ import { addLinks } from "./DecisionTreeHelpers/link.js";
 import { addNodes } from "./DecisionTreeHelpers/node.js";
 import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
 import { createLinearPathLayout } from "./DecisionTreeHelpers/subtrees.js";
+import { traceInstancePath } from "./DecisionTreeHelpers/instancePath.js";
 
 // Global variables to store current visualization state
 let currentVisualizationState = null;
@@ -40,46 +40,6 @@ function createColorMap(rawTreeData, colorPalette) {
     });
     
     return colorMap;
-}
-
-// Function to trace the path through the decision tree for a given instance
-function traceInstancePath(rawTreeData, instanceData) {
-    const path = [];
-    const nodesById = {};
-    
-    // Create lookup for nodes
-    rawTreeData.forEach(node => {
-        nodesById[node.node_id] = node;
-    });
-    
-    let currentNode = nodesById[0]; // Start at root
-    
-    while (currentNode && !currentNode.is_leaf) {
-        path.push(currentNode.node_id);
-        
-        const featureName = currentNode.feature_name;
-        const threshold = currentNode.threshold;
-        const instanceValue = instanceData[featureName];
-        
-        if (instanceValue === undefined) {
-            console.warn(`Feature ${featureName} not found in instance data`);
-            break;
-        }
-        
-        // Decide which child to follow
-        if (instanceValue <= threshold) {
-            currentNode = nodesById[currentNode.left_child];
-        } else {
-            currentNode = nodesById[currentNode.right_child];
-        }
-    }
-    
-    // Add the final leaf node
-    if (currentNode && currentNode.is_leaf) {
-        path.push(currentNode.node_id);
-    }
-    
-    return path;
 }
 
 // Function to refresh the visualization after expand/collapse operations

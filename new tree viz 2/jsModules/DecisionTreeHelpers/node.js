@@ -1,5 +1,9 @@
+// node.js - Node rendering and styling
+
 import { calculateNodeRadius } from "./metrics.js";
-import { expandSubtree, collapseSubtree } from "./subtrees.js";
+import { isNodeInPath, getInstanceValue } from "./instancePath.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "./tooltip.js";
+import { createContextMenu } from "./contextMenu.js";
 
 // Calculate optimal font size for multi-line labels inside a rectangle
 function calculateFontSize(lines, rectWidth, rectHeight) {
@@ -42,17 +46,6 @@ export function getNodeColor(d, colorMap, SETTINGS) {
     return SETTINGS.visual.colors.nodeDefault; // Default for non-leaf nodes
 }
 
-// Helper function to check if a node is in the instance path
-function isNodeInPath(nodeId, instancePath) {
-    return instancePath && instancePath.includes(nodeId);
-}
-
-// Function to get instance value for a feature
-function getInstanceValue(featureName, instanceData) {
-    if (!instanceData || !featureName) return null;
-    return instanceData[featureName];
-}
-
 // Function to prepare text lines for a node
 function getNodeTextLines(d, instanceData) {
     const lines = [];
@@ -77,69 +70,6 @@ function getNodeTextLines(d, instanceData) {
     }
     
     return lines;
-}
-
-// Create and show context menu
-function createContextMenu(event, d, contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData) {
-    // Remove any existing context menu
-    d3.select('.context-menu').remove();
-    
-    // Prevent default context menu
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Only show context menu for nodes that have hidden children
-    if (!d.hasHiddenChildren && !d.isExpanded) {
-        return;
-    }
-    
-    const menu = d3.select('body')
-        .append('div')
-        .attr('class', 'context-menu')
-        .style('position', 'absolute')
-        .style('left', (event.pageX + 5) + 'px')
-        .style('top', (event.pageY + 5) + 'px');
-    
-    if (d.hasHiddenChildren) {
-        menu.append('div')
-            .attr('class', 'context-menu-item')
-            .text('Expand Subtree')
-            .on('click', () => {
-                expandSubtree(d);
-                refreshVisualization(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
-                d3.select('.context-menu').remove();
-            });
-    }
-    
-    if (d.isExpanded) {
-        menu.append('div')
-            .attr('class', 'context-menu-item')
-            .text('Collapse Subtree')
-            .on('click', () => {
-                collapseSubtree(d);
-                refreshVisualization(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
-                d3.select('.context-menu').remove();
-            });
-    }
-    
-    // Add click listener to document to close menu
-    const closeMenu = () => {
-        d3.select('.context-menu').remove();
-        d3.select('body').on('click.context-menu', null);
-    };
-    
-    // Use a small delay to prevent immediate closing
-    setTimeout(() => {
-        d3.select('body').on('click.context-menu', closeMenu);
-    }, 10);
-}
-
-// Function to refresh the visualization after expand/collapse
-function refreshVisualization(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData) {
-    // Import the refreshVisualization function from DecisionTree.js
-    import('../DecisionTree.js').then(module => {
-        module.refreshVisualization();
-    });
 }
 
 export function addNodes(
@@ -251,100 +181,4 @@ export function addNodes(
         );
 
     return nodes;
-}
-
-export function handleMouseOver(event, d, tooltip, metrics, instancePath = [], SETTINGS) {
-    // Extract tooltip content creation to a separate function
-    const content = createNodeTooltipContent(d, instancePath);
-
-    tooltip
-        .html(content.join("<br>"))
-        .style("class", "decision-tree-tooltip")
-        .style("visibility", "visible")
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-
-    d3.select(event.currentTarget).style("stroke", SETTINGS.visual.colors.highlight);
-}
-
-function createNodeTooltipContent(d, instancePath = []) {
-    const content = [];
-
-    // Node type and primary information
-    if (d.data.is_leaf) {
-        // Leaf node information
-        content.push(`<strong>Class:</strong> ${d.data.class_label}`);
-    } else {
-        // Split node information
-        content.push(
-            `<strong>Split:</strong> ${
-                d.data.feature_name
-            } ≤ ${d.data.threshold.toFixed(2)}`
-        );
-        content.push(`<strong>Feature Index:</strong> ${d.data.feature_index}`);
-        content.push(`<strong>Impurity:</strong> ${d.data.impurity.toFixed(4)}`);
-    }
-
-    // Common information for both node types
-    content.push(`<strong>Samples:</strong> ${d.data.n_samples}`);
-
-    // Add weighted samples if available
-    if (d.data.weighted_n_samples) {
-        const weightDiff = Math.abs(
-            d.data.weighted_n_samples - d.data.n_samples
-        );
-        // Only show if there's a meaningful difference
-        if (weightDiff > 0.01) {
-            content.push(
-                `<strong>Weighted Samples:</strong> ${d.data.weighted_n_samples.toFixed(
-                    2
-                )}`
-            );
-        }
-    }
-
-    if (!d.data.is_leaf) {
-        // Add class distribution if available (summarized)
-        if (d.data.value && d.data.value.length > 0 && d.data.value[0].length > 0) {
-            const valueArray = d.data.value[0];
-            if (valueArray.length > 1) {
-                const total = valueArray.reduce((sum, val) => sum + val, 0);
-                const distribution = valueArray
-                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
-                    .join(", ");
-                content.push(
-                    `<strong>Class Distribution:</strong> [${distribution}]`
-                );
-            }
-        }
-    }
-
-    // Add subtree information
-    if (d.hasHiddenChildren) {
-        content.push(`<strong>Subtree:</strong> Right-click to expand`);
-    } else if (d.isExpanded) {
-        content.push(`<strong>Subtree:</strong> Right-click to collapse`);
-    }
-
-    return content;
-}
-
-export function handleMouseMove(event, tooltip) {
-    tooltip
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-}
-
-export function handleMouseOut(event, d, tooltip, metrics, instancePath = [], SETTINGS) {
-    tooltip.style("visibility", "hidden");
-    
-    const isInPath = isNodeInPath(d.data.node_id, instancePath);
-    const strokeColor = isInPath ? SETTINGS.visual.colors.pathHighlightStroke : SETTINGS.visual.colors.nodeStroke;
-    const strokeWidth = isInPath ? `${metrics.nodeBorderStrokeWidth * SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px` : `${metrics.nodeBorderStrokeWidth}px`;
-    const opacity = isInPath ? SETTINGS.visual.opacity.pathHighlight : SETTINGS.visual.opacity.normal;
-    
-    d3.select(event.currentTarget)
-        .style("stroke", strokeColor)
-        .style("stroke-width", strokeWidth)
-        .style("opacity", opacity);
 }
