@@ -34,7 +34,10 @@ export function getVisualizationSettings() {
             rectWidth: 150,
             rectHeight: 100,
             rectBorderRadius: 8,
-            rectMargin: 100, // Spacing between rectangles in path
+            rectMargin: 100, // Base spacing between rectangles in path (minimum value)
+            
+            // Subtree-based spacing configuration
+            subtreeSizeSpacingMultiplier: 10, // Additional pixels per node in subtree
             
             // Layout spacing
             verticalGap: 100, // Gap between path and subtrees

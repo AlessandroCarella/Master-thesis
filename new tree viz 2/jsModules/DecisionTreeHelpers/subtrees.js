@@ -98,6 +98,41 @@ function setDescendantsHidden(node, hidden) {
     }
 }
 
+// Helper function to calculate the total number of nodes in a subtree
+function calculateSubtreeSize(node) {
+    if (!node) return 0;
+    
+    let count = 1; // Count the node itself
+    
+    if (node.children) {
+        node.children.forEach(child => {
+            count += calculateSubtreeSize(child);
+        });
+    }
+    
+    return count;
+}
+
+// Helper function to calculate subtree sizes for all path nodes
+function calculatePathNodeSubtreeSizes(pathNodes, instancePath) {
+    return pathNodes.map(pathNode => {
+        if (!pathNode.children) return 0;
+        
+        // Find children that are not in the instance path (off-path subtrees)
+        const offPathChildren = pathNode.children.filter(child => 
+            !instancePath.includes(child.data.node_id)
+        );
+        
+        // Calculate total size of all off-path subtrees from this node
+        let totalSubtreeSize = 0;
+        offPathChildren.forEach(subtreeRoot => {
+            totalSubtreeSize += calculateSubtreeSize(subtreeRoot);
+        });
+        
+        return totalSubtreeSize;
+    });
+}
+
 // Position a subtree using D3 tree layout with hierarchical expand/collapse
 function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, metrics, SETTINGS) {
     if (!subtreeRoot) return;
@@ -168,24 +203,47 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     setupNodeExpansionStates(subtreeRoot, true, SETTINGS);
 }
 
-// Helper function to distribute path nodes horizontally with constant spacing
-function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius, SETTINGS) {
+// Helper function to distribute path nodes horizontally with variable spacing based on subtree sizes
+function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius, SETTINGS, subtreeSizes) {
     if (pathNodes.length === 0) return [];
     if (pathNodes.length === 1) return [totalWidth / 2];
     
-    // Calculate total width needed for all rectangles and margins
+    // Calculate variable margins based on subtree sizes
+    const baseMargin = SETTINGS.visual.rectMargin; // Minimum margin
+    const subtreeSizeMultiplier = SETTINGS.visual.subtreeSizeSpacingMultiplier || 2; // How much extra space per node
+    
+    // Calculate margins between each pair of adjacent nodes
+    const margins = [];
+    for (let i = 0; i < pathNodes.length - 1; i++) {
+        // Use the larger of the two adjacent subtree sizes to determine spacing
+        const leftSubtreeSize = subtreeSizes[i] || 0;
+        const rightSubtreeSize = subtreeSizes[i + 1] || 0;
+        const maxSubtreeSize = Math.max(leftSubtreeSize, rightSubtreeSize);
+        
+        // Calculate margin: base margin + additional space based on subtree size
+        const margin = baseMargin + (maxSubtreeSize * subtreeSizeMultiplier);
+        margins.push(margin);
+    }
+    
+    // Calculate total width needed
     const totalRectWidth = pathNodes.length * SETTINGS.visual.rectWidth;
-    const totalMarginWidth = (pathNodes.length - 1) * SETTINGS.visual.rectMargin;
+    const totalMarginWidth = margins.reduce((sum, margin) => sum + margin, 0);
     const requiredWidth = totalRectWidth + totalMarginWidth;
     
     // Calculate starting position to center the entire group
     const startX = (totalWidth - requiredWidth) / 2 + SETTINGS.visual.rectWidth / 2;
     
-    // Calculate positions with constant spacing
+    // Calculate positions with variable spacing
     const positions = [];
+    let currentX = startX;
+    
     for (let i = 0; i < pathNodes.length; i++) {
-        const x = startX + i * (SETTINGS.visual.rectWidth + SETTINGS.visual.rectMargin);
-        positions.push(x);
+        positions.push(currentX);
+        
+        // Move to next position (if not the last node)
+        if (i < pathNodes.length - 1) {
+            currentX += SETTINGS.visual.rectWidth + margins[i];
+        }
     }
     
     return positions;
@@ -319,12 +377,16 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
 
     const centerY = SETTINGS.size.innerHeight / 2;
 
-    // Calculate horizontal positions for path nodes with spacing from settings
+    // Calculate subtree sizes for each path node
+    const subtreeSizes = calculatePathNodeSubtreeSizes(pathNodes, instancePath);
+
+    // Calculate horizontal positions for path nodes with variable spacing based on subtree sizes
     const pathPositions = distributePathNodesHorizontally(
         pathNodes,
         SETTINGS.size.innerWidth,
         metrics.nodeRadius,
-        SETTINGS
+        SETTINGS,
+        subtreeSizes
     );
     
     // Position path nodes horizontally
