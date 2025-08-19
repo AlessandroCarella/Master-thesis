@@ -1,4 +1,3 @@
-// dataProcessing.js - Standalone Version
 export function createHierarchy(data) {
     if (!data || !Array.isArray(data)) {
         console.error("Invalid data provided to createHierarchy:", data);

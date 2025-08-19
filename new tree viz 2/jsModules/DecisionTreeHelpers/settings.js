@@ -1,4 +1,3 @@
-// settings.js - Standalone Version
 export function getVisualizationSettings() {
     const margin = { top: 90, right: 90, bottom: 90, left: 90 };
     const width = 800;
@@ -13,8 +12,8 @@ export function getVisualizationSettings() {
         },
         tree: {
             splitAngle: 0,
-            minSplitWidth: 20,
-            minSplitHeight: 15,
+            minSplitWidth: 30,
+            minSplitHeight: 25,
             levelHeightScale: 100,
             get radianAngle() {
                 return (this.splitAngle * Math.PI) / 180;

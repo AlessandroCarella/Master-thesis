@@ -1,4 +1,3 @@
-// zoom.js - Standalone Version
 export function initializeZoom(svg, contentGroup, SETTINGS, metrics, minZoom) {
     const zoom = d3
         .zoom()

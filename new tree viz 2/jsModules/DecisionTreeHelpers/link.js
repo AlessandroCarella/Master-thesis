@@ -1,4 +1,3 @@
-// link.js - Updated for Linear Path Layout
 import { getStrokeWidth } from "./metrics.js";
 
 // Color scheme for the visualization
@@ -18,14 +17,9 @@ export function createSplitPath({ source, target }, SETTINGS) {
     const isSourceInPath = source.isInPath;
     const isTargetInPath = target.isInPath;
     
-    if (isSourceInPath && isTargetInPath) {
+    if (isSourceInPath) {
         // Direct horizontal line for path connections
         return `M${sourceX},${sourceY} L${targetX},${targetY}`;
-    } else if (isSourceInPath && !isTargetInPath) {
-        // Vertical connection from path node to off-path subtree
-        const midX = sourceX + (targetX - sourceX) * 0.5;
-        const midY = sourceY + (targetY - sourceY) * 0.3;
-        return `M${sourceX},${sourceY} Q${midX},${midY} ${targetX},${targetY}`;
     } else {
         // Standard curved connection for off-path subtrees
         const midY = (sourceY + targetY) / 2;

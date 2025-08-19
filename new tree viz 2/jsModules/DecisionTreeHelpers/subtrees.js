@@ -1,4 +1,3 @@
-// subtrees.js - Updated to use D3 tree layout for subtrees
 import { calculateSeparation } from './metrics.js';
 
 // Helper function to create a D3 hierarchy from a node and its descendants
@@ -49,16 +48,12 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     const [minX, maxX] = d3.extent(nodes, d => d.x);
     const [minY, maxY] = d3.extent(nodes, d => d.y);
     
-    // Calculate offset to center the subtree horizontally around the anchor point
-    const subtreeWidth = maxX - minX;
-    const offsetX = anchorX - (minX + subtreeWidth / 2);
+    // For the root node, we want it positioned directly above/below the anchor
+    // For other nodes, we want them positioned relative to the root
+    const rootHierarchyNode = layoutResult;
     
-    // Calculate vertical offset based on whether subtree is above or below path
-    const subtreeHeight = maxY - minY;
+    // Calculate vertical positioning
     const verticalGap = 100; // Gap between path and subtree
-    const offsetY = isAbove ? 
-        anchorY - maxY - verticalGap : 
-        anchorY - minY + verticalGap;
     
     // Apply the calculated offsets to position the subtree
     const hierarchyToOriginalMap = new Map();
@@ -80,8 +75,34 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     nodes.forEach(hierarchyNode => {
         const originalNode = hierarchyToOriginalMap.get(hierarchyNode);
         if (originalNode) {
-            originalNode.x = hierarchyNode.x + offsetX;
-            originalNode.y = hierarchyNode.y + offsetY;
+            // For the root node, position it directly at the anchor X coordinate
+            if (hierarchyNode === rootHierarchyNode) {
+                originalNode.x = anchorX;
+            } else {
+                // For other nodes, position them relative to the root's layout position
+                const rootLayoutX = rootHierarchyNode.x;
+                const offsetFromRoot = hierarchyNode.x - rootLayoutX;
+                originalNode.x = anchorX + offsetFromRoot;
+            }
+            
+            if (isAbove) {
+                // For trees above the path, we want them to grow upward
+                // Root should be closest to the path (highest Y value in the subtree)
+                // Leaves should be furthest from the path (lowest Y values)
+                // Since smaller Y = higher on screen, we need to invert the layout
+                
+                // Calculate the distance from root for this node
+                const distanceFromRoot = hierarchyNode.y - minY;
+                
+                // Position the root just above the path, and other nodes further up
+                originalNode.y = anchorY - verticalGap - distanceFromRoot;
+            } else {
+                // For trees below the path, normal positioning
+                // Root should be closest to path, leaves further down
+                const distanceFromRoot = hierarchyNode.y - minY;
+                originalNode.y = anchorY + verticalGap + distanceFromRoot;
+            }
+            
             originalNode.isInPath = false;
         }
     });

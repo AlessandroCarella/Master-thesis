@@ -1,4 +1,3 @@
-// node.js - Updated with Rectangle Shapes for Path Nodes
 import { calculateNodeRadius } from "./metrics.js";
 
 // Color scheme for the visualization
