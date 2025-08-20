@@ -7,13 +7,21 @@ import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link.js";
 import { 
     getNodeLabel, 
     getNodeLabelLines, 
-    getNodeColor, 
     createTooltip, 
     showTooltip, 
-    hideTooltip 
+    hideTooltip,
+    handleNodeClick,
+    getNodeById
 } from "./BlocksDecisionTreeHelpers/node.js";
 import { calculateFontSize } from "./BlocksDecisionTreeHelpers/utils.js";
-import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT } from "./BlocksDecisionTreeHelpers/settings.js";
+import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT, SPLIT_NODE_COLOR } from "./BlocksDecisionTreeHelpers/settings.js";
+import {
+    getScatterPlotVisualization,
+    getTreeVisualization,
+    setBlocksTreeVisualization,
+    getNodeColor,
+} from "./visualizationConnector.js";
+import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 export function createBlocksTreeVisualization(rawTreeData, instance) {
     // Set container selector
@@ -39,7 +47,12 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     // Ensure the entire visualization chain is visible
     ensureVisualizationVisibility();
 
-    render(containerSelector, tooltip);
+    const visualization = render(containerSelector, tooltip);
+    
+    // Set the blocks tree visualization for interaction
+    setBlocksTreeVisualization(visualization);
+    
+    return visualization;
 }
 
 function ensureVisualizationVisibility() {
@@ -95,19 +108,49 @@ function render(containerSelector, tooltip) {
 
     // Render links
     const links = createLinks(allPaths, nodePositions);
-    renderLinks(g, links, instancePath);
+    const linkElements = renderLinks(g, links, instancePath);
 
     // Render nodes
-    renderNodes(g, nodePositions, instancePath, tooltip);
+    const nodeElements = renderNodes(g, nodePositions, instancePath, tooltip);
 
     // Render labels
     renderLabels(g, nodePositions);
+
+    // Return visualization object for interaction
+    return {
+        svg,
+        container: g,
+        nodePositions,
+        links,
+        instancePath,
+        linkElements,
+        nodeElements,
+        allPaths
+    };
+}
+
+// Helper function to get node color using global color management
+function getBlocksNodeColor(nodeId) {
+    const nodeData = getNodeById(nodeId);
+    if (!nodeData) return SPLIT_NODE_COLOR;
+    
+    // Get the global color map
+    const globalColorMap = getGlobalColorMap();
+    if (!globalColorMap) return SPLIT_NODE_COLOR;
+    
+    // Create a node object that matches the global getNodeColor function interface
+    const nodeForColorFunction = {
+        data: nodeData
+    };
+    
+    // Use the global getNodeColor function
+    return getNodeColor(nodeForColorFunction, globalColorMap);
 }
 
 function renderNodes(container, nodePositions, instancePath, tooltip) {
     const nodes = Object.values(nodePositions);
 
-    container
+    const nodeElements = container
         .selectAll(".node")
         .data(nodes)
         .enter()
@@ -122,7 +165,7 @@ function renderNodes(container, nodePositions, instancePath, tooltip) {
         .attr("height", RECT_HEIGHT)
         .attr("rx", 4)
         .attr("ry", 4)
-        .attr("fill", (d) => getNodeColor(d.id))
+        .attr("fill", (d) => getBlocksNodeColor(d.id))
         .on("mouseover", (event, d) => {
             showTooltip(event, d.id, tooltip);
         })
@@ -133,7 +176,18 @@ function renderNodes(container, nodePositions, instancePath, tooltip) {
             tooltip
                 .style("left", `${event.pageX + 15}px`)
                 .style("top", `${event.pageY - 28}px`);
+        })
+        .on("click", (event, d) => {
+            handleNodeClick(
+                event,
+                d,
+                container,
+                getTreeVisualization(),
+                getScatterPlotVisualization()
+            );
         });
+
+    return nodeElements;
 }
 
 function renderLabels(container, nodePositions) {

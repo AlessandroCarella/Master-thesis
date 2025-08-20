@@ -1,6 +1,11 @@
 import { state } from "./state.js";
-import { DEFAULT_COLORS, SPLIT_NODE_COLOR, ANIMATION_CONFIG } from "./settings.js";
+import { SPLIT_NODE_COLOR, ANIMATION_CONFIG } from "./settings.js";
 import { getTreeStats, getUniqueClasses } from "./metrics.js";
+import { 
+    handleTreeNodeClick,
+    colorScheme,
+    getBlocksTreeVisualization
+} from "../visualizationConnector.js";
 
 export function getNodeById(nodeId) {
     const root = state.hierarchyRoot;
@@ -50,17 +55,7 @@ export function getPathToNode(targetNodeId) {
     return findPath(root);
 }
 
-export function getNodeColor(nodeId) {
-    const node = getNodeById(nodeId);
-    if (!node) return SPLIT_NODE_COLOR;
-    if (node.is_leaf) {
-        const cls = node.class_label || "unknown";
-        const unique = getUniqueClasses();
-        const idx = unique.indexOf(cls);
-        return DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-    }
-    return SPLIT_NODE_COLOR;
-}
+// Removed local getNodeColor function - now using global color management
 
 export function getNodeLabelLines(nodeId, instance) {
     const node = getNodeById(nodeId);
@@ -81,7 +76,7 @@ export function getNodeLabel(nodeId, instance) {
     return lines.join("\n");
 }
 
-// Enhanced tooltip content creation function (adapted from first file)
+// Enhanced tooltip content creation function (adapted from classic tree)
 function createNodeTooltipContent(node) {
     const content = [];
 
@@ -167,4 +162,149 @@ export function showTooltip(event, nodeId, tooltip) {
 
 export function hideTooltip(tooltip) {
     tooltip.transition().duration(ANIMATION_CONFIG.tooltipHideDuration).style("opacity", 0);
+}
+
+// Convert blocks tree node data to the format expected by the highlighting system
+function convertToTreeNodeFormat(blocksNodeData) {
+    const node = getNodeById(blocksNodeData.id);
+    if (!node) return null;
+
+    // Create a mock tree node that matches the classic tree structure
+    return {
+        data: node,
+        // Add any other properties needed by the highlighting system
+    };
+}
+
+// Handle node clicks in the blocks tree
+export function handleNodeClick(event, blocksNodeData, container, treeVis, scatterPlotVis) {
+    event.stopPropagation();
+
+    // Convert blocks node data to tree node format
+    const treeNode = convertToTreeNodeFormat(blocksNodeData);
+    if (!treeNode) return;
+
+    // Get the blocks tree visualization
+    const blocksTreeVis = getBlocksTreeVisualization();
+    
+    // Create a mock metrics object for the highlighting system
+    const mockMetrics = {
+        nodeBorderStrokeWidth: 2,
+        linkStrokeWidth: 2
+    };
+
+    // Use the existing tree node click handler with blocks tree adaptation
+    handleTreeNodeClick(
+        event,
+        treeNode,
+        container,
+        treeVis,
+        scatterPlotVis,
+        mockMetrics,
+        blocksTreeVis
+    );
+}
+
+// Highlight a specific node in blocks tree
+export function highlightBlocksTreeNode(blocksTreeVis, nodeId) {
+    if (!blocksTreeVis || !blocksTreeVis.container) return;
+
+    blocksTreeVis.container
+        .selectAll(".node")
+        .filter((d) => d.id === nodeId)
+        .style("stroke", colorScheme.ui.highlight)
+        .style("stroke-width", "3px");
+}
+
+// Highlight a path in blocks tree
+export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
+    if (!blocksTreeVis || !blocksTreeVis.container || !pathNodeIds) return;
+
+    // Highlight nodes in the path
+    pathNodeIds.forEach(nodeId => {
+        highlightBlocksTreeNode(blocksTreeVis, nodeId);
+    });
+
+    // Highlight links in the path
+    for (let i = 0; i < pathNodeIds.length - 1; i++) {
+        const sourceId = pathNodeIds[i];
+        const targetId = pathNodeIds[i + 1];
+
+        blocksTreeVis.container
+            .selectAll(".link")
+            .filter((d) => {
+                return (d.sourceId === sourceId && d.targetId === targetId) ||
+                       (d.sourceId === targetId && d.targetId === sourceId);
+            })
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", "4px");
+    }
+}
+
+// Highlight descendants of a node (for split nodes)
+export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
+    if (!blocksTreeVis || !blocksTreeVis.container) return;
+
+    const node = getNodeById(nodeId);
+    if (!node) return;
+
+    // Get all descendant node IDs
+    const descendants = [];
+    
+    function collectDescendants(currentNodeId) {
+        const currentNode = getNodeById(currentNodeId);
+        if (!currentNode) return;
+        
+        descendants.push(currentNodeId);
+        
+        // Find children in the hierarchy
+        const hierarchyNode = findHierarchyNode(currentNodeId);
+        if (hierarchyNode && hierarchyNode.children) {
+            hierarchyNode.children.forEach(child => {
+                collectDescendants(child.data.node_id);
+            });
+        }
+    }
+
+    collectDescendants(nodeId);
+
+    // Highlight all descendant nodes
+    descendants.forEach(descendantId => {
+        highlightBlocksTreeNode(blocksTreeVis, descendantId);
+    });
+
+    // Highlight all links between descendants
+    descendants.forEach(sourceId => {
+        descendants.forEach(targetId => {
+            if (sourceId !== targetId) {
+                blocksTreeVis.container
+                    .selectAll(".link")
+                    .filter((d) => {
+                        return (d.sourceId === sourceId && d.targetId === targetId) ||
+                               (d.sourceId === targetId && d.targetId === sourceId);
+                    })
+                    .style("stroke", colorScheme.ui.highlight)
+                    .style("stroke-width", "3px");
+            }
+        });
+    });
+}
+
+// Helper function to find hierarchy node by ID
+function findHierarchyNode(nodeId) {
+    const root = state.hierarchyRoot;
+    if (!root) return null;
+
+    function search(node) {
+        if (node.data.node_id === nodeId) return node;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = search(child);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    return search(root);
 }

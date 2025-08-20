@@ -1,5 +1,10 @@
-import { getOriginalPointsNeighPointsBoolArrayValAti } from "../visualizationConnector.js";
+import { getOriginalPointsNeighPointsBoolArrayValAti, resetBlocksTreeHighlights } from "../visualizationConnector.js";
 import { colorScheme, getGlobalColorMap } from "./colors.js";
+import { 
+    highlightBlocksTreeNode, 
+    highlightBlocksTreePath,
+    highlightBlocksTreeDescendants,
+} from "../BlocksDecisionTreeHelpers/node.js";
 
 // Determine if a point belongs to a leaf node's decision path
 export function pointBelongsToLeaf(point, originalData, leafNode) {
@@ -52,6 +57,12 @@ export function resetHighlights(treeVis, scatterPlotVis) {
                     : colorScheme.opacity.neighPoint
             );
     }
+
+    // Reset blocks tree highlights
+    const blocksTreeVis = window.blocksTreeVisualization;
+    if (blocksTreeVis) {
+        resetBlocksTreeHighlights(blocksTreeVis);
+    }
 }
 
 // Highlight points in scatter plot for selected leaf node
@@ -65,6 +76,18 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
                 ? colorScheme.ui.highlight
                 : getGlobalColorMap()[scatterPlotVis.data.targets[i]];
         })
+        
+    // Also highlight the corresponding node in blocks tree
+    const blocksTreeVis = window.blocksTreeVisualization;
+    if (blocksTreeVis && leafNode.data && leafNode.data.node_id) {
+        highlightBlocksTreeNode(blocksTreeVis, leafNode.data.node_id);
+        
+        // Get path to root for blocks tree
+        const pathToRoot = getPathToNodeInBlocks(leafNode.data.node_id);
+        if (pathToRoot.length > 0) {
+            highlightBlocksTreePath(blocksTreeVis, pathToRoot);
+        }
+    }
 }
 
 // Highlights a single node
@@ -76,6 +99,12 @@ export function highlightNode(contentGroup, node, metrics) {
         .style("stroke", colorScheme.ui.highlight)
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("opacity", colorScheme.opacity.default);
+        
+    // Also highlight in blocks tree
+    const blocksTreeVis = window.blocksTreeVisualization;
+    if (blocksTreeVis && node.data && node.data.node_id) {
+        highlightBlocksTreeNode(blocksTreeVis, node.data.node_id);
+    }
 }
 
 // Highlights the link between two nodes
@@ -97,10 +126,21 @@ export function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
 // For leaf nodes: highlights all the paths from the leaf to the root
 export function highlightPathToRoot(contentGroup, leafNode, metrics) {
     let currentNode = leafNode;
-    while (currentNode.parent) {
-        highlightNode(contentGroup, currentNode.parent, metrics);
-        highlightPath(contentGroup, currentNode.parent, currentNode, metrics);
+    const pathNodeIds = [];
+    
+    while (currentNode) {
+        pathNodeIds.unshift(currentNode.data.node_id);
+        if (currentNode.parent) {
+            highlightNode(contentGroup, currentNode.parent, metrics);
+            highlightPath(contentGroup, currentNode.parent, currentNode, metrics);
+        }
         currentNode = currentNode.parent;
+    }
+    
+    // Highlight the path in blocks tree
+    const blocksTreeVis = window.blocksTreeVisualization;
+    if (blocksTreeVis && pathNodeIds.length > 0) {
+        highlightBlocksTreePath(blocksTreeVis, pathNodeIds);
     }
 }
 
@@ -125,6 +165,12 @@ export function highlightDescendants(
             highlightPath(contentGroup, node, child, metrics);
             highlightDescendants(contentGroup, child, metrics, scatterPlotVis);
         });
+    }
+    
+    // Highlight descendants in blocks tree
+    const blocksTreeVis = window.blocksTreeVisualization;
+    if (blocksTreeVis && node.data && node.data.node_id) {
+        highlightBlocksTreeDescendants(blocksTreeVis, node.data.node_id);
     }
 }
 
@@ -168,4 +214,23 @@ export function highlightPointsForDescendants(node, scatterPlotVis) {
 
             return getGlobalColorMap()[scatterPlotVis.data.targets[i]];
         })
+}
+
+// Helper function to get path to node in blocks tree
+function getPathToNodeInBlocks(nodeId) {
+    const blocksTreeVis = window.blocksTreeVisualization;
+    if (!blocksTreeVis) return [];
+    
+    // Use the blocks tree's allPaths to find the path to the node
+    const allPaths = blocksTreeVis.allPaths || [];
+    
+    for (const path of allPaths) {
+        const nodeIndex = path.indexOf(nodeId);
+        if (nodeIndex !== -1) {
+            // Return the path from root to this node
+            return path.slice(0, nodeIndex + 1);
+        }
+    }
+    
+    return [];
 }

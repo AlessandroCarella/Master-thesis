@@ -8,6 +8,11 @@ import {
 import { getSurrogateParameters } from "./ui.js";
 import { fetchVisualizationUpdate } from "./API.js";
 import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
+import { 
+    highlightInstancePathInTree, 
+    highlightInstancePathInBlocksTree,
+    getExplainedInstance
+} from "./visualizationConnector.js";
 
 export function initializeVisualizations(data) {
     if (!data) {
@@ -18,6 +23,16 @@ export function initializeVisualizations(data) {
     clearVisualizations();
     createVisualizations(data);
     setupScatterPlotMethodListeners();
+    
+    // Highlight instance paths after all visualizations are created
+    const instance = getExplainedInstance();
+    if (instance) {
+        // Small delay to ensure visualizations are fully rendered
+        setTimeout(() => {
+            highlightInstancePathInTree(instance);
+            highlightInstancePathInBlocksTree(instance);
+        }, 100);
+    }
 }
 
 function clearVisualizations() {
@@ -27,17 +42,20 @@ function clearVisualizations() {
 }
 
 function createVisualizations(data) {    
+    // Create classic tree visualization
     createTreeVisualization(
         data.decisionTreeVisualizationData,
         data.instance
     );
 
+    // Create scatter plot visualization
     createScatterPlot(
         data.scatterPlotVisualizationData,
         window.treeVisualization,
         "#scatter-plot"
     );
 
+    // Create blocks tree visualization
     createBlocksTreeVisualization(
         data.decisionTreeVisualizationData,
         data.instance
@@ -90,4 +108,11 @@ function buildVisualizationRequestData(selectedMethod) {
 function updateVisualizations(data) {
     clearVisualizations();
     createVisualizations(data);
+    
+    // Re-highlight instance paths after update
+    const instance = getExplainedInstance();
+    if (instance) {
+        highlightInstancePathInTree(instance);
+        highlightInstancePathInBlocksTree(instance);
+    }
 }
