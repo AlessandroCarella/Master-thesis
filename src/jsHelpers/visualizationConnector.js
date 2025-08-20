@@ -6,7 +6,6 @@ export {
 import {
     resetHighlights,
     highlightNode,
-    highlightPath,
     highlightPathToRoot,
     highlightDescendants,
     highlightPointsForLeaf,

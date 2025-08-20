@@ -1,12 +1,11 @@
 import { createTreeVisualization } from "./ClassicDecisionTree.js";
 import { createScatterPlot } from "./2DScatterPlot.js";
 import {
-    buildExplanationRequestData,
     showExplanationLoading,
     updateVisualizationUI,
 } from "./UIHelpers/explanation.js";
-import { getFeatureValues, getSurrogateParameters } from "./ui.js";
-import { fetchExplanation, fetchVisualizationUpdate } from "./API.js";
+import { getSurrogateParameters } from "./ui.js";
+import { fetchVisualizationUpdate } from "./API.js";
 import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 export function initializeVisualizations(data) {

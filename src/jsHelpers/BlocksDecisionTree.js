@@ -1,9 +1,9 @@
-import { state } from "./blocksDecisionTreeHelpers/state.js";
-import { loadDataset, getDatasetFiles, buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./blocksDecisionTreeHelpers/dataProcessing.js";
-import { createSVGContainer } from "./blocksDecisionTreeHelpers/svg.js";
-import { setupZoom } from "./blocksDecisionTreeHelpers/zoom.js";
-import { depthAlignedLayout } from "./blocksDecisionTreeHelpers/layout.js";
-import { createLinks, renderLinks } from "./blocksDecisionTreeHelpers/link.js";
+import { state } from "./BlocksDecisionTreeHelpers/state.js";
+import { loadDataset, buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing.js";
+import { createSVGContainer } from "./BlocksDecisionTreeHelpers/svg.js";
+import { setupZoom } from "./BlocksDecisionTreeHelpers/zoom.js";
+import { depthAlignedLayout } from "./BlocksDecisionTreeHelpers/layout.js";
+import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link.js";
 import { 
     getNodeLabel, 
     getNodeLabelLines, 
@@ -11,9 +11,9 @@ import {
     createTooltip, 
     showTooltip, 
     hideTooltip 
-} from "./blocksDecisionTreeHelpers/node.js";
-import { calculateFontSize } from "./blocksDecisionTreeHelpers/utils.js";
-import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT } from "./blocksDecisionTreeHelpers/settings.js";
+} from "./BlocksDecisionTreeHelpers/node.js";
+import { calculateFontSize } from "./BlocksDecisionTreeHelpers/utils.js";
+import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT } from "./BlocksDecisionTreeHelpers/settings.js";
 
 // Module-level variables
 let containerSelector = null;
