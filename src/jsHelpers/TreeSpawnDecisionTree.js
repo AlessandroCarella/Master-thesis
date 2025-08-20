@@ -1,21 +1,21 @@
-import { createHierarchy } from "./TreeSpawnDecisionTreeHelpers/dataProcessing.js";
-import { getVisualizationSettings } from "./TreeSpawnDecisionTreeHelpers/settings.js";
+import { createHierarchy } from "./TreeSpawnDecisionTreeHelpers/dataProcessing_spawnTree.js";
+import { getVisualizationSettings } from "./TreeSpawnDecisionTreeHelpers/settings_spawnTree.js";
 import {
     calculateInitialTransform,
     calculateMetrics,
-} from "./TreeSpawnDecisionTreeHelpers/metrics.js";
+} from "./TreeSpawnDecisionTreeHelpers/metrics_spawnTree.js";
 import {
     clearExistingSVG,
     createSVGContainer,
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
-} from "./TreeSpawnDecisionTreeHelpers/svg.js";
-import { addLinks } from "./TreeSpawnDecisionTreeHelpers/link.js";
-import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node.js";
-import { initializeZoom } from "./TreeSpawnDecisionTreeHelpers/zoom.js";
-import { createLinearPathLayout } from "./TreeSpawnDecisionTreeHelpers/subtrees.js";
-import { traceInstancePath } from "./TreeSpawnDecisionTreeHelpers/instancePath.js";
+} from "./TreeSpawnDecisionTreeHelpers/svg_spawnTree.js";
+import { addLinks } from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js";
+import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
+import { initializeZoom } from "./TreeSpawnDecisionTreeHelpers/zoom_spawnTree.js";
+import { createLinearPathLayout } from "./TreeSpawnDecisionTreeHelpers/subtrees_spawnTree.js";
+import { traceInstancePath } from "./TreeSpawnDecisionTreeHelpers/instancePath_spawnTree.js";
 
 // Global variables to store current visualization state
 let currentVisualizationState = null;

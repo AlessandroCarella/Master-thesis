@@ -1,4 +1,4 @@
-import { CONTAINER_WIDTH, CONTAINER_HEIGHT } from "./settings.js";
+import { CONTAINER_WIDTH, CONTAINER_HEIGHT } from "./settings_blocksTree.js";
 
 export function createSVGContainer(containerSelector, effectiveWidth, effectiveHeight) {
     // Clear previous visualization

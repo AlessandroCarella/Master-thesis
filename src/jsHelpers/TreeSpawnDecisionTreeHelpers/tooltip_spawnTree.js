@@ -1,4 +1,4 @@
-import { isNodeInPath } from "./instancePath.js";
+import { isNodeInPath } from "./instancePath_spawnTree.js";
 
 // Function to create tooltip content for a node
 export function createNodeTooltipContent(d, instancePath = []) {

@@ -1,6 +1,6 @@
-import { state } from "./state.js";
-import { SPLIT_NODE_COLOR, ANIMATION_CONFIG } from "./settings.js";
-import { getTreeStats, getUniqueClasses } from "./metrics.js";
+import { state } from "./state_blocksTree.js";
+import { SPLIT_NODE_COLOR, ANIMATION_CONFIG } from "./settings_blocksTree.js";
+import { getTreeStats, getUniqueClasses } from "./metrics_blocksTree.js";
 import { 
     handleTreeNodeClick,
     colorScheme,

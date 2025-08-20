@@ -1,6 +1,6 @@
-import { arraysEqual, findBranchPoint } from "./utils.js";
-import { state } from "./state.js";
-import { LAYOUT_CONFIG } from "./settings.js";
+import { arraysEqual, findBranchPoint } from "./utils_blocksTree.js";
+import { state } from "./state_blocksTree.js";
+import { LAYOUT_CONFIG } from "./settings_blocksTree.js";
 
 // Depth-aligned layout that lines up nodes by depth and allocates space by total node count
 export function depthAlignedLayout(

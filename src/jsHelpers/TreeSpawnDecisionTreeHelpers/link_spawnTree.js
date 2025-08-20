@@ -1,4 +1,4 @@
-import { getStrokeWidth } from "./metrics.js";
+import { getStrokeWidth } from "./metrics_spawnTree.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;

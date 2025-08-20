@@ -1,9 +1,9 @@
-import { state } from "./BlocksDecisionTreeHelpers/state.js";
-import { buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing.js";
-import { createSVGContainer } from "./BlocksDecisionTreeHelpers/svg.js";
-import { setupZoom } from "./BlocksDecisionTreeHelpers/zoom.js";
-import { depthAlignedLayout } from "./BlocksDecisionTreeHelpers/layout.js";
-import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link.js";
+import { state } from "./BlocksDecisionTreeHelpers/state_blocksTree.js";
+import { buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing_blocksTree.js";
+import { createSVGContainer } from "./BlocksDecisionTreeHelpers/svg_blocksTree.js";
+import { setupZoom } from "./BlocksDecisionTreeHelpers/zoom_blocksTree.js";
+import { depthAlignedLayout } from "./BlocksDecisionTreeHelpers/layout_blocksTree.js";
+import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { 
     getNodeLabel, 
     getNodeLabelLines, 
@@ -12,9 +12,9 @@ import {
     hideTooltip,
     handleNodeClick,
     getNodeById
-} from "./BlocksDecisionTreeHelpers/node.js";
-import { calculateFontSize } from "./BlocksDecisionTreeHelpers/utils.js";
-import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT, SPLIT_NODE_COLOR } from "./BlocksDecisionTreeHelpers/settings.js";
+} from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
+import { calculateFontSize } from "./BlocksDecisionTreeHelpers/utils_blocksTree.js";
+import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT, SPLIT_NODE_COLOR } from "./BlocksDecisionTreeHelpers/settings_blocksTree.js";
 import {
     getScatterPlotVisualization,
     getTreeVisualization,

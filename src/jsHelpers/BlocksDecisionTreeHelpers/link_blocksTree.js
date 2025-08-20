@@ -1,4 +1,4 @@
-import { getStrokeWidth } from "./metrics.js";
+import { getStrokeWidth } from "./metrics_blocksTree.js";
 import { colorScheme } from "../visualizationConnector.js";
 
 export function createLinks(allPaths, nodePositions) {
@@ -48,8 +48,8 @@ export function renderLinks(container, links, instancePath) {
         .attr("y1", (d) => d.source.y)
         .attr("x2", (d) => d.target.x)
         .attr("y2", (d) => d.target.y)
-        .attr("stroke", colorScheme.ui.linkStroke)
-        .attr("stroke-width", (d) => `${getStrokeWidth(d.targetId)}px`)
+        .style("stroke", colorScheme.ui.linkStroke)
+        .style("stroke-width", (d) => `${getStrokeWidth(d.targetId)}px`)
         .each(function(d) {
             // Store original stroke width for highlighting
             const originalStrokeWidth = getStrokeWidth(d.targetId);
@@ -82,8 +82,6 @@ export function highlightInstancePathInBlocks(
         target: pathNodeIds[i + 1],
     }));
 
-    const highlightStrokeWidth = 4; // Fixed highlight stroke width for blocks tree
-
     // Add highlights
     container
         .selectAll(".link")
@@ -101,11 +99,6 @@ export function highlightInstancePathInBlocks(
             const y1 = originalLink.attr("y1");
             const x2 = originalLink.attr("x2");
             const y2 = originalLink.attr("y2");
-            
-            // Use the stored original stroke width
-            const baseStrokeWidth = parseFloat(
-                originalLink.attr("data-original-stroke-width")
-            );
 
             container
                 .append("line")
@@ -115,10 +108,6 @@ export function highlightInstancePathInBlocks(
                 .attr("x2", x2)
                 .attr("y2", y2)
                 .style("stroke", colorScheme.ui.instancePathHighlight)
-                .style(
-                    "stroke-width",
-                    `${baseStrokeWidth + highlightStrokeWidth}px`
-                )
                 .style("opacity", colorScheme.opacity.originalInstancePath)
                 .lower();
 

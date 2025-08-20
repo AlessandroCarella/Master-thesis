@@ -12,14 +12,14 @@ import {
     highlightPointsForDescendants,
 } from "./visualizationConnectorHelpers/highlight.js";
 
-import { findInstancePath } from "./ClassicDecisionTreeHelpers/dataProcessing.js";
-import { highlightInstancePath } from "./ClassicDecisionTreeHelpers/link.js";
-import { highlightInstancePathInBlocks, resetBlocksLinkHighlights } from "./BlocksDecisionTreeHelpers/link.js";
+import { findInstancePath } from "./ClassicDecisionTreeHelpers/dataProcessing_classicTree.js";
+import { highlightInstancePath } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
+import { highlightInstancePathInBlocks, resetBlocksLinkHighlights } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { 
     highlightBlocksTreeNode, 
     highlightBlocksTreePath,
     highlightBlocksTreeDescendants,
-} from "./BlocksDecisionTreeHelpers/node.js";
+} from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
 
 let scatterPlotVisualization = null;
 let treeVisualization = null;

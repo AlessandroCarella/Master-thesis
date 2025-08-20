@@ -1,4 +1,4 @@
-import { ZOOM_CONFIG } from "./settings.js";
+import { ZOOM_CONFIG } from "./settings_blocksTree.js";
 
 export function setupZoom(svg, g) {
     const zoom = d3

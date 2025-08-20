@@ -1,5 +1,5 @@
-import { state } from "./state.js";
-import { getNodeById, getAllNodes, getAllLeaves } from "./node.js";
+import { state } from "./state_blocksTree.js";
+import { getNodeById, getAllNodes, getAllLeaves } from "./node_blocksTree.js";
 
 export function getTreeDepth() {
     return state.hierarchyRoot ? state.hierarchyRoot.height : 0;

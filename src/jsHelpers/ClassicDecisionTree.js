@@ -3,23 +3,23 @@ import {
     highlightInstancePathInTree,
     getExplainedInstance,
 } from "./visualizationConnector.js";
-import { createHierarchy } from "./ClassicDecisionTreeHelpers/dataProcessing.js";
-import { getVisualizationSettings } from "./ClassicDecisionTreeHelpers/settings.js";
+import { createHierarchy } from "./ClassicDecisionTreeHelpers/dataProcessing_classicTree.js";
+import { getVisualizationSettings } from "./ClassicDecisionTreeHelpers/settings_classicTree.js";
 import {
     calculateMetrics,
     createTreeLayout,
     calculateInitialTransform,
-} from "./ClassicDecisionTreeHelpers/metrics.js";
+} from "./ClassicDecisionTreeHelpers/metrics_classicTree.js";
 import {
     clearExistingSVG,
     createSVGContainer,
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
-} from "./ClassicDecisionTreeHelpers/svg.js";
-import { addLinks } from "./ClassicDecisionTreeHelpers/link.js";
-import { addNodes } from "./ClassicDecisionTreeHelpers/node.js";
-import { initializeZoom } from "./ClassicDecisionTreeHelpers/zoom.js";
+} from "./ClassicDecisionTreeHelpers/svg_classicTree.js";
+import { addLinks } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
+import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
+import { initializeZoom } from "./ClassicDecisionTreeHelpers/zoom_classicTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 export function createTreeVisualization(rawTreeData, container) {

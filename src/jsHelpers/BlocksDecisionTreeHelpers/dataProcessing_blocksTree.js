@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+import { state } from "./state_blocksTree.js";
 
 export function getDatasetFiles(dataset) {
     if (dataset === "dataset1") return "tree.json and instance.json";

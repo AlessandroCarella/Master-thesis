@@ -1,4 +1,4 @@
-import { expandSubtree, collapseSubtree } from "./subtrees.js";
+import { expandSubtree, collapseSubtree } from "./subtrees_spawnTree.js";
 
 // Function to refresh the visualization after expand/collapse
 function refreshVisualization() {

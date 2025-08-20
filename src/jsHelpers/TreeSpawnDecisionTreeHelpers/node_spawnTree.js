@@ -1,9 +1,9 @@
 // node.js - Node rendering and styling
 
-import { calculateNodeRadius } from "./metrics.js";
-import { isNodeInPath, getInstanceValue } from "./instancePath.js";
-import { handleMouseOver, handleMouseMove, handleMouseOut } from "./tooltip.js";
-import { createContextMenu } from "./contextMenu.js";
+import { calculateNodeRadius } from "./metrics_spawnTree.js";
+import { isNodeInPath, getInstanceValue } from "./instancePath_spawnTree.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "./tooltip_spawnTree.js";
+import { createContextMenu } from "./contextMenu_spawnTree.js";
 
 // Calculate optimal font size for multi-line labels inside a rectangle
 function calculateFontSize(lines, rectWidth, rectHeight) {

@@ -4,7 +4,7 @@ import {
     highlightBlocksTreeNode, 
     highlightBlocksTreePath,
     highlightBlocksTreeDescendants,
-} from "../BlocksDecisionTreeHelpers/node.js";
+} from "../BlocksDecisionTreeHelpers/node_blocksTree.js";
 
 // Determine if a point belongs to a leaf node's decision path
 export function pointBelongsToLeaf(point, originalData, leafNode) {

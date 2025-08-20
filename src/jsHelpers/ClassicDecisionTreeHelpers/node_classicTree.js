@@ -5,7 +5,7 @@ import {
     getTreeVisualization,
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
-import { calculateNodeRadius } from "./metrics.js";
+import { calculateNodeRadius } from "./metrics_classicTree.js";
 
 export function addNodes(
     contentGroup,
