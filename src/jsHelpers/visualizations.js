@@ -1,4 +1,4 @@
-import { createTreeVisualization } from "./DecisionTree.js";
+import { createTreeVisualization } from "./ClassicDecisionTree.js";
 import { createScatterPlot } from "./scatterPlot.js";
 import {
     buildExplanationRequestData,

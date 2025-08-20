@@ -1,5 +1,6 @@
 import { arraysEqual, findBranchPoint } from "./utils.js";
 import { state } from "./state.js";
+import { LAYOUT_CONFIG } from "./settings.js";
 
 // Depth-aligned layout that lines up nodes by depth and allocates space by total node count
 export function depthAlignedLayout(
@@ -17,8 +18,7 @@ export function depthAlignedLayout(
     const totalNodes = allNodes.size;
 
     const nodeScaleFactor = Math.max(1, Math.sqrt(totalNodes / 100));
-    const minSpacing = 100;
-    const nodeSpacing = minSpacing * nodeScaleFactor;
+    const nodeSpacing = LAYOUT_CONFIG.minSpacing * nodeScaleFactor;
 
     const maxDepth = Math.max(...allPaths.map((p) => p.length - 1));
     const requiredWidth = (maxDepth + 1) * nodeSpacing * 2;
@@ -28,10 +28,10 @@ export function depthAlignedLayout(
     const effectiveHeight = Math.max(height, requiredHeight);
 
     const margin = {
-        top: 100 * nodeScaleFactor,
-        right: 100 * nodeScaleFactor,
-        bottom: 100 * nodeScaleFactor,
-        left: 100 * nodeScaleFactor,
+        top: LAYOUT_CONFIG.margin.top * nodeScaleFactor,
+        right: LAYOUT_CONFIG.margin.right * nodeScaleFactor,
+        bottom: LAYOUT_CONFIG.margin.bottom * nodeScaleFactor,
+        left: LAYOUT_CONFIG.margin.left * nodeScaleFactor,
     };
 
     const availableWidth = effectiveWidth - margin.left - margin.right;
