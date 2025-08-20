@@ -2,7 +2,7 @@
     "name": "Webapp skeleton",
     "version": "1.0.0",
     "description": "Webapp skeleton",
-    "main": "index.js",
+    "main": "script.js",
     "scripts": {
         "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
         "start-server": "py -m uvicorn main:app --reload",

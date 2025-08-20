@@ -1,5 +1,6 @@
 import { createTreeVisualization } from "./ClassicDecisionTree.js";
 import { createScatterPlot } from "./2DScatterPlot.js";
+import { createBlocksTreeVisualization } from "./BlocksDecisionTree.js";
 import {
     showExplanationLoading,
     updateVisualizationUI,
@@ -22,22 +23,25 @@ export function initializeVisualizations(data) {
 function clearVisualizations() {
     d3.select("#scatter-plot").selectAll("*").remove();
     d3.select("#tree-plot").selectAll("*").remove();
+    d3.select("#blocks-tree-plot").selectAll("*").remove();
 }
 
-function createVisualizations(data) {
-    if (data.decisionTreeVisualizationData) {
-        createTreeVisualization(
-            data.decisionTreeVisualizationData,
-            data.instance
-        );
-    }
-    if (data.scatterPlotVisualizationData) {
-        createScatterPlot(
-            data.scatterPlotVisualizationData,
-            "#scatter-plot",
-            window.treeVisualization
-        );
-    }
+function createVisualizations(data) {    
+    createScatterPlot(
+        data.scatterPlotVisualizationData,
+        window.treeVisualization,
+        "#scatter-plot"
+    );
+
+    createTreeVisualization(
+        data.decisionTreeVisualizationData,
+        data.instance
+    );
+
+    createBlocksTreeVisualization(
+        data.decisionTreeVisualizationData,
+        data.instance
+    );
 }
 
 export function setupScatterPlotMethodListeners() {

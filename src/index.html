@@ -15,6 +15,7 @@
         <link rel="stylesheet" href="styles/buttons.css" />
         <link rel="stylesheet" href="styles/visualizations.css" />
         <link rel="stylesheet" href="styles/loading.css" />
+        <link rel="stylesheet" href="styles/blocks-tree.css" />
     </head>
     <body>
         <div class="container">
@@ -128,10 +129,16 @@
                         <div id="tree-plot"></div>
                     </div>
                 </div>
+
+                <div class="svg-side-by-side">
+                    <div class="visualization-container">
+                        <h2>Blocks Decision Tree</h2>
+                        <div id="blocks-tree-plot"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Dataset Panel (initially hidden, slides in from right) -->
         <!-- Dataset Panel (initially hidden, slides in from right) -->
         <div id="datasetPanel" class="dataset-panel">
             <div class="panel-header">
@@ -167,6 +174,7 @@
         </div>
 
         <script src="https://d3js.org/d3.v6.min.js"></script>
-        <script type="module" src="index.js"></script>
+        <script type="module" src="script.js"></script>
+        <!-- <script type="module" src="script.js"></script> -->
     </body>
 </html>

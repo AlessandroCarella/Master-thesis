@@ -22,27 +22,17 @@ import { addNodes } from "./ClassicDecisionTreeHelpers/node.js";
 import { initializeZoom } from "./ClassicDecisionTreeHelpers/zoom.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
-export function createTreeVisualization(rawTreeData) {
-    if (!rawTreeData) {
-        console.error("No tree data provided to createTreeVisualization");
-        return;
-    }
-
+export function createTreeVisualization(rawTreeData, container) {
     const SETTINGS = getVisualizationSettings();
     const hierarchyRoot = createHierarchy(rawTreeData);
-
-    if (!hierarchyRoot) {
-        console.error("Failed to create hierarchy from tree data");
-        return;
-    }
 
     const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
 
-    clearExistingSVG();
-    const svg = createSVGContainer(SETTINGS);
+    clearExistingSVG(container);
+    const svg = createSVGContainer(SETTINGS, container);
     const contentGroup = createContentGroup(svg, SETTINGS);
     const tooltip = createTooltip();
 

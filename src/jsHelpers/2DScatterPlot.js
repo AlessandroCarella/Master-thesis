@@ -11,7 +11,7 @@ import { createPoints } from "./2DScatterPlotHelpers/points.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 // Main function to create the scatter plot
-export function createScatterPlot(data, container, treeVis) {
+export function createScatterPlot(data, treeVis, container) {
     if (!data || !data.transformedData || !data.targets || !data.originalData) {
         console.error("Invalid scatter plot data structure:", data);
         return;

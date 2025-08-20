@@ -1,5 +1,5 @@
 import { state } from "./BlocksDecisionTreeHelpers/state.js";
-import { loadDataset, buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing.js";
+import { buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing.js";
 import { createSVGContainer } from "./BlocksDecisionTreeHelpers/svg.js";
 import { setupZoom } from "./BlocksDecisionTreeHelpers/zoom.js";
 import { depthAlignedLayout } from "./BlocksDecisionTreeHelpers/layout.js";
@@ -15,34 +15,58 @@ import {
 import { calculateFontSize } from "./BlocksDecisionTreeHelpers/utils.js";
 import { CONTAINER_WIDTH, CONTAINER_HEIGHT, RECT_WIDTH, RECT_HEIGHT } from "./BlocksDecisionTreeHelpers/settings.js";
 
-// Module-level variables
-let containerSelector = null;
-let tooltip = null;
+export function createBlocksTreeVisualization(rawTreeData, instance) {
+    // Set container selector
+    const containerSelector = "#blocks-tree-plot";
+    let tooltip = createTooltip();
+    
+    // Store the data
+    state.treeData = rawTreeData;
+    state.instanceData = instance;
+    
+    state.hierarchyRoot = buildHierarchy(rawTreeData);
+    
+    // Get the existing container - it should always exist in the HTML
+    const container = document.querySelector(containerSelector);
+    if (!container) {
+        console.error(`Container ${containerSelector} not found in DOM`);
+        return;
+    }
 
-export async function initialize(selector) {
-    containerSelector = selector;
-    tooltip = createTooltip();
-    await loadCurrentDataset();
+    // Clear any existing content
+    container.innerHTML = '';
+    
+    // Ensure the entire visualization chain is visible
+    ensureVisualizationVisibility();
+
+    render(containerSelector, tooltip);
 }
 
-export async function setDataset(key) {
-    state.currentDataset = key;
-    await loadCurrentDataset();
-}
-
-async function loadCurrentDataset() {
-    try {
-        const { tree, instance } = await loadDataset(state.currentDataset);
-        state.treeData = tree;
-        state.instanceData = instance;
-        state.hierarchyRoot = buildHierarchy(tree);
-        render();
-    } catch (error) {
-        console.error("Error loading data:", error);
+function ensureVisualizationVisibility() {
+    // Make sure the entire parent chain is visible
+    const svgContainer = document.getElementById("svg-container");
+    const blocksTreeContainer = document.getElementById("blocks-tree-plot");
+    
+    if (svgContainer) {
+        svgContainer.style.display = "block";
+        svgContainer.style.visibility = "visible";
+    }
+    
+    if (blocksTreeContainer) {
+        blocksTreeContainer.style.display = "block";
+        blocksTreeContainer.style.visibility = "visible";
+    }
+    
+    // Ensure all parent elements are visible
+    let parent = blocksTreeContainer?.parentElement;
+    while (parent && parent !== document.body) {
+        parent.style.display = "block";
+        parent.style.visibility = "visible";
+        parent = parent.parentElement;
     }
 }
 
-function render() {
+function render(containerSelector, tooltip) {
     // Get paths and layout
     const instancePath = traceInstancePath(state.instanceData);
     const allPaths = getAllPathsFromHierarchy();
@@ -74,13 +98,13 @@ function render() {
     renderLinks(g, links, instancePath);
 
     // Render nodes
-    renderNodes(g, nodePositions, instancePath);
+    renderNodes(g, nodePositions, instancePath, tooltip);
 
     // Render labels
     renderLabels(g, nodePositions);
 }
 
-function renderNodes(container, nodePositions, instancePath) {
+function renderNodes(container, nodePositions, instancePath, tooltip) {
     const nodes = Object.values(nodePositions);
 
     container
@@ -140,16 +164,4 @@ function renderLabels(container, nodePositions) {
                     .text(line);
             });
         });
-}
-
-export function getCurrentDataset() {
-    return state.currentDataset;
-}
-
-export function getTreeData() {
-    return state.treeData;
-}
-
-export function getInstanceData() {
-    return state.instanceData;
 }

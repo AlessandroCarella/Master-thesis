@@ -75,6 +75,13 @@ export const updateVisualizationUI = () => {
         <div id="tree-plot"></div>
       </div>
     </div>
+
+    <div class="svg-side-by-side">
+      <div class="visualization-container">
+        <h2>Blocks Decision Tree</h2>
+        <div id="blocks-tree-plot"></div>
+      </div>
+    </div>
   `;
 
     setupScatterPlotMethodListeners();

@@ -81,6 +81,62 @@ export function getNodeLabel(nodeId, instance) {
     return lines.join("\n");
 }
 
+// Enhanced tooltip content creation function (adapted from first file)
+function createNodeTooltipContent(node) {
+    const content = [];
+
+    // Node type and primary information
+    if (node.is_leaf) {
+        // Leaf node information
+        content.push(`<strong>Class:</strong> ${node.class_label || "Unknown"}`);
+    } else {
+        // Split node information
+        content.push(
+            `<strong>Split:</strong> ${
+                node.feature_name
+            } > ${node.threshold.toFixed(2)}`
+        );
+        content.push(`<strong>Feature Index:</strong> ${node.feature_index}`);
+        content.push(`<strong>Impurity:</strong> ${node.impurity.toFixed(4)}`);
+    }
+
+    // Common information for both node types
+    content.push(`<strong>Samples:</strong> ${node.n_samples || 0}`);
+
+    // Add weighted samples if available
+    if (node.weighted_n_samples) {
+        const weightDiff = Math.abs(
+            node.weighted_n_samples - node.n_samples
+        );
+        // Only show if there's a meaningful difference
+        if (weightDiff > 0.01) {
+            content.push(
+                `<strong>Weighted Samples:</strong> ${node.weighted_n_samples.toFixed(
+                    2
+                )}`
+            );
+        }
+    }
+
+    if (!node.is_leaf) {
+        // Add class distribution if available (summarized)
+        if (node.value && node.value.length > 0 && node.value[0].length > 0) {
+            const valueArray = node.value[0];
+            if (valueArray.length > 1) {
+                const total = valueArray.reduce((sum, val) => sum + val, 0);
+                const distribution = valueArray
+                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
+                    .join(", ");
+                content.push(
+                    `<strong>Class Distribution:</strong> [${distribution}]`
+                );
+            }
+        }
+    }
+
+    return content;
+}
+
 // Tooltip functionality
 export function createTooltip() {
     return d3
@@ -94,44 +150,11 @@ export function showTooltip(event, nodeId, tooltip) {
     const node = getNodeById(nodeId);
     if (!node) return;
 
-    let html = '<div class="tooltip-header">';
-    if (node.is_leaf) {
-        html += `<strong>Leaf Node: ${
-            node.class_label || "Unknown"
-        }</strong></div>`;
-    } else {
-        html += `<strong>Split: ${node.feature_name} > ${node.threshold}</strong></div>`;
-        html += `<div class="tooltip-line">Feature Index: ${
-            node.feature_index || "N/A"
-        }</div>`;
-        html += `<div class="tooltip-line">Impurity: ${
-            node.impurity ? Number(node.impurity).toFixed(4) : "N/A"
-        }</div>`;
-    }
-
-    html += `<div class="tooltip-line">Node ID: ${node.node_id}</div>`;
-    html += `<div class="tooltip-line">Samples: ${node.n_samples || 0}</div>`;
-
-    if (Array.isArray(node.value)) {
-        const total = node.value.reduce((s, v) => s + v, 0) || 1;
-        const percentages = node.value.map((v) =>
-            ((v / total) * 100).toFixed(1)
-        );
-        html += '<div class="tooltip-distribution">';
-        html += '<div style="font-weight: bold;">Class Distribution:</div>';
-        html += `<div>[${percentages.join("%, ")}%]</div>`;
-        html += "</div>";
-    }
-
-    if (node.node_id === 0) {
-        const stats = getTreeStats();
-        html += '<div class="tooltip-distribution">';
-        html += '<div style="font-weight: bold;">Tree Statistics:</div>';
-        html += `<div>Total Nodes: ${stats.totalNodes}</div>`;
-        html += `<div>Leaf Nodes: ${stats.leafNodes}</div>`;
-        html += `<div>Max Depth: ${stats.maxDepth}</div>`;
-        html += "</div>";
-    }
+    // Use the enhanced tooltip content creation logic
+    const content = createNodeTooltipContent(node);
+    
+    // Convert content array to HTML
+    const html = content.join("<br>");
 
     tooltip
         .html(html)

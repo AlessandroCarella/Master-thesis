@@ -1,0 +1,41 @@
+/* Blocks Decision Tree Visualization Styles */
+#blocks-tree-plot {
+    width: 800px;
+    height: 800px;
+    background-color: white;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid black;
+}
+
+/* Node styles - based on original implementation */
+#blocks-tree-plot .node {
+    stroke: #333;
+    stroke-width: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+
+/* Link styles - based on original implementation */
+#blocks-tree-plot .link {
+    fill: none;
+    stroke: #999;
+    stroke-width: 2px;
+    transition: all 0.2s ease;
+}
+
+/* Label styles - based on original implementation */
+#blocks-tree-plot .node-label {
+    text-anchor: middle;
+    fill: #333;
+    pointer-events: none;
+    dominant-baseline: middle;
+    font-family: Arial, sans-serif;
+    font-weight: normal;
+    user-select: none;
+}
+
+#blocks-tree-plot .node-label-group {
+    pointer-events: none;
+}
