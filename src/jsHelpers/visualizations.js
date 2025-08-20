@@ -1,5 +1,5 @@
 import { createTreeVisualization } from "./ClassicDecisionTree.js";
-import { createScatterPlot } from "./scatterPlot.js";
+import { createScatterPlot } from "./2DScatterPlot.js";
 import {
     buildExplanationRequestData,
     showExplanationLoading,

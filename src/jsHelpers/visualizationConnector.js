@@ -13,8 +13,8 @@ import {
     highlightPointsForDescendants,
 } from "./visualizationConnectorHelpers/highlight.js";
 
-import { findInstancePath } from "./DecisionTreeHelpers/dataProcessing.js";
-import { highlightInstancePath } from "./DecisionTreeHelpers/link.js";
+import { findInstancePath } from "./ClassicDecisionTreeHelpers/dataProcessing.js";
+import { highlightInstancePath } from "./ClassicDecisionTreeHelpers/link.js";
 
 let scatterPlotVisualization = null;
 let treeVisualization = null;

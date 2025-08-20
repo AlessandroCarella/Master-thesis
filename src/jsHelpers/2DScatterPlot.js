@@ -3,11 +3,11 @@
 import {
     setScatterPlotVisualization,
 } from "./visualizationConnector.js";
-import { createTooltip } from "./ScatterPlotHelpers/tooltip.js";
-import { createZoom } from "./ScatterPlotHelpers/zoom.js";
-import { createAxes } from "./ScatterPlotHelpers/axis.js";
-import { drawVoronoi } from "./ScatterPlotHelpers/voronoi.js";
-import { createPoints } from "./ScatterPlotHelpers/points.js";
+import { createTooltip } from "./2DScatterPlotHelpers/tooltip.js";
+import { createZoom } from "./2DScatterPlotHelpers/zoom.js";
+import { createAxes } from "./2DScatterPlotHelpers/axis.js";
+import { drawVoronoi } from "./2DScatterPlotHelpers/voronoi.js";
+import { createPoints } from "./2DScatterPlotHelpers/points.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 // Main function to create the scatter plot
