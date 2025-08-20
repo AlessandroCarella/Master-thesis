@@ -3,7 +3,7 @@ import { expandSubtree, collapseSubtree } from "./subtrees.js";
 // Function to refresh the visualization after expand/collapse
 function refreshVisualization() {
     // Import the refreshVisualization function from DecisionTree.js
-    import('../DecisionTree.js').then(module => {
+    import('../TreeSpawnDecisionTree.js').then(module => {
         module.refreshVisualization();
     });
 }

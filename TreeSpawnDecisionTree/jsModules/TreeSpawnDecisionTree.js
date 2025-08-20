@@ -1,21 +1,21 @@
-import { createHierarchy } from "./DecisionTreeHelpers/dataProcessing.js";
-import { getVisualizationSettings } from "./DecisionTreeHelpers/settings.js";
+import { createHierarchy } from "./TreeSpawnDecisionTreeHelpers/dataProcessing.js";
+import { getVisualizationSettings } from "./TreeSpawnDecisionTreeHelpers/settings.js";
 import {
     calculateInitialTransform,
     calculateMetrics,
-} from "./DecisionTreeHelpers/metrics.js";
+} from "./TreeSpawnDecisionTreeHelpers/metrics.js";
 import {
     clearExistingSVG,
     createSVGContainer,
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
-} from "./DecisionTreeHelpers/svg.js";
-import { addLinks } from "./DecisionTreeHelpers/link.js";
-import { addNodes } from "./DecisionTreeHelpers/node.js";
-import { initializeZoom } from "./DecisionTreeHelpers/zoom.js";
-import { createLinearPathLayout } from "./DecisionTreeHelpers/subtrees.js";
-import { traceInstancePath } from "./DecisionTreeHelpers/instancePath.js";
+} from "./TreeSpawnDecisionTreeHelpers/svg.js";
+import { addLinks } from "./TreeSpawnDecisionTreeHelpers/link.js";
+import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node.js";
+import { initializeZoom } from "./TreeSpawnDecisionTreeHelpers/zoom.js";
+import { createLinearPathLayout } from "./TreeSpawnDecisionTreeHelpers/subtrees.js";
+import { traceInstancePath } from "./TreeSpawnDecisionTreeHelpers/instancePath.js";
 
 // Global variables to store current visualization state
 let currentVisualizationState = null;

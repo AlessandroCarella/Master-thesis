@@ -1,4 +1,4 @@
-import { createTreeVisualization } from "./jsModules/DecisionTree.js";
+import { createTreeVisualization } from "./jsModules/TreeSpawnDecisionTree.js";
 
 let currentTreeNumber = 1;
 let loadedData = {}; // Cache loaded data
