@@ -27,15 +27,15 @@ function clearVisualizations() {
 }
 
 function createVisualizations(data) {    
+    createTreeVisualization(
+        data.decisionTreeVisualizationData,
+        data.instance
+    );
+
     createScatterPlot(
         data.scatterPlotVisualizationData,
         window.treeVisualization,
         "#scatter-plot"
-    );
-
-    createTreeVisualization(
-        data.decisionTreeVisualizationData,
-        data.instance
     );
 
     createBlocksTreeVisualization(

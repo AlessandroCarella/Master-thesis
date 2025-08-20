@@ -15,7 +15,12 @@
     gap: 2rem;
     justify-content: center; /* Center the grid horizontally */
     align-items: center; /* Align items vertically */
+    margin-bottom: 2rem; /* Add space between svg-side-by-side divs */
 }
+
+/* .svg-side-by-side:last-child {
+    margin-bottom: 0; /* Remove margin from the last div */
+/* } */
 
 /* When screen width is less than 1800px, stack them vertically */
 @media (max-width: 1800px) {

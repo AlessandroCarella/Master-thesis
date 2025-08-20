@@ -249,7 +249,9 @@ window.explainInstance = async () => {
             instance: instanceData
         });
 
-        scrollToElement(svgContainer);
+        if (svgContainer) {
+            scrollToElement(svgContainer);
+        }
     } catch (error) {
         console.error("Failed to explain instance:", error);
     } finally {

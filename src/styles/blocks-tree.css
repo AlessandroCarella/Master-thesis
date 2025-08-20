@@ -2,10 +2,16 @@
 #blocks-tree-plot {
     width: 800px;
     height: 800px;
-    background-color: white;
     position: relative;
     overflow: hidden;
-    border: 1px solid black;
+    flex: 1;
+    margin-top: 0;
+    width: 100%;
+}
+
+#blocks-tree-plot svg {
+    border: 2px solid var(--border-color); /* Match other plots */
+    border-radius: var(--radius-md); /* Match other plots */
 }
 
 /* Node styles - based on original implementation */
@@ -15,7 +21,6 @@
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
 
 /* Link styles - based on original implementation */
 #blocks-tree-plot .link {
