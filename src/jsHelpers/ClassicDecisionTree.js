@@ -22,7 +22,7 @@ import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
 import { initializeZoom } from "./ClassicDecisionTreeHelpers/zoom_classicTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
-export function createTreeVisualization(rawTreeData, container) {
+export function createTreeVisualization(rawTreeData, instance, container) {
     const SETTINGS = getVisualizationSettings();
     const hierarchyRoot = createHierarchy(rawTreeData);
 
@@ -57,7 +57,6 @@ export function createTreeVisualization(rawTreeData, container) {
     setTreeVisualization({ contentGroup, treeData, metrics });
     window.treeVisualization = { contentGroup, treeData, metrics };
 
-    let instance = getExplainedInstance();
     if (instance) {
         highlightInstancePathInTree(instance);
     }

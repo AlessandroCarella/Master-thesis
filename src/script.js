@@ -218,11 +218,11 @@ window.explainInstance = async () => {
             svgContainer.style.opacity = "1";
         }
 
-        
-        // Also make sure scatter plot and tree plot containers are visible
+        // Also make sure all visualization containers are visible
         const scatterPlot = document.getElementById("scatter-plot");
         const treePlot = document.getElementById("tree-plot");
         const blocksTreeContainer = document.getElementById("blocks-tree-plot");
+        const treeSpawnContainer = document.getElementById("treespawn-tree-plot");
         
         if (scatterPlot) {
             scatterPlot.style.display = "block";
@@ -237,6 +237,11 @@ window.explainInstance = async () => {
         if (blocksTreeContainer) {
             blocksTreeContainer.style.display = "block";
             blocksTreeContainer.style.visibility = "visible";
+        }
+
+        if (treeSpawnContainer) {
+            treeSpawnContainer.style.display = "block";
+            treeSpawnContainer.style.visibility = "visible";
         }
 
         updateVisualizationUI();

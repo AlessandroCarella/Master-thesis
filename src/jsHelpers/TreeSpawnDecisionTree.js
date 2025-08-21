@@ -16,31 +16,11 @@ import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
 import { initializeZoom } from "./TreeSpawnDecisionTreeHelpers/zoom_spawnTree.js";
 import { createLinearPathLayout } from "./TreeSpawnDecisionTreeHelpers/subtrees_spawnTree.js";
 import { traceInstancePath } from "./TreeSpawnDecisionTreeHelpers/instancePath_spawnTree.js";
+import { setTreeSpawnVisualization } from "./visualizationConnector.js";
+import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 
 // Global variables to store current visualization state
 let currentVisualizationState = null;
-
-// Function to create a color map from unique class labels
-function createColorMap(rawTreeData, colorPalette) {
-    // Extract all unique class labels from leaf nodes
-    const uniqueClasses = new Set();
-    rawTreeData.forEach(node => {
-        if (node.is_leaf && node.class_label !== undefined && node.class_label !== null) {
-            uniqueClasses.add(node.class_label);
-        }
-    });
-    
-    // Convert to array and sort for consistent ordering
-    const classArray = Array.from(uniqueClasses).sort();
-    
-    // Create color mapping
-    const colorMap = {};
-    classArray.forEach((classLabel, index) => {
-        colorMap[classLabel] = colorPalette[index % colorPalette.length];
-    });
-    
-    return colorMap;
-}
 
 // Function to refresh the visualization after expand/collapse operations
 export function refreshVisualization() {
@@ -69,7 +49,7 @@ export function refreshVisualization() {
     addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
 }
 
-export function createTreeVisualization(rawTreeData, instanceData = null) {
+export function createTreeSpawnVisualization(rawTreeData, instanceData) {    
     if (!rawTreeData) {
         console.error("No tree data provided to createTreeVisualization");
         return;
@@ -84,23 +64,21 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
     }
 
     // Create dynamic color map from the data using settings
-    const colorMap = createColorMap(rawTreeData, SETTINGS.visual.colorPalette);
+    const colorMap = getGlobalColorMap();
     
     // Trace the instance path if instance data is provided
     let instancePath = [];
-    if (instanceData) {
-        instancePath = traceInstancePath(rawTreeData, instanceData);
-    }
+    instancePath = traceInstancePath(rawTreeData, instanceData);
 
     const root = d3.hierarchy(hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
 
-    // Clear existing visualization and tooltips
-    clearExistingSVG();
-    // Also remove any existing tooltips
-    d3.selectAll('.decision-tree-tooltip').remove();
+    // Clear existing visualization and tooltips in the TreeSpawn container
+    const containerSelector = "#treespawn-tree-plot";
     
-    const svg = createSVGContainer(SETTINGS);
+    clearExistingSVG(containerSelector);
+    
+    const svg = createSVGContainer(SETTINGS, containerSelector);
     const contentGroup = createContentGroup(svg, SETTINGS);
     const tooltip = createTooltip();
 
@@ -135,5 +113,17 @@ export function createTreeVisualization(rawTreeData, instanceData = null) {
         instanceData
     };
 
-    return { contentGroup, treeData, metrics, instancePath };
+    // Create visualization object and register it
+    const visualization = { 
+        contentGroup, 
+        treeData, 
+        metrics, 
+        instancePath,
+        svg,
+        container: contentGroup
+    };
+    
+    setTreeSpawnVisualization(visualization);
+
+    return visualization;
 }

@@ -1,6 +1,7 @@
 import { createTreeVisualization } from "./ClassicDecisionTree.js";
 import { createScatterPlot } from "./2DScatterPlot.js";
 import { createBlocksTreeVisualization } from "./BlocksDecisionTree.js";
+import { createTreeSpawnVisualization } from "./TreeSpawnDecisionTree.js";
 import {
     showExplanationLoading,
     updateVisualizationUI,
@@ -11,6 +12,7 @@ import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { 
     highlightInstancePathInTree, 
     highlightInstancePathInBlocksTree,
+    highlightInstancePathInTreeSpawn,
     getExplainedInstance
 } from "./visualizationConnector.js";
 
@@ -30,6 +32,7 @@ export function initializeVisualizations(data) {
         // Small delay to ensure visualizations are fully rendered
         highlightInstancePathInTree(instance);
         highlightInstancePathInBlocksTree(instance);
+        highlightInstancePathInTreeSpawn(instance);
     }
 }
 
@@ -37,13 +40,17 @@ function clearVisualizations() {
     d3.select("#scatter-plot").selectAll("*").remove();
     d3.select("#tree-plot").selectAll("*").remove();
     d3.select("#blocks-tree-plot").selectAll("*").remove();
+    d3.select("#treespawn-tree-plot").selectAll("*").remove();
+    // Also remove any tooltips that might be lingering
+    d3.selectAll(".decision-tree-tooltip").remove();
 }
 
 function createVisualizations(data) {    
     // Create classic tree visualization
     createTreeVisualization(
         data.decisionTreeVisualizationData,
-        data.instance
+        data.instance,
+        "#tree-plot"
     );
 
     // Create scatter plot visualization
@@ -55,6 +62,12 @@ function createVisualizations(data) {
 
     // Create blocks tree visualization
     createBlocksTreeVisualization(
+        data.decisionTreeVisualizationData,
+        data.instance
+    );
+
+    // Create TreeSpawn tree visualization
+    createTreeSpawnVisualization(
         data.decisionTreeVisualizationData,
         data.instance
     );
@@ -105,12 +118,23 @@ function buildVisualizationRequestData(selectedMethod) {
 
 function updateVisualizations(data) {
     clearVisualizations();
-    createVisualizations(data);
+    
+    // FIX: Get the current explained instance to preserve it during updates
+    const instance = getExplainedInstance();
+    
+    // Create the updated data object with preserved instance
+    const updatedData = {
+        decisionTreeVisualizationData: data.decisionTreeVisualizationData,
+        scatterPlotVisualizationData: data.scatterPlotVisualizationData,
+        instance: instance
+    };
+    
+    createVisualizations(updatedData);
     
     // Re-highlight instance paths after update
-    const instance = getExplainedInstance();
     if (instance) {
         highlightInstancePathInTree(instance);
         highlightInstancePathInBlocksTree(instance);
+        highlightInstancePathInTreeSpawn(instance);
     }
 }

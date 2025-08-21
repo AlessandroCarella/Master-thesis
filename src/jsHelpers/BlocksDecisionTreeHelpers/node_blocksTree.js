@@ -1,11 +1,8 @@
 import { state } from "./state_blocksTree.js";
-import { SPLIT_NODE_COLOR, ANIMATION_CONFIG } from "./settings_blocksTree.js";
-import { getTreeStats, getUniqueClasses } from "./metrics_blocksTree.js";
 import { 
     handleTreeNodeClick,
     colorScheme,
     getBlocksTreeVisualization,
-    getScatterPlotVisualization,
     getTreeVisualization
 } from "../visualizationConnector.js";
 
@@ -156,12 +153,12 @@ export function showTooltip(event, nodeId, tooltip) {
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY - 28}px`)
         .transition()
-        .duration(ANIMATION_CONFIG.tooltipShowDuration)
+        .duration(200)
         .style("opacity", 1);
 }
 
 export function hideTooltip(tooltip) {
-    tooltip.transition().duration(ANIMATION_CONFIG.tooltipHideDuration).style("opacity", 0);
+    tooltip.transition().duration(500).style("opacity", 0);
 }
 
 // FIXED: Helper function to find hierarchy node by ID in the CLASSIC TREE

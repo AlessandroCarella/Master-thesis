@@ -1,5 +1,3 @@
-// node.js - Node rendering and styling
-
 import { calculateNodeRadius } from "./metrics_spawnTree.js";
 import { isNodeInPath, getInstanceValue } from "./instancePath_spawnTree.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "./tooltip_spawnTree.js";
@@ -133,8 +131,6 @@ export function addNodes(
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .style("font-size", `${fontSize}px`)
-                    .style("font-weight", index === 0 ? "bold" : "normal")
-                    .style("fill", index === 0 ? "#333" : "#666")
                     .text(line);
             });
         } else {

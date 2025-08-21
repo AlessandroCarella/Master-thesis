@@ -69,14 +69,6 @@ function ensureVisualizationVisibility() {
         blocksTreeContainer.style.display = "block";
         blocksTreeContainer.style.visibility = "visible";
     }
-    
-    // Ensure all parent elements are visible
-    let parent = blocksTreeContainer?.parentElement;
-    while (parent && parent !== document.body) {
-        parent.style.display = "block";
-        parent.style.visibility = "visible";
-        parent = parent.parentElement;
-    }
 }
 
 function render(containerSelector, tooltip) {

@@ -32,8 +32,3 @@ export const LAYOUT_CONFIG = {
 export const ZOOM_CONFIG = {
     scaleExtent: [0.9, 100],
 };
-
-export const ANIMATION_CONFIG = {
-    tooltipShowDuration: 200,
-    tooltipHideDuration: 500,
-};

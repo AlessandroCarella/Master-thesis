@@ -78,8 +78,18 @@ export const updateVisualizationUI = () => {
 
     <div class="svg-side-by-side">
       <div class="visualization-container">
-        <h2>Blocks Decision Tree</h2>
+        <div class="visualization-header">
+          <h2>Blocks Decision Tree</h2>
+          <div></div> <!-- Empty div to maintain consistent layout -->
+        </div>
         <div id="blocks-tree-plot"></div>
+      </div>      
+      <div class="visualization-container">
+        <div class="visualization-header">
+          <h2>TreeSpawn Decision Tree</h2>
+          <div></div> <!-- Empty div to maintain consistent layout -->
+        </div>
+        <div id="treespawn-tree-plot"></div>
       </div>
     </div>
   `;

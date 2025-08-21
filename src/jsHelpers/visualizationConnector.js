@@ -21,10 +21,17 @@ import {
     highlightBlocksTreeDescendants,
     resetBlocksTreeHighlights
 } from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
+import { 
+    highlightTreeSpawnPath,
+    highlightTreeSpawnNode,
+    highlightTreeSpawnDescendants,
+    resetTreeSpawnHighlights
+} from "./TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
 
 let scatterPlotVisualization = null;
 let treeVisualization = null;
 let blocksTreeVisualization = null;
+let treeSpawnVisualization = null;
 
 export function setScatterPlotVisualization(vis) {
     scatterPlotVisualization = vis;
@@ -41,6 +48,11 @@ export function setBlocksTreeVisualization(vis) {
     window.blocksTreeVisualization = vis;
 }
 
+export function setTreeSpawnVisualization(vis) {
+    treeSpawnVisualization = vis;
+    window.treeSpawnVisualization = vis;
+}
+
 export function getScatterPlotVisualization() {
     return scatterPlotVisualization;
 }
@@ -51,6 +63,10 @@ export function getTreeVisualization() {
 
 export function getBlocksTreeVisualization() {
     return blocksTreeVisualization;
+}
+
+export function getTreeSpawnVisualization() {
+    return treeSpawnVisualization;
 }
 
 // Store the currently explained instance
@@ -75,7 +91,8 @@ export function handleTreeNodeClick(
     treeVis,
     scatterPlotVis,
     metrics,
-    blocksTreeVis = null
+    blocksTreeVis = null,
+    treeSpawnVis = null
 ) {
     event.stopPropagation();
 
@@ -85,6 +102,9 @@ export function handleTreeNodeClick(
         if (blocksTreeVis) {
             resetBlocksTreeHighlights(blocksTreeVis);
         }
+        if (treeSpawnVis) {
+            resetTreeSpawnHighlights(treeSpawnVis);
+        }
         selectedNode = null;
         return;
     }
@@ -92,6 +112,9 @@ export function handleTreeNodeClick(
     resetHighlights(treeVis, scatterPlotVis);
     if (blocksTreeVis) {
         resetBlocksTreeHighlights(blocksTreeVis);
+    }
+    if (treeSpawnVis) {
+        resetTreeSpawnHighlights(treeSpawnVis);
     }
     selectedNode = d;
 
@@ -101,19 +124,37 @@ export function handleTreeNodeClick(
         // For leaf nodes: highlight the path to the root and corresponding scatter plot points
         highlightPathToRoot(contentGroup, d, metrics);
         
-        highlightBlocksTreeNode(blocksTreeVis, d.data.node_id);
-        // Get path to root for blocks tree
-        const pathToRoot = getPathToNodeInBlocks(d.data.node_id);
-        if (pathToRoot.length > 0) {
-            highlightBlocksTreePath(blocksTreeVis, pathToRoot);
+        if (blocksTreeVis) {
+            highlightBlocksTreeNode(blocksTreeVis, d.data.node_id);
+            // Get path to root for blocks tree
+            const pathToRoot = getPathToNodeInBlocks(d.data.node_id);
+            if (pathToRoot.length > 0) {
+                highlightBlocksTreePath(blocksTreeVis, pathToRoot);
+            }
+        }
+        
+        // Highlight in TreeSpawn tree
+        if (treeSpawnVis) {
+            highlightTreeSpawnNode(treeSpawnVis, d.data.node_id);
+            const treeSpawnPath = getPathToNodeInTreeSpawn(d.data.node_id);
+            if (treeSpawnPath.length > 0) {
+                highlightTreeSpawnPath(treeSpawnVis, treeSpawnPath);
+            }
         }
         
         highlightPointsForLeaf(d, scatterPlotVis);
     } else {
         highlightNode(contentGroup, d, metrics);
         highlightDescendants(contentGroup, d, metrics);
-    
-        highlightBlocksTreeDescendants(blocksTreeVis, d.data.node_id);
+        
+        if (blocksTreeVis) {
+            highlightBlocksTreeDescendants(blocksTreeVis, d.data.node_id);
+        }
+        
+        // Highlight descendants in TreeSpawn tree
+        if (treeSpawnVis) {
+            highlightTreeSpawnDescendants(treeSpawnVis, d.data.node_id);
+        }
         
         highlightPointsForDescendants(d, scatterPlotVis);
     }
@@ -160,6 +201,17 @@ export function highlightInstancePathInBlocksTree(instance) {
     // Use the existing instance path from the blocks tree
     if (instancePath && instancePath.length > 0) {
         highlightInstancePathInBlocks(container, instancePath);
+    }
+}
+
+export function highlightInstancePathInTreeSpawn(instance) {
+    if (!treeSpawnVisualization || !instance) return;
+
+    const { instancePath } = treeSpawnVisualization;
+
+    // Use the existing instance path from the TreeSpawn tree
+    if (instancePath && instancePath.length > 0) {
+        highlightTreeSpawnPath(treeSpawnVisualization, instancePath);
     }
 }
 
