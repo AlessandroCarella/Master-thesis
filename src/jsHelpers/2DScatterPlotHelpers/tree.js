@@ -1,4 +1,10 @@
 import { colorScheme } from "../visualizationConnector.js";
+import { 
+    findBlocksTreePath, 
+    highlightBlocksTreePathFromScatterPlot,
+    resetBlocksTreeHighlights 
+} from "../BlocksDecisionTreeHelpers/node_blocksTree.js";
+import { getBlocksTreeVisualization } from "../visualizationConnector.js";
 
 export function resetTreeHighlights(treeVisualization) {
     if (!treeVisualization || !treeVisualization.contentGroup) return;
@@ -8,9 +14,7 @@ export function resetTreeHighlights(treeVisualization) {
         .selectAll(".link")
         .style("stroke", colorScheme.ui.linkStroke)
         .style("stroke-width", function(d) {
-            // Use the stored original stroke width instead of base metrics
-            const originalWidth = d3.select(this).attr("data-original-stroke-width");
-            return originalWidth ? `${originalWidth}px` : `${treeVisualization.metrics.linkStrokeWidth}px`;
+            return `${d3.select(this).attr("data-original-stroke-width")}px`;
         });
 
     // Reset node styles
@@ -42,8 +46,7 @@ export function highlightTreePath(path, treeVisualization) {
             .style("stroke", colorScheme.ui.highlight)
             .style("stroke-width", function(d) {
                 // Use the stored original stroke width as base and add highlight thickness
-                const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
-                return `${baseWidth}px`; // Add small highlight thickness
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
             });
     }
 
@@ -87,7 +90,7 @@ export function findTreePath(features, root) {
     return path;
 }
 
-// This function is used in pointsHelper.js to toggle a point’s color and highlight tree paths.
+// This function is used in pointsHelper.js to toggle a point's color and highlight tree paths.
 export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     // Reset all points to their original colors first
     d3.selectAll("path.point")
@@ -100,6 +103,12 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     if (window.lastClickedPoint === node) {
         window.lastClickedPoint = null;
         resetTreeHighlights(treeVisualization);
+        
+        // Also reset blocks tree highlights
+        const blocksTreeVis = getBlocksTreeVisualization();
+        if (blocksTreeVis) {
+            resetBlocksTreeHighlights(blocksTreeVis);
+        }
         return;
     }
 
@@ -108,9 +117,34 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     d3.select(node)
         .style("fill", colorScheme.ui.highlight)
 
-    // Find and highlight the corresponding path in the decision tree
+    // Find and highlight the corresponding path in the classical decision tree
     if (treeVisualization && treeVisualization.treeData) {
         const path = findTreePath(originalFeatures, treeVisualization);
         highlightTreePath(path, treeVisualization);
+    }
+
+    // Find and highlight the corresponding path in the blocks decision tree
+    const blocksTreeVis = getBlocksTreeVisualization();
+    if (blocksTreeVis) {
+        try {
+            const blocksPath = findBlocksTreePath(originalFeatures);
+            if (blocksPath && blocksPath.length > 0) {
+                highlightBlocksTreePathFromScatterPlot(blocksPath);
+            }
+        } catch (error) {
+            console.warn("Could not highlight blocks tree path:", error);
+        }
+    }
+}
+
+// Function to reset all tree highlights (both classical and blocks)
+export function resetAllTreeHighlights(treeVisualization) {
+    // Reset classical tree highlights
+    resetTreeHighlights(treeVisualization);
+    
+    // Reset blocks tree highlights
+    const blocksTreeVis = getBlocksTreeVisualization();
+    if (blocksTreeVis) {
+        resetBlocksTreeHighlights(blocksTreeVis);
     }
 }

@@ -43,7 +43,7 @@ export function createPoints(
         })
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("stroke", colorScheme.ui.nodeStroke)
-        .style("stroke-width", 1)
+        .style("stroke-width", colorScheme.stroke.points2DScatterPlot)
         .style("opacity", (d, i) =>
             data.originalPointsNeighPointsBoolArray[i]
                 ? colorScheme.opacity.datasetPoint

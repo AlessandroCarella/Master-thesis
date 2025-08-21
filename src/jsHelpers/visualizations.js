@@ -28,10 +28,8 @@ export function initializeVisualizations(data) {
     const instance = getExplainedInstance();
     if (instance) {
         // Small delay to ensure visualizations are fully rendered
-        setTimeout(() => {
-            highlightInstancePathInTree(instance);
-            highlightInstancePathInBlocksTree(instance);
-        }, 100);
+        highlightInstancePathInTree(instance);
+        highlightInstancePathInBlocksTree(instance);
     }
 }
 

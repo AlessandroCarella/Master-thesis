@@ -19,6 +19,7 @@ import {
     highlightBlocksTreeNode, 
     highlightBlocksTreePath,
     highlightBlocksTreeDescendants,
+    resetBlocksTreeHighlights
 } from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
 
 let scatterPlotVisualization = null;
@@ -96,36 +97,24 @@ export function handleTreeNodeClick(
 
     if (d.data.is_leaf) {
         // Highlight the clicked node in classic tree
-        if (treeVis) {
-            highlightNode(contentGroup, d, metrics);
-            // For leaf nodes: highlight the path to the root and corresponding scatter plot points
-            highlightPathToRoot(contentGroup, d, metrics);
-        }
+        highlightNode(contentGroup, d, metrics);
+        // For leaf nodes: highlight the path to the root and corresponding scatter plot points
+        highlightPathToRoot(contentGroup, d, metrics);
         
-        // Highlight in blocks tree if available
-        if (blocksTreeVis) {
-            highlightBlocksTreeNode(blocksTreeVis, d.data.node_id);
-            // Get path to root for blocks tree
-            const pathToRoot = getPathToNodeInBlocks(d.data.node_id);
-            if (pathToRoot.length > 0) {
-                highlightBlocksTreePath(blocksTreeVis, pathToRoot);
-            }
+        highlightBlocksTreeNode(blocksTreeVis, d.data.node_id);
+        // Get path to root for blocks tree
+        const pathToRoot = getPathToNodeInBlocks(d.data.node_id);
+        if (pathToRoot.length > 0) {
+            highlightBlocksTreePath(blocksTreeVis, pathToRoot);
         }
         
         highlightPointsForLeaf(d, scatterPlotVis);
     } else {
-        // For split nodes: highlight the node and all its descendants
-        if (treeVis) {
-            highlightNode(contentGroup, d, metrics);
-            highlightDescendants(contentGroup, d, metrics);
-        }
+        highlightNode(contentGroup, d, metrics);
+        highlightDescendants(contentGroup, d, metrics);
+    
+        highlightBlocksTreeDescendants(blocksTreeVis, d.data.node_id);
         
-        // Highlight in blocks tree if available
-        if (blocksTreeVis) {
-            highlightBlocksTreeDescendants(blocksTreeVis, d.data.node_id);
-        }
-        
-        // Add this line to highlight scatter plot points for all descendant nodes
         highlightPointsForDescendants(d, scatterPlotVis);
     }
 }
@@ -172,20 +161,6 @@ export function highlightInstancePathInBlocksTree(instance) {
     if (instancePath && instancePath.length > 0) {
         highlightInstancePathInBlocks(container, instancePath);
     }
-}
-
-// Reset highlights for blocks tree specifically
-export function resetBlocksTreeHighlights(blocksTreeVis) {
-    if (!blocksTreeVis || !blocksTreeVis.container) return;
-
-    // Reset link highlights
-    resetBlocksLinkHighlights(blocksTreeVis.container);
-    
-    // Reset node highlights  
-    blocksTreeVis.container
-        .selectAll(".node")
-        .style("stroke", "#666666")
-        .style("stroke-width", "1px");
 }
 
 let originalPointsNeighPointsBoolArray = null;

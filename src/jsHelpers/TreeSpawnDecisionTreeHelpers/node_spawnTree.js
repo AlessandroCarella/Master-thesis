@@ -110,7 +110,7 @@ export function addNodes(
                 .attr("rx", SETTINGS.visual.rectBorderRadius)
                 .attr("ry", SETTINGS.visual.rectBorderRadius)
                 .style("fill", getNodeColor(d, colorMap, SETTINGS))
-                .style("stroke-width", `${metrics.nodeBorderStrokeWidth * SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`)
+                .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
                 .style("stroke", SETTINGS.visual.colors.pathHighlightStroke)
                 .style("opacity", SETTINGS.visual.opacity.pathHighlight);
 

@@ -15,7 +15,7 @@ export function drawVoronoi(g, data, x, y, colorMap) {
             )
             .attr("fill", regionColor) // Use the class-specific color
             .attr("stroke", colorScheme.ui.linkStroke)
-            .attr("stroke-width", 0.5)
-            .attr("opacity", 0.2); // Reduced opacity
+            .attr("stroke-width", colorScheme.stroke.voronoi)
+            .attr("opacity", colorScheme.opacity.voronoi);
     });
 }

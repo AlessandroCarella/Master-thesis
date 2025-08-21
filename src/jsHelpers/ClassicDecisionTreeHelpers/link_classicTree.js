@@ -67,12 +67,6 @@ export function highlightInstancePath(
         target: pathNodeIds[i + 1],
     }));
 
-    // Extract this calculation to a separate function for reusability
-    const highlightStrokeWidth = calculateHighlightStrokeWidth(
-        metrics,
-        SETTINGS
-    );
-
     // Add highlights
     contentGroup
         .selectAll(".link")
@@ -99,7 +93,7 @@ export function highlightInstancePath(
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style(
                     "stroke-width",
-                    `${baseStrokeWidth + highlightStrokeWidth}px`
+                    `${baseStrokeWidth * 2}px`
                 )
                 .style("fill", "none")
                 .style("opacity", colorScheme.opacity.originalInstancePath)
@@ -107,29 +101,4 @@ export function highlightInstancePath(
 
             originalPath.classed("instance-path", true);
         });
-}
-
-function calculateHighlightStrokeWidth(metrics, SETTINGS) {
-    return metrics
-        ? parseFloat(metrics.linkStrokeWidth) +
-              calculateHighlightThickness(metrics.totalNodes, SETTINGS)
-        : 6; // Default fallback if metrics not provided
-}
-
-// Helper function to calculate highlight thickness based on tree size
-function calculateHighlightThickness(totalNodes, SETTINGS) {
-    if (!totalNodes || !SETTINGS) return 6; // Default fallback
-
-    // Scale highlight thickness inversely with tree size
-    // Larger trees get thinner highlights to avoid visual clutter
-    const minThickness = 3;
-    const maxThickness = 12;
-    const baseThickness = 6;
-
-    // Use logarithmic scaling to handle trees of different sizes
-    const scale = Math.max(0.5, Math.min(2, 30 / Math.sqrt(totalNodes)));
-    return Math.min(
-        maxThickness,
-        Math.max(minThickness, baseThickness * scale)
-    );
 }

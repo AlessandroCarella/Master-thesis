@@ -128,7 +128,7 @@ export function handleMouseMove(event, tooltip) {
 export function handleMouseOut(event, d, tooltip, metrics) {
     tooltip.style("visibility", "hidden");
     d3.select(event.currentTarget)
-        .style("stroke", colorScheme.ui.nodeStroke)
+        // .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("opacity", colorScheme.opacity.hover);
 }

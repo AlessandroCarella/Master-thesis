@@ -1,9 +1,10 @@
-import { getOriginalPointsNeighPointsBoolArrayValAti, resetBlocksTreeHighlights } from "../visualizationConnector.js";
+import { getOriginalPointsNeighPointsBoolArrayValAti } from "../visualizationConnector.js";
 import { colorScheme, getGlobalColorMap } from "./colors.js";
 import { 
     highlightBlocksTreeNode, 
     highlightBlocksTreePath,
     highlightBlocksTreeDescendants,
+    resetBlocksTreeHighlights
 } from "../BlocksDecisionTreeHelpers/node_blocksTree.js";
 
 // Determine if a point belongs to a leaf node's decision path
@@ -24,8 +25,7 @@ export function pointBelongsToLeaf(point, originalData, leafNode) {
     return true;
 }
 
-// Reset all highlights across visualizations
-// Note: scatterPlotVis and treeVis are passed as parameters (state is managed elsewhere)
+// Reset all highlights across visualizations - UPDATED VERSION
 export function resetHighlights(treeVis, scatterPlotVis) {
     // Reset decision tree highlights
     if (treeVis && treeVis.contentGroup) {
@@ -58,14 +58,14 @@ export function resetHighlights(treeVis, scatterPlotVis) {
             );
     }
 
-    // Reset blocks tree highlights
+    // UPDATED: Reset blocks tree highlights
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis) {
         resetBlocksTreeHighlights(blocksTreeVis);
     }
 }
 
-// Highlight points in scatter plot for selected leaf node
+// UPDATED: Highlight points in scatter plot for selected leaf node
 export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
     if (!scatterPlotVis || !scatterPlotVis.points) return;
 
@@ -75,9 +75,9 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
             return pointBelongsToLeaf(d, originalData, leafNode)
                 ? colorScheme.ui.highlight
                 : getGlobalColorMap()[scatterPlotVis.data.targets[i]];
-        })
+        });
         
-    // Also highlight the corresponding node in blocks tree
+    // UPDATED: Also highlight the corresponding node in blocks tree
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis && leafNode.data && leafNode.data.node_id) {
         highlightBlocksTreeNode(blocksTreeVis, leafNode.data.node_id);
@@ -90,17 +90,20 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
     }
 }
 
-// Highlights a single node
+// UPDATED: Highlights a single node
 export function highlightNode(contentGroup, node, metrics) {
-    contentGroup
-        .selectAll(".node")
-        .filter((n) => n === node)
-        .select("circle")
-        .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.default);
+    // Highlight in classical tree
+    if (contentGroup) {
+        contentGroup
+            .selectAll(".node")
+            .filter((n) => n === node)
+            .select("circle")
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
+            .style("opacity", colorScheme.opacity.default);
+    }
         
-    // Also highlight in blocks tree
+    // UPDATED: Also highlight in blocks tree
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis && node.data && node.data.node_id) {
         highlightBlocksTreeNode(blocksTreeVis, node.data.node_id);
@@ -109,6 +112,8 @@ export function highlightNode(contentGroup, node, metrics) {
 
 // Highlights the link between two nodes
 export function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
+    if (!contentGroup) return;
+    
     contentGroup
         .selectAll(".link")
         .filter(
@@ -125,9 +130,12 @@ export function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
 
 // For leaf nodes: highlights all the paths from the leaf to the root
 export function highlightPathToRoot(contentGroup, leafNode, metrics) {
+    if (!leafNode) return;
+    
     let currentNode = leafNode;
     const pathNodeIds = [];
     
+    // Highlight classical tree path
     while (currentNode) {
         pathNodeIds.unshift(currentNode.data.node_id);
         if (currentNode.parent) {
@@ -145,13 +153,14 @@ export function highlightPathToRoot(contentGroup, leafNode, metrics) {
 }
 
 // Recursively highlights a node and all its descendants, including their connecting paths.
-// Also highlights scatter plot points for leaf nodes.
 export function highlightDescendants(
     contentGroup,
     node,
     metrics,
     scatterPlotVis
 ) {
+    if (!node) return;
+    
     highlightNode(contentGroup, node, metrics);
 
     // If this is a leaf and scatterPlotVis is provided, highlight corresponding scatter plot points
@@ -213,7 +222,7 @@ export function highlightPointsForDescendants(node, scatterPlotVis) {
             }
 
             return getGlobalColorMap()[scatterPlotVis.data.targets[i]];
-        })
+        });
 }
 
 // Helper function to get path to node in blocks tree

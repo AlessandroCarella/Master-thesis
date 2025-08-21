@@ -19,8 +19,13 @@ export const colorScheme = {
         neighPoint:1,
         datasetPoint:0.3,
         originalInstancePath:0.5,
-        hidden:0
+        hidden:0,
+        voronoi:0.2,
     },
+    stroke: {
+        voronoi:0.5,
+        points2DScatterPlot:1,
+    }
 };
 
 // Fetch colors from API

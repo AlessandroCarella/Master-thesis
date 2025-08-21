@@ -4,7 +4,9 @@ import { getTreeStats, getUniqueClasses } from "./metrics_blocksTree.js";
 import { 
     handleTreeNodeClick,
     colorScheme,
-    getBlocksTreeVisualization
+    getBlocksTreeVisualization,
+    getScatterPlotVisualization,
+    getTreeVisualization
 } from "../visualizationConnector.js";
 
 export function getNodeById(nodeId) {
@@ -54,8 +56,6 @@ export function getPathToNode(targetNodeId) {
 
     return findPath(root);
 }
-
-// Removed local getNodeColor function - now using global color management
 
 export function getNodeLabelLines(nodeId, instance) {
     const node = getNodeById(nodeId);
@@ -164,25 +164,38 @@ export function hideTooltip(tooltip) {
     tooltip.transition().duration(ANIMATION_CONFIG.tooltipHideDuration).style("opacity", 0);
 }
 
-// Convert blocks tree node data to the format expected by the highlighting system
-function convertToTreeNodeFormat(blocksNodeData) {
-    const node = getNodeById(blocksNodeData.id);
-    if (!node) return null;
+// FIXED: Helper function to find hierarchy node by ID in the CLASSIC TREE
+function findClassicTreeHierarchyNode(nodeId) {
+    const treeVis = getTreeVisualization();
+    if (!treeVis || !treeVis.treeData) return null;
 
-    // Create a mock tree node that matches the classic tree structure
-    return {
-        data: node,
-        // Add any other properties needed by the highlighting system
-    };
+    // Search in the classic tree hierarchy
+    const descendants = treeVis.treeData.descendants();
+    return descendants.find(node => node.data.node_id === nodeId);
 }
 
-// Handle node clicks in the blocks tree
+// Helper function to find hierarchy node by ID in the BLOCKS TREE (for internal blocks tree operations)
+function findBlocksTreeHierarchyNode(nodeId) {
+    const root = state.hierarchyRoot;
+    if (!root) return null;
+
+    function search(node) {
+        if (node.data.node_id === nodeId) return node;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = search(child);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    return search(root);
+}
+
+// Handle node clicks in the blocks tree - FIXED VERSION
 export function handleNodeClick(event, blocksNodeData, container, treeVis, scatterPlotVis) {
     event.stopPropagation();
-
-    // Convert blocks node data to tree node format
-    const treeNode = convertToTreeNodeFormat(blocksNodeData);
-    if (!treeNode) return;
 
     // Get the blocks tree visualization
     const blocksTreeVis = getBlocksTreeVisualization();
@@ -193,11 +206,21 @@ export function handleNodeClick(event, blocksNodeData, container, treeVis, scatt
         linkStrokeWidth: 2
     };
 
+    // FIXED: Find the corresponding node in the CLASSIC tree hierarchy
+    const hierarchicalNode = findClassicTreeHierarchyNode(blocksNodeData.id);
+    
+    if (!hierarchicalNode) {
+        console.warn(`Could not find classic tree node with ID: ${blocksNodeData.id}`);
+        return;
+    }
+
+    const classicalTreeContainer = treeVis ? treeVis.contentGroup : null;
+
     // Use the existing tree node click handler with blocks tree adaptation
     handleTreeNodeClick(
         event,
-        treeNode,
-        container,
+        hierarchicalNode,
+        classicalTreeContainer,
         treeVis,
         scatterPlotVis,
         mockMetrics,
@@ -237,7 +260,9 @@ export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
                        (d.sourceId === targetId && d.targetId === sourceId);
             })
             .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", "4px");
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
+            });
     }
 }
 
@@ -248,7 +273,7 @@ export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
     const node = getNodeById(nodeId);
     if (!node) return;
 
-    // Get all descendant node IDs
+    // Get all descendant node IDs using the blocks tree hierarchy
     const descendants = [];
     
     function collectDescendants(currentNodeId) {
@@ -257,8 +282,8 @@ export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
         
         descendants.push(currentNodeId);
         
-        // Find children in the hierarchy
-        const hierarchyNode = findHierarchyNode(currentNodeId);
+        // Find children in the blocks tree hierarchy
+        const hierarchyNode = findBlocksTreeHierarchyNode(currentNodeId);
         if (hierarchyNode && hierarchyNode.children) {
             hierarchyNode.children.forEach(child => {
                 collectDescendants(child.data.node_id);
@@ -273,38 +298,116 @@ export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
         highlightBlocksTreeNode(blocksTreeVis, descendantId);
     });
 
-    // Highlight all links between descendants
-    descendants.forEach(sourceId => {
-        descendants.forEach(targetId => {
-            if (sourceId !== targetId) {
-                blocksTreeVis.container
-                    .selectAll(".link")
-                    .filter((d) => {
-                        return (d.sourceId === sourceId && d.targetId === targetId) ||
-                               (d.sourceId === targetId && d.targetId === sourceId);
-                    })
-                    .style("stroke", colorScheme.ui.highlight)
-                    .style("stroke-width", "3px");
-            }
-        });
-    });
+    // Highlight links between consecutive levels of descendants
+    for (let i = 0; i < descendants.length; i++) {
+        const currentId = descendants[i];
+        const hierarchyNode = findBlocksTreeHierarchyNode(currentId);
+        
+        if (hierarchyNode && hierarchyNode.children) {
+            hierarchyNode.children.forEach(child => {
+                const childId = child.data.node_id;
+                if (descendants.includes(childId)) {
+                    blocksTreeVis.container
+                        .selectAll(".link")
+                        .filter((d) => {
+                            return (d.sourceId === currentId && d.targetId === childId) ||
+                                   (d.sourceId === childId && d.targetId === currentId);
+                        })
+                        .style("stroke", colorScheme.ui.highlight)
+                        .style("stroke-width", function(d) {
+                            return `${d3.select(this).attr("data-original-stroke-width")}px`;
+                        });
+                }
+            });
+        }
+    }
 }
 
-// Helper function to find hierarchy node by ID
-function findHierarchyNode(nodeId) {
+// Function to find tree path for scatter plot integration (similar to classical tree)
+export function findBlocksTreePath(features) {
     const root = state.hierarchyRoot;
-    if (!root) return null;
+    if (!root) return [];
 
-    function search(node) {
-        if (node.data.node_id === nodeId) return node;
-        if (node.children) {
-            for (const child of node.children) {
-                const found = search(child);
-                if (found) return found;
-            }
+    let path = [];
+    let currentNode = root;
+
+    while (currentNode) {
+        path.push(currentNode);
+
+        // If we've reached a leaf node, stop
+        if (currentNode.data.is_leaf) {
+            break;
         }
-        return null;
+
+        // Get the feature value for the current split
+        const featureValue = features[currentNode.data.feature_name];
+
+        // Decide which child to traverse to
+        if (featureValue <= currentNode.data.threshold) {
+            // Find left child
+            currentNode = currentNode.children?.find(child => 
+                child.data.node_id === currentNode.data.left_child
+            ) || null;
+        } else {
+            // Find right child
+            currentNode = currentNode.children?.find(child => 
+                child.data.node_id === currentNode.data.right_child
+            ) || null;
+        }
     }
 
-    return search(root);
+    return path;
+}
+
+// Function to highlight tree path in blocks tree (for scatter plot integration)
+export function highlightBlocksTreePathFromScatterPlot(path) {
+    const blocksTreeVis = getBlocksTreeVisualization();
+    if (!blocksTreeVis) return;
+
+    // Reset previous highlights first
+    resetBlocksTreeHighlights(blocksTreeVis);
+
+    // Highlight nodes in the path
+    path.forEach((node) => {
+        highlightBlocksTreeNode(blocksTreeVis, node.data.node_id);
+    });
+
+    // Highlight links in the path
+    for (let i = 0; i < path.length - 1; i++) {
+        const currentNode = path[i];
+        const nextNode = path[i + 1];
+
+        blocksTreeVis.container
+            .selectAll(".link")
+            .filter((linkData) => {
+                return (linkData.sourceId === currentNode.data.node_id && 
+                        linkData.targetId === nextNode.data.node_id) ||
+                       (linkData.sourceId === nextNode.data.node_id && 
+                        linkData.targetId === currentNode.data.node_id);
+            })
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
+            });
+    }
+}
+
+// Reset highlights for blocks tree
+export function resetBlocksTreeHighlights(blocksTreeVis) {
+    if (!blocksTreeVis || !blocksTreeVis.container) return;
+
+    // Reset node highlights  
+    blocksTreeVis.container
+        .selectAll(".node")
+        .style("stroke", "#666666")
+        .style("stroke-width", "1px");
+
+    // Reset link highlights
+    blocksTreeVis.container
+        .selectAll(".link")
+        .style("stroke", colorScheme.ui.linkStroke)
+        .style("stroke-width", function(d) {
+            // Use the stored original stroke width
+            return `${d3.select(this).attr("data-original-stroke-width")}px`;
+        });
 }

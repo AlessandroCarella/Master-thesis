@@ -52,16 +52,12 @@ export function renderLinks(container, links, instancePath) {
         .style("stroke-width", (d) => `${getStrokeWidth(d.targetId)}px`)
         .each(function(d) {
             // Store original stroke width for highlighting
-            const originalStrokeWidth = getStrokeWidth(d.targetId);
-            d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
+            d3.select(this).attr("data-original-stroke-width", getStrokeWidth(d.targetId));
         });
 }
 
 // Highlight instance path in blocks tree (similar to classic tree)
-export function highlightInstancePathInBlocks(
-    container,
-    pathNodeIds
-) {
+export function highlightInstancePathInBlocks(container, pathNodeIds) {
     // Add validation for pathNodeIds
     if (!container || !pathNodeIds) {
         console.warn("Missing required parameters for highlightInstancePathInBlocks");
@@ -99,7 +95,7 @@ export function highlightInstancePathInBlocks(
             const y1 = originalLink.attr("y1");
             const x2 = originalLink.attr("x2");
             const y2 = originalLink.attr("y2");
-
+            
             container
                 .append("line")
                 .attr("class", "link-highlight")
@@ -109,6 +105,7 @@ export function highlightInstancePathInBlocks(
                 .attr("y2", y2)
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style("opacity", colorScheme.opacity.originalInstancePath)
+                .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width")*2}px`)
                 .lower();
 
             originalLink.classed("instance-path", true);
@@ -133,8 +130,7 @@ export function resetBlocksLinkHighlights(container) {
         .style("stroke", colorScheme.ui.linkStroke)
         .style("stroke-width", function(d) {
             // Use the stored original stroke width
-            const originalWidth = d3.select(this).attr("data-original-stroke-width");
-            return originalWidth ? `${originalWidth}px` : "2px";
+            return `${d3.select(this).attr("data-original-stroke-width")}px`;
         });
 }
 
@@ -149,10 +145,68 @@ export function highlightBlocksLinks(container, linkPairs) {
                 return (d.sourceId === pair.source && d.targetId === pair.target) ||
                        (d.sourceId === pair.target && d.targetId === pair.source);
             })
-            .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", function(d) {
-                const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
-                return `${baseWidth + 2}px`; // Add highlight thickness
-            });
+            .style("stroke", colorScheme.ui.highlight);
+    });
+}
+
+// Highlight path to root for leaf nodes (similar to classic tree functionality)
+export function highlightPathToRootInBlocks(container, leafNodeId, allPaths) {
+    if (!container || !leafNodeId || !allPaths) return;
+
+    // Find the path that contains this leaf node
+    const pathToRoot = allPaths.find(path => 
+        path[path.length - 1] === leafNodeId
+    );
+
+    if (!pathToRoot) return;
+
+    // Highlight all links in the path to root
+    for (let i = 0; i < pathToRoot.length - 1; i++) {
+        const sourceId = pathToRoot[i];
+        const targetId = pathToRoot[i + 1];
+
+        container
+            .selectAll(".link")
+            .filter((d) => {
+                return (d.sourceId === sourceId && d.targetId === targetId) ||
+                       (d.sourceId === targetId && d.targetId === sourceId);
+            })
+            .style("stroke", colorScheme.ui.highlight);
+    }
+}
+
+// Highlight descendant links for split nodes
+export function highlightDescendantLinksInBlocks(container, nodeId, allPaths) {
+    if (!container || !nodeId || !allPaths) return;
+
+    // Find all paths that pass through this node
+    const descendantPaths = allPaths.filter(path => path.includes(nodeId));
+    
+    // Collect all links in these paths that are descendants of the node
+    const descendantLinks = new Set();
+    
+    descendantPaths.forEach(path => {
+        const nodeIndex = path.indexOf(nodeId);
+        if (nodeIndex !== -1) {
+            // Add all links from this node onwards in the path
+            for (let i = nodeIndex; i < path.length - 1; i++) {
+                const sourceId = path[i];
+                const targetId = path[i + 1];
+                descendantLinks.add(`${sourceId}-${targetId}`);
+            }
+        }
+    });
+
+    // Highlight all descendant links
+    descendantLinks.forEach(linkId => {
+        const [sourceId, targetId] = linkId.split('-').map(id => parseInt(id));
+        
+        container
+            .selectAll(".link")
+            .filter((d) => {
+                return (d.sourceId === sourceId && d.targetId === targetId) ||
+                       (d.sourceId === targetId && d.targetId === sourceId);
+            })
+            .style("stroke", colorScheme.ui.highlight);
     });
 }
