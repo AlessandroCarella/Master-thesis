@@ -30,6 +30,17 @@
     fill: #333;
 }
 
+/* TreeSpawn node text styling - match blocks tree */
+#treespawn-tree-plot text {
+    text-anchor: middle;
+    fill: #333;
+    pointer-events: none;
+    dominant-baseline: middle;
+    font-family: Arial, sans-serif;
+    font-weight: normal;
+    user-select: none;
+}
+
 /* Context menu styling for TreeSpawn */
 .context-menu {
   background-color: white;

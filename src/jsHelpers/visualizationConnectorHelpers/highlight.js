@@ -6,6 +6,13 @@ import {
     highlightBlocksTreeDescendants,
     resetBlocksTreeHighlights
 } from "../BlocksDecisionTreeHelpers/node_blocksTree.js";
+import {
+    highlightTreeSpawnNode,
+    highlightTreeSpawnPath,
+    highlightTreeSpawnDescendants,
+    resetTreeSpawnHighlights,
+    getPathToNodeInTreeSpawn
+} from "../TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
 
 // Determine if a point belongs to a leaf node's decision path
 export function pointBelongsToLeaf(point, originalData, leafNode) {
@@ -25,7 +32,7 @@ export function pointBelongsToLeaf(point, originalData, leafNode) {
     return true;
 }
 
-// Reset all highlights across visualizations - UPDATED VERSION
+// Reset all highlights across visualizations
 export function resetHighlights(treeVis, scatterPlotVis) {
     // Reset decision tree highlights
     if (treeVis && treeVis.contentGroup) {
@@ -58,14 +65,20 @@ export function resetHighlights(treeVis, scatterPlotVis) {
             );
     }
 
-    // UPDATED: Reset blocks tree highlights
+    // Reset blocks tree highlights
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis) {
         resetBlocksTreeHighlights(blocksTreeVis);
     }
+
+    // Reset TreeSpawn tree highlights
+    const treeSpawnVis = window.treeSpawnVisualization;
+    if (treeSpawnVis) {
+        resetTreeSpawnHighlights(treeSpawnVis);
+    }
 }
 
-// UPDATED: Highlight points in scatter plot for selected leaf node
+// Highlight points in scatter plot for selected leaf node
 export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
     if (!scatterPlotVis || !scatterPlotVis.points) return;
 
@@ -77,7 +90,7 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
                 : getGlobalColorMap()[scatterPlotVis.data.targets[i]];
         });
         
-    // UPDATED: Also highlight the corresponding node in blocks tree
+    // Also highlight the corresponding node in blocks tree
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis && leafNode.data && leafNode.data.node_id) {
         highlightBlocksTreeNode(blocksTreeVis, leafNode.data.node_id);
@@ -88,9 +101,21 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
             highlightBlocksTreePath(blocksTreeVis, pathToRoot);
         }
     }
+
+    // Also highlight the corresponding node in TreeSpawn tree
+    const treeSpawnVis = window.treeSpawnVisualization;
+    if (treeSpawnVis && leafNode.data && leafNode.data.node_id) {
+        highlightTreeSpawnNode(treeSpawnVis, leafNode.data.node_id);
+        
+        // Get path to root for TreeSpawn tree
+        const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVis, leafNode.data.node_id);
+        if (treeSpawnPath.length > 0) {
+            highlightTreeSpawnPath(treeSpawnVis, treeSpawnPath);
+        }
+    }
 }
 
-// UPDATED: Highlights a single node
+// Highlights a single node
 export function highlightNode(contentGroup, node, metrics) {
     // Highlight in classical tree
     if (contentGroup) {
@@ -103,10 +128,16 @@ export function highlightNode(contentGroup, node, metrics) {
             .style("opacity", colorScheme.opacity.default);
     }
         
-    // UPDATED: Also highlight in blocks tree
+    // Also highlight in blocks tree
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis && node.data && node.data.node_id) {
         highlightBlocksTreeNode(blocksTreeVis, node.data.node_id);
+    }
+
+    // Also highlight in TreeSpawn tree
+    const treeSpawnVis = window.treeSpawnVisualization;
+    if (treeSpawnVis && node.data && node.data.node_id) {
+        highlightTreeSpawnNode(treeSpawnVis, node.data.node_id);
     }
 }
 
@@ -150,6 +181,12 @@ export function highlightPathToRoot(contentGroup, leafNode, metrics) {
     if (blocksTreeVis && pathNodeIds.length > 0) {
         highlightBlocksTreePath(blocksTreeVis, pathNodeIds);
     }
+
+    // Highlight the path in TreeSpawn tree
+    const treeSpawnVis = window.treeSpawnVisualization;
+    if (treeSpawnVis && pathNodeIds.length > 0) {
+        highlightTreeSpawnPath(treeSpawnVis, pathNodeIds);
+    }
 }
 
 // Recursively highlights a node and all its descendants, including their connecting paths.
@@ -180,6 +217,12 @@ export function highlightDescendants(
     const blocksTreeVis = window.blocksTreeVisualization;
     if (blocksTreeVis && node.data && node.data.node_id) {
         highlightBlocksTreeDescendants(blocksTreeVis, node.data.node_id);
+    }
+
+    // Highlight descendants in TreeSpawn tree
+    const treeSpawnVis = window.treeSpawnVisualization;
+    if (treeSpawnVis && node.data && node.data.node_id) {
+        highlightTreeSpawnDescendants(treeSpawnVis, node.data.node_id);
     }
 }
 

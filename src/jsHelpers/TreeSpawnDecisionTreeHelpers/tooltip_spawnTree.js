@@ -1,5 +1,3 @@
-import { isNodeInPath } from "./instancePath_spawnTree.js";
-
 // Function to create tooltip content for a node
 export function createNodeTooltipContent(d, instancePath = []) {
     const content = [];
@@ -74,8 +72,6 @@ export function handleMouseOver(event, d, tooltip, metrics, instancePath = [], S
         .style("visibility", "visible")
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
-
-    d3.select(event.currentTarget).style("stroke", SETTINGS.visual.colors.highlight);
 }
 
 // Handle mouse move event for tooltips
@@ -88,14 +84,4 @@ export function handleMouseMove(event, tooltip) {
 // Handle mouse out event for tooltips
 export function handleMouseOut(event, d, tooltip, metrics, instancePath = [], SETTINGS) {
     tooltip.style("visibility", "hidden");
-    
-    const isInPath = isNodeInPath(d.data.node_id, instancePath);
-    const strokeColor = isInPath ? SETTINGS.visual.colors.pathHighlightStroke : SETTINGS.visual.colors.nodeStroke;
-    const strokeWidth = isInPath ? `${metrics.nodeBorderStrokeWidth * SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px` : `${metrics.nodeBorderStrokeWidth}px`;
-    const opacity = isInPath ? SETTINGS.visual.opacity.pathHighlight : SETTINGS.visual.opacity.normal;
-    
-    d3.select(event.currentTarget)
-        .style("stroke", strokeColor)
-        .style("stroke-width", strokeWidth)
-        .style("opacity", opacity);
 }

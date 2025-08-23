@@ -3,7 +3,8 @@ import {
     handleTreeNodeClick,
     colorScheme,
     getBlocksTreeVisualization,
-    getTreeVisualization
+    getTreeVisualization,
+    getTreeSpawnVisualization
 } from "../visualizationConnector.js";
 
 export function getNodeById(nodeId) {
@@ -194,8 +195,9 @@ function findBlocksTreeHierarchyNode(nodeId) {
 export function handleNodeClick(event, blocksNodeData, container, treeVis, scatterPlotVis) {
     event.stopPropagation();
 
-    // Get the blocks tree visualization
+    // Get the other tree visualizations
     const blocksTreeVis = getBlocksTreeVisualization();
+    const spawnTreeVis = getTreeSpawnVisualization();
     
     // Create a mock metrics object for the highlighting system
     const mockMetrics = {
@@ -221,7 +223,8 @@ export function handleNodeClick(event, blocksNodeData, container, treeVis, scatt
         treeVis,
         scatterPlotVis,
         mockMetrics,
-        blocksTreeVis
+        blocksTreeVis,
+        spawnTreeVis
     );
 }
 

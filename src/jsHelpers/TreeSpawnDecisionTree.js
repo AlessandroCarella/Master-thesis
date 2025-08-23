@@ -40,12 +40,13 @@ export function refreshVisualization() {
         instanceData 
     } = currentVisualizationState;
     
-    // Remove existing nodes and links
+    // Remove existing nodes and links (including background instance path links)
     contentGroup.selectAll('.node').remove();
     contentGroup.selectAll('.link').remove();
+    contentGroup.selectAll('.instance-path-background').remove();
     
-    // Re-add links and nodes with updated visibility
-    addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath);
+    // Re-add links (without automatic instance path background) and nodes with w visibility
+    addLinks(contentGroup, treeData, metrics, SETTINGS);
     addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
 }
 
@@ -86,8 +87,11 @@ export function createTreeSpawnVisualization(rawTreeData, instanceData) {
     const treeData = createLinearPathLayout(root, metrics, SETTINGS, instancePath);
 
     addBackgroundLayer(contentGroup, SETTINGS, metrics);
-    addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath);
-    // Pass instanceData to addNodes function
+    
+    // Add links without automatic instance path background highlighting
+    addLinks(contentGroup, treeData, metrics, SETTINGS);
+    
+    // Add nodes (instance path nodes will still be rendered as rectangles)
     addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
 
     const initialTransform = calculateInitialTransform(treeData, SETTINGS);
@@ -113,14 +117,15 @@ export function createTreeSpawnVisualization(rawTreeData, instanceData) {
         instanceData
     };
 
-    // Create visualization object and register it
+    // Create visualization object and register it (now includes rawTreeData)
     const visualization = { 
         contentGroup, 
         treeData, 
         metrics, 
         instancePath,
         svg,
-        container: contentGroup
+        container: contentGroup,
+        rawTreeData: rawTreeData  // Store raw tree data for scatter plot integration
     };
     
     setTreeSpawnVisualization(visualization);

@@ -29,7 +29,6 @@ export function initializeVisualizations(data) {
     // Highlight instance paths after all visualizations are created
     const instance = getExplainedInstance();
     if (instance) {
-        // Small delay to ensure visualizations are fully rendered
         highlightInstancePathInTree(instance);
         highlightInstancePathInBlocksTree(instance);
         highlightInstancePathInTreeSpawn(instance);
@@ -66,7 +65,7 @@ function createVisualizations(data) {
         data.instance
     );
 
-    // Create TreeSpawn tree visualization
+    // Create TreeSpawn tree visualization (without automatic instance path highlighting)
     createTreeSpawnVisualization(
         data.decisionTreeVisualizationData,
         data.instance
@@ -119,7 +118,7 @@ function buildVisualizationRequestData(selectedMethod) {
 function updateVisualizations(data) {
     clearVisualizations();
     
-    // FIX: Get the current explained instance to preserve it during updates
+    // Get the current explained instance to preserve it during updates
     const instance = getExplainedInstance();
     
     // Create the updated data object with preserved instance
@@ -131,7 +130,6 @@ function updateVisualizations(data) {
     
     createVisualizations(updatedData);
     
-    // Re-highlight instance paths after update
     if (instance) {
         highlightInstancePathInTree(instance);
         highlightInstancePathInBlocksTree(instance);

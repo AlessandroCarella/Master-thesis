@@ -25,7 +25,9 @@ import {
     highlightTreeSpawnPath,
     highlightTreeSpawnNode,
     highlightTreeSpawnDescendants,
-    resetTreeSpawnHighlights
+    resetTreeSpawnHighlights,
+    getPathToNodeInTreeSpawn,
+    addInstancePathHighlightToTreeSpawn
 } from "./TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
 
 let scatterPlotVisualization = null;
@@ -136,7 +138,7 @@ export function handleTreeNodeClick(
         // Highlight in TreeSpawn tree
         if (treeSpawnVis) {
             highlightTreeSpawnNode(treeSpawnVis, d.data.node_id);
-            const treeSpawnPath = getPathToNodeInTreeSpawn(d.data.node_id);
+            const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVis, d.data.node_id);
             if (treeSpawnPath.length > 0) {
                 highlightTreeSpawnPath(treeSpawnVis, treeSpawnPath);
             }
@@ -151,7 +153,6 @@ export function handleTreeNodeClick(
             highlightBlocksTreeDescendants(blocksTreeVis, d.data.node_id);
         }
         
-        // Highlight descendants in TreeSpawn tree
         if (treeSpawnVis) {
             highlightTreeSpawnDescendants(treeSpawnVis, d.data.node_id);
         }
@@ -207,11 +208,22 @@ export function highlightInstancePathInBlocksTree(instance) {
 export function highlightInstancePathInTreeSpawn(instance) {
     if (!treeSpawnVisualization || !instance) return;
 
+    // Check if TreeSpawn visualization is fully initialized
+    if (!treeSpawnVisualization.container || !treeSpawnVisualization.instancePath) {
+        console.warn("TreeSpawn visualization not fully initialized, skipping instance path highlighting");
+        return;
+    }
+
     const { instancePath } = treeSpawnVisualization;
 
     // Use the existing instance path from the TreeSpawn tree
     if (instancePath && instancePath.length > 0) {
-        highlightTreeSpawnPath(treeSpawnVisualization, instancePath);
+        try {
+            // Use the highlight function that adds background highlights
+            addInstancePathHighlightToTreeSpawn(treeSpawnVisualization, instancePath);
+        } catch (error) {
+            console.warn("Error highlighting TreeSpawn instance path:", error);
+        }
     }
 }
 

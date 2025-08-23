@@ -1,7 +1,9 @@
 import {
     colorScheme,
+    getBlocksTreeVisualization,
     getNodeColor,
     getScatterPlotVisualization,
+    getTreeSpawnVisualization,
     getTreeVisualization,
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
@@ -35,16 +37,24 @@ export function addNodes(
         .on("mouseout", (event, d) =>
             handleMouseOut(event, d, tooltip, metrics)
         );
+        
+        
+        nodes.on("click", (event, d) => {
+            // Get the other tree visualizations
+            const blocksTreeVis = getBlocksTreeVisualization();
+            const spawnTreeVis = getTreeSpawnVisualization();
 
-    nodes.on("click", (event, d) =>
-        handleTreeNodeClick(
-            event,
-            d,
-            contentGroup,
-            getTreeVisualization(),
-            getScatterPlotVisualization(),
-            metrics
-        )
+            handleTreeNodeClick(
+                event,
+                d,
+                contentGroup,
+                getTreeVisualization(),
+                getScatterPlotVisualization(),
+                metrics,
+                blocksTreeVis,
+                spawnTreeVis
+            )
+        }
     );
 
     return nodes;
@@ -60,8 +70,6 @@ export function handleMouseOver(event, d, tooltip, metrics) {
         .style("visibility", "visible")
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
-
-    d3.select(event.currentTarget).style("stroke", colorScheme.ui.highlight);
 }
 
 function createNodeTooltipContent(d) {
@@ -128,7 +136,6 @@ export function handleMouseMove(event, tooltip) {
 export function handleMouseOut(event, d, tooltip, metrics) {
     tooltip.style("visibility", "hidden");
     d3.select(event.currentTarget)
-        // .style("stroke", colorScheme.ui.nodeStroke)
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("opacity", colorScheme.opacity.hover);
 }

@@ -4,7 +4,14 @@ import {
     highlightBlocksTreePathFromScatterPlot,
     resetBlocksTreeHighlights 
 } from "../BlocksDecisionTreeHelpers/node_blocksTree.js";
-import { getBlocksTreeVisualization } from "../visualizationConnector.js";
+import { 
+    getBlocksTreeVisualization,
+    getTreeSpawnVisualization 
+} from "../visualizationConnector.js";
+import { 
+    resetTreeSpawnHighlights 
+} from "../TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
+import { findTreeSpawnPath, highlightTreeSpawnPathFromScatterPlot } from "../TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
 
 export function resetTreeHighlights(treeVisualization) {
     if (!treeVisualization || !treeVisualization.contentGroup) return;
@@ -109,6 +116,12 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
         if (blocksTreeVis) {
             resetBlocksTreeHighlights(blocksTreeVis);
         }
+
+        // Also reset TreeSpawn tree highlights
+        const treeSpawnVis = getTreeSpawnVisualization();
+        if (treeSpawnVis) {
+            resetTreeSpawnHighlights(treeSpawnVis);
+        }
         return;
     }
 
@@ -135,9 +148,22 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
             console.warn("Could not highlight blocks tree path:", error);
         }
     }
+
+    // Find and highlight the corresponding path in the TreeSpawn decision tree
+    const treeSpawnVis = getTreeSpawnVisualization();
+    if (treeSpawnVis) {
+        try {
+            const treeSpawnPath = findTreeSpawnPath(originalFeatures);
+            if (treeSpawnPath && treeSpawnPath.length > 0) {
+                highlightTreeSpawnPathFromScatterPlot(treeSpawnPath);
+            }
+        } catch (error) {
+            console.warn("Could not highlight TreeSpawn tree path:", error);
+        }
+    }
 }
 
-// Function to reset all tree highlights (both classical and blocks)
+// Function to reset all tree highlights (classical, blocks, and TreeSpawn)
 export function resetAllTreeHighlights(treeVisualization) {
     // Reset classical tree highlights
     resetTreeHighlights(treeVisualization);
@@ -146,5 +172,11 @@ export function resetAllTreeHighlights(treeVisualization) {
     const blocksTreeVis = getBlocksTreeVisualization();
     if (blocksTreeVis) {
         resetBlocksTreeHighlights(blocksTreeVis);
+    }
+
+    // Reset TreeSpawn tree highlights
+    const treeSpawnVis = getTreeSpawnVisualization();
+    if (treeSpawnVis) {
+        resetTreeSpawnHighlights(treeSpawnVis);
     }
 }

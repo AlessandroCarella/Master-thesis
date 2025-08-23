@@ -1,4 +1,5 @@
 import { getStrokeWidth } from "./metrics_spawnTree.js";
+import { colorScheme } from "../visualizationConnector.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;
@@ -38,15 +39,18 @@ function isLinkInPath(link, instancePath) {
     return false;
 }
 
+// Add only normal links (no automatic background highlights)
 export function addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath = []) {
     // Only create links between visible nodes
     const visibleLinks = treeData.links().filter(link => 
         !link.source.isHidden && !link.target.isHidden
     );
     
+    // Add normal links (no automatic background highlights)
+    // Background highlights will only be added when explicitly requested
     contentGroup
         .selectAll(".link")
-        .data(visibleLinks, d => `${d.source.data.node_id}-${d.target.data.node_id}`) // Use key function for proper data binding
+        .data(visibleLinks, d => `${d.source.data.node_id}-${d.target.data.node_id}`)
         .join("path")
         .attr("class", "link")
         .attr("data-source-id", (d) => d.source.data.node_id)
@@ -60,24 +64,89 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS, instancePath
             );
             // Store as data attribute for later retrieval
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
-            
-            // Check if this link is in the instance path
-            const isInPath = isLinkInPath(d, instancePath);
-            d3.select(this).attr("data-in-path", isInPath);
         })
         .style("stroke-width", function(d) {
-            const isInPath = d3.select(this).attr("data-in-path") === "true";
-            if (isInPath) {
-                return `${SETTINGS.visual.strokeWidth.highlightLink}px`;
-            }
-            // Use the stored original stroke width
+            // Use normal stroke width for regular links
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
         })
         .attr("d", (d) => createSplitPath(d, SETTINGS))
         .style("fill", "none")
-        .style("stroke", function(d) {
-            const isInPath = d3.select(this).attr("data-in-path") === "true";
-            return isInPath ? SETTINGS.visual.colors.highlightStroke : SETTINGS.visual.colors.linkStroke;
-        })
-        .style("opacity", 1);
+        .style("stroke", colorScheme.ui.linkStroke)
+        .style("opacity", colorScheme.opacity.default);
+}
+
+// Helper function to update instance path background highlights
+export function updateInstancePathBackground(contentGroup, treeData, metrics, SETTINGS, instancePath = []) {
+    // Remove existing background highlights
+    contentGroup.selectAll(".instance-path-background").remove();
+    
+    // Re-add background highlights with new instance path
+    if (instancePath && instancePath.length > 0) {
+        const visibleLinks = treeData.links().filter(link => 
+            !link.source.isHidden && !link.target.isHidden
+        );
+        const instancePathLinks = visibleLinks.filter(link => isLinkInPath(link, instancePath));
+        
+        contentGroup
+            .selectAll(".instance-path-background")
+            .data(instancePathLinks)
+            .enter()
+            .append("path")
+            .attr("class", "instance-path-background")
+            .attr("data-source-id", (d) => d.source.data.node_id)
+            .attr("data-target-id", (d) => d.target.data.node_id)
+            .each(function(d) {
+                const originalStrokeWidth = getStrokeWidth(
+                    d.target.data.weighted_n_samples || d.target.data.n_samples, 
+                    treeData.data.n_samples, 
+                    metrics.linkStrokeWidth
+                );
+                d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
+            })
+            .style("stroke-width", function(d) {
+                const originalWidth = d3.select(this).attr("data-original-stroke-width");
+                return `${originalWidth * (SETTINGS.visual.strokeWidth.pathHighlightMultiplier || 2)}px`;
+            })
+            .attr("d", (d) => createSplitPath(d, SETTINGS))
+            .style("fill", "none")
+            .style("stroke", colorScheme.ui.instancePathHighlight)
+            .style("opacity", colorScheme.opacity.originalInstancePath)
+            .lower();
+    }
+}
+
+// Function to highlight specific links (for interactive highlighting)
+export function highlightTreeSpawnLinks(contentGroup, linkPairs, metrics) {
+    linkPairs.forEach(pair => {
+        contentGroup
+            .selectAll(".link")
+            .filter((d) => {
+                return (d.source.data.node_id === pair.source && d.target.data.node_id === pair.target) ||
+                       (d.source.data.node_id === pair.target && d.target.data.node_id === pair.source);
+            })
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", function(d) {
+                const originalWidth = d3.select(this).attr("data-original-stroke-width");
+                return `${originalWidth}px`; // Moderate highlight for interactive selection
+            });
+    });
+}
+
+// Function to reset interactive link highlights (keeps instance path background)
+export function resetTreeSpawnLinkHighlights(contentGroup) {
+    // Reset interactive highlights on normal links
+    contentGroup
+        .selectAll(".link")
+        .style("stroke", colorScheme.ui.linkStroke)
+        .style("stroke-width", function(d) {
+            return `${d3.select(this).attr("data-original-stroke-width")}px`;
+        });
+    
+    // Keep instance path background highlights as they are persistent
+    // No changes needed to .instance-path-background elements
+}
+
+// Function to completely remove instance path background (for reset scenarios)
+export function removeInstancePathBackground(contentGroup) {
+    contentGroup.selectAll(".instance-path-background").remove();
 }

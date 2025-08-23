@@ -2,6 +2,15 @@ import { calculateNodeRadius } from "./metrics_spawnTree.js";
 import { isNodeInPath, getInstanceValue } from "./instancePath_spawnTree.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "./tooltip_spawnTree.js";
 import { createContextMenu } from "./contextMenu_spawnTree.js";
+import { 
+    handleTreeNodeClick,
+    getTreeVisualization,
+    getScatterPlotVisualization,
+    getBlocksTreeVisualization,
+    getTreeSpawnVisualization,
+    colorScheme
+} from "../visualizationConnector.js";
+import { resetTreeSpawnHighlights } from "./highlight_spawnTree.js";
 
 // Calculate optimal font size for multi-line labels inside a rectangle
 function calculateFontSize(lines, rectWidth, rectHeight) {
@@ -39,9 +48,10 @@ function calculateFontSize(lines, rectWidth, rectHeight) {
 // Function to get node color based on class
 export function getNodeColor(d, colorMap, SETTINGS) {
     if (d.data.is_leaf && d.data.class_label !== undefined) {
-        return colorMap[d.data.class_label] || SETTINGS.visual.colors.nodeDefaultLeaf;
+        return colorMap[d.data.class_label];
     }
-    return SETTINGS.visual.colors.nodeDefault; // Default for non-leaf nodes
+    // Use global color scheme for consistency
+    return colorScheme.ui.default; // Default for non-leaf nodes
 }
 
 // Function to prepare text lines for a node
@@ -70,6 +80,154 @@ function getNodeTextLines(d, instanceData) {
     return lines;
 }
 
+// Helper function to find hierarchy node by ID in the CLASSIC TREE
+function findClassicTreeHierarchyNode(nodeId) {
+    const treeVis = getTreeVisualization();
+    if (!treeVis || !treeVis.treeData) return null;
+
+    // Search in the classic tree hierarchy
+    const descendants = treeVis.treeData.descendants();
+    return descendants.find(node => node.data.node_id === nodeId);
+}
+
+// Function to find TreeSpawn path for given features (similar to blocks tree)
+export function findTreeSpawnPath(features) {
+    const treeSpawnVis = getTreeSpawnVisualization();
+    if (!treeSpawnVis || !treeSpawnVis.treeData) {
+        console.warn("TreeSpawn visualization or tree data not available");
+        return [];
+    }
+
+    try {
+        // Find the root node in the TreeSpawn hierarchy
+        const root = treeSpawnVis.treeData.descendants().find(node => node.depth === 0);
+        if (!root) return [];
+
+        let path = [];
+        let currentNode = root;
+
+        while (currentNode) {
+            path.push(currentNode);
+
+            // If we've reached a leaf node, stop
+            if (currentNode.data.is_leaf) {
+                break;
+            }
+
+            // Get the feature value for the current split
+            const featureValue = features[currentNode.data.feature_name];
+
+            // Decide which child to traverse to
+            if (featureValue <= currentNode.data.threshold) {
+                // Find left child
+                currentNode = currentNode.children?.find(child => 
+                    child.data.node_id === currentNode.data.left_child
+                ) || null;
+            } else {
+                // Find right child  
+                currentNode = currentNode.children?.find(child => 
+                    child.data.node_id === currentNode.data.right_child
+                ) || null;
+            }
+        }
+
+        return path;
+    } catch (error) {
+        console.error("Error finding TreeSpawn path:", error);
+        return [];
+    }
+}
+
+// Function to highlight TreeSpawn path from scatter plot (similar to blocks tree)
+export function highlightTreeSpawnPathFromScatterPlot(path) {
+    const treeSpawnVis = getTreeSpawnVisualization();
+    if (!treeSpawnVis || !path || path.length === 0) {
+        return;
+    }
+
+    try {
+        // Reset previous highlights first
+        resetTreeSpawnHighlights(treeSpawnVis);
+
+        // Highlight nodes in the path
+        path.forEach((node) => {
+            treeSpawnVis.container
+                .selectAll(".node")
+                .filter((d) => d.data.node_id === node.data.node_id)
+                .selectAll("circle, rect")
+                .style("stroke", colorScheme.ui.highlight)
+                .style("stroke-width", "3px");
+        });
+
+        // Highlight links in the path
+        for (let i = 0; i < path.length - 1; i++) {
+            const currentNode = path[i];
+            const nextNode = path[i + 1];
+
+            treeSpawnVis.container
+                .selectAll(".link")
+                .filter((linkData) => {
+                    return (linkData.source.data.node_id === currentNode.data.node_id && 
+                            linkData.target.data.node_id === nextNode.data.node_id) ||
+                           (linkData.source.data.node_id === nextNode.data.node_id && 
+                            linkData.target.data.node_id === currentNode.data.node_id);
+                })
+                .style("stroke", colorScheme.ui.highlight)
+                .style("stroke-width", function(d) {
+                    const originalWidth = d3.select(this).attr("data-original-stroke-width");
+                    // Fallback to metrics if attribute doesn't exist
+                    if (originalWidth && originalWidth !== null) {
+                        return `${originalWidth}px`;
+                    } else {
+                        // Use fallback stroke width from metrics
+                        const fallbackWidth = treeSpawnVis.metrics ? treeSpawnVis.metrics.linkStrokeWidth : 2;
+                        return `${fallbackWidth}px`;
+                    }
+                });
+        }
+    } catch (error) {
+        console.error("Error highlighting TreeSpawn path:", error);
+    }
+}
+
+// Handle node clicks in the TreeSpawn tree - proper integration with global highlighting
+export function handleNodeClick(event, spawnNodeData, container, treeVis, scatterPlotVis) {
+    event.stopPropagation();
+
+    // Get all tree visualizations
+    const blocksTreeVis = getBlocksTreeVisualization();
+    const spawnTreeVis = getTreeSpawnVisualization();
+    
+    // Create a mock metrics object for the highlighting system (consistent with blocks tree)
+    const mockMetrics = {
+        nodeBorderStrokeWidth: 2,
+        linkStrokeWidth: 2
+    };
+
+    // Find the corresponding node in the CLASSIC tree hierarchy
+    const hierarchicalNode = findClassicTreeHierarchyNode(spawnNodeData.data.node_id);
+    
+    if (!hierarchicalNode) {
+        console.warn(`Could not find classic tree node with ID: ${spawnNodeData.data.node_id}`);
+        return;
+    }
+
+    const classicalTreeContainer = treeVis ? treeVis.contentGroup : null;
+
+    // Use the existing tree node click handler with proper TreeSpawn integration
+    handleTreeNodeClick(
+        event,
+        hierarchicalNode,
+        classicalTreeContainer,
+        treeVis,
+        scatterPlotVis,
+        mockMetrics,
+        blocksTreeVis,
+        spawnTreeVis
+    );
+}
+
+// Main function to add nodes with proper click handler integration
 export function addNodes(
     contentGroup,
     treeData,
@@ -109,8 +267,8 @@ export function addNodes(
                 .attr("ry", SETTINGS.visual.rectBorderRadius)
                 .style("fill", getNodeColor(d, colorMap, SETTINGS))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-                .style("stroke", SETTINGS.visual.colors.pathHighlightStroke)
-                .style("opacity", SETTINGS.visual.opacity.pathHighlight);
+                .style("stroke", colorScheme.ui.nodeStroke)
+                .style("opacity", colorScheme.opacity.default);
 
             // Add text for path nodes with dynamic font sizing and vertical centering
             const textLines = getNodeTextLines(d, instanceData);
@@ -139,8 +297,8 @@ export function addNodes(
                 .attr("r", baseRadius)
                 .style("fill", getNodeColor(d, colorMap, SETTINGS))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-                .style("stroke", SETTINGS.visual.colors.nodeStroke)
-                .style("opacity", SETTINGS.visual.opacity.normal);
+                .style("stroke", colorScheme.ui.nodeStroke)
+                .style("opacity", colorScheme.opacity.default);
             
             // Add indicator if node has hidden children
             if (d.hasHiddenChildren) {
@@ -158,7 +316,7 @@ export function addNodes(
         }
     });
 
-    // Add common event handlers to both circles and rectangles
+    // Add event handlers with proper click integration
     nodes.selectAll("circle, rect")
         .attr("data-in-path", (d) => isNodeInPath(d.data.node_id, instancePath))
         .on("mouseover", (event, d) =>
@@ -167,7 +325,17 @@ export function addNodes(
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
             handleMouseOut(event, d, tooltip, metrics, instancePath, SETTINGS)
-        );
+        )
+        .on("click", (event, d) => {
+            // Proper click handler integration
+            handleNodeClick(
+                event,
+                d,
+                contentGroup,
+                getTreeVisualization(),
+                getScatterPlotVisualization()
+            );
+        });
 
     // Add context menu only to nodes that can be expanded or collapsed
     nodes.selectAll("circle, rect")
