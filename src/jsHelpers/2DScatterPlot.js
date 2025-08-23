@@ -5,7 +5,6 @@ import {
 } from "./visualizationConnector.js";
 import { createTooltip } from "./2DScatterPlotHelpers/tooltip.js";
 import { createZoom } from "./2DScatterPlotHelpers/zoom.js";
-import { createAxes } from "./2DScatterPlotHelpers/axis.js";
 import { drawVoronoi } from "./2DScatterPlotHelpers/voronoi.js";
 import { createPoints } from "./2DScatterPlotHelpers/points.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
@@ -26,9 +25,6 @@ export function createScatterPlot(data, treeVis, container) {
     const margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
     const tooltip = createTooltip();
-
-    document.getElementById("x-axis-label").textContent = data.xAxisLabel;
-    document.getElementById("y-axis-label").textContent = data.yAxisLabel;
 
     d3.select(container).select("svg").remove();
 
@@ -53,9 +49,6 @@ export function createScatterPlot(data, treeVis, container) {
         .scaleLinear()
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
-
-    // Create axes regardless of method
-    createAxes(g, x, y, margin, width, height);
 
     // Only draw Voronoi regions for PCA
     if (data.method.toUpperCase() === "PCA") {

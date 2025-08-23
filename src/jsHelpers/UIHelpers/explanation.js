@@ -64,8 +64,6 @@ export const updateVisualizationUI = () => {
           </div>
         </div>
         <div id="scatter-plot"></div>
-        <p id="x-axis-label"></p>
-        <p id="y-axis-label"></p>
       </div>
       <div class="visualization-container">
         <div class="visualization-header">

@@ -329,11 +329,7 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
     x_min, x_max = X_transformed[:, 0].min() - 1, X_transformed[:, 0].max() + 1
     y_min, y_max = X_transformed[:, 1].min() - 1, X_transformed[:, 1].max() + 1
     
-    # Format axis labels based on the method
     if method.lower() == 'pca':
-        x_axis_label = format_pc_label(model.components_[0], feature_names, 0)
-        y_axis_label = format_pc_label(model.components_[1], feature_names, 1)
-        
         # Generate grid in PCA space
         xx, yy, _ = generate_decision_boundary_grid(X_transformed, step)
         
@@ -354,11 +350,6 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
             "yRange": [float(y_min), float(y_max)],
         }
     else:
-        # For t-SNE, UMAP, and MDS, generate generic axis labels and decision boundary ranges.
-        method_label = method.upper() if method.lower() != 'mds' else 'MDS'
-        x_axis_label = f"{method_label} dimension 1"
-        y_axis_label = f"{method_label} dimension 2"
-        
         decision_boundary = {
             "xRange": [float(x_min), float(x_max)],
             "yRange": [float(y_min), float(y_max)],
@@ -376,8 +367,6 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
         "originalData": original_series_list,
         "targets": filtered_labels.tolist(),
         "decisionBoundary": decision_boundary,
-        "xAxisLabel": x_axis_label,
-        "yAxisLabel": y_axis_label,
         "method": method,
         "originalPointsNeighPointsBoolArray": originalPointsNeighPointsBoolArray,
     }
