@@ -149,8 +149,7 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     
     // Get the bounds of the laid out subtree
     const nodes = layoutResult.descendants();
-    const [minX, maxX] = d3.extent(nodes, d => d.x);
-    const [minY, maxY] = d3.extent(nodes, d => d.y);
+    const [minY] = d3.extent(nodes, d => d.y);
     
     const rootHierarchyNode = layoutResult;
     

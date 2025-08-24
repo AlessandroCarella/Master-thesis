@@ -8,6 +8,7 @@ import {
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
 import { calculateNodeRadius } from "./metrics_classicTree.js";
+import { state } from "./state_classicTree.js";
 
 export function addNodes(
     contentGroup,
@@ -38,24 +39,22 @@ export function addNodes(
             handleMouseOut(event, d, tooltip, metrics)
         );
         
-        
-        nodes.on("click", (event, d) => {
-            // Get the other tree visualizations
-            const blocksTreeVis = getBlocksTreeVisualization();
-            const spawnTreeVis = getTreeSpawnVisualization();
+    nodes.on("click", (event, d) => {
+        // Get the other tree visualizations
+        const blocksTreeVis = getBlocksTreeVisualization();
+        const spawnTreeVis = getTreeSpawnVisualization();
 
-            handleTreeNodeClick(
-                event,
-                d,
-                contentGroup,
-                getTreeVisualization(),
-                getScatterPlotVisualization(),
-                metrics,
-                blocksTreeVis,
-                spawnTreeVis
-            )
-        }
-    );
+        handleTreeNodeClick(
+            event,
+            d,
+            contentGroup,
+            getTreeVisualization(),
+            getScatterPlotVisualization(),
+            metrics,
+            blocksTreeVis,
+            spawnTreeVis
+        );
+    });
 
     return nodes;
 }
@@ -108,22 +107,6 @@ function createNodeTooltipContent(d) {
         }
     }
 
-    if (!d.data.is_leaf) {
-        // Add class distribution if available (summarized)
-        if (d.data.value && d.data.value.length > 0 && d.data.value[0].length > 0) {
-            const valueArray = d.data.value[0];
-            if (valueArray.length > 1) {
-                const total = valueArray.reduce((sum, val) => sum + val, 0);
-                const distribution = valueArray
-                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
-                    .join(", ");
-                content.push(
-                    `<strong>Class Distribution:</strong> [${distribution}]`
-                );
-            }
-        }
-    }
-
     return content;
 }
 
@@ -138,4 +121,76 @@ export function handleMouseOut(event, d, tooltip, metrics) {
     d3.select(event.currentTarget)
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("opacity", colorScheme.opacity.hover);
+}
+
+// Helper function to highlight a specific node
+export function highlightClassicTreeNode(contentGroup, nodeId) {
+    if (!contentGroup) return;
+
+    contentGroup
+        .selectAll(".node")
+        .filter((d) => d.data.node_id === nodeId)
+        .select("circle")
+        .style("stroke", colorScheme.ui.highlight)
+}
+
+// Helper function to reset node highlights
+export function resetClassicTreeNodeHighlights(contentGroup) {
+    if (!contentGroup) return;
+
+    contentGroup
+        .selectAll(".node circle")
+        .style("stroke", colorScheme.ui.nodeStroke)
+        .style("stroke-width", function() {
+            // Get the metrics from the stored tree visualization
+            const treeVis = getTreeVisualization();
+            return `${treeVis.metrics.nodeBorderStrokeWidth}px`
+        });
+}
+
+// Helper function to highlight a path in classic tree
+export function highlightClassicTreePath(contentGroup, pathNodeIds) {
+    if (!contentGroup || !pathNodeIds) return;
+
+    // Highlight nodes in the path
+    pathNodeIds.forEach(nodeId => {
+        highlightClassicTreeNode(contentGroup, nodeId);
+    });
+}
+
+// Helper function to highlight descendants of a node
+export function highlightClassicTreeDescendants(contentGroup, nodeId) {
+    if (!contentGroup || !state.hierarchyRoot) return;
+
+    // Find all descendant node IDs
+    const descendants = [];
+    
+    function collectDescendants(node) {
+        descendants.push(node.node_id);
+        if (node.children) {
+            node.children.forEach(child => collectDescendants(child));
+        }
+    }
+
+    // Find the starting node in the hierarchy
+    function findNode(node, targetId) {
+        if (node.node_id === targetId) return node;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = findNode(child, targetId);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    const startNode = findNode(state.hierarchyRoot, nodeId);
+    if (startNode) {
+        collectDescendants(startNode);
+        
+        // Highlight all descendant nodes
+        descendants.forEach(descendantId => {
+            highlightClassicTreeNode(contentGroup, descendantId);
+        });
+    }
 }

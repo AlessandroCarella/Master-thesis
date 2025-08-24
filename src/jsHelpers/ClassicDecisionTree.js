@@ -1,7 +1,6 @@
 import {
     setTreeVisualization,
     highlightInstancePathInTree,
-    getExplainedInstance,
 } from "./visualizationConnector.js";
 import { createHierarchy } from "./ClassicDecisionTreeHelpers/dataProcessing_classicTree.js";
 import { getVisualizationSettings } from "./ClassicDecisionTreeHelpers/settings_classicTree.js";
@@ -21,14 +20,19 @@ import { addLinks } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
 import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
 import { initializeZoom } from "./ClassicDecisionTreeHelpers/zoom_classicTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
+import { state } from "./ClassicDecisionTreeHelpers/state_classicTree.js";
 
 export function createTreeVisualization(rawTreeData, instance, container) {
     const SETTINGS = getVisualizationSettings();
-    const hierarchyRoot = createHierarchy(rawTreeData);
+    
+    // Store data in global state
+    state.treeData = rawTreeData;
+    state.instanceData = instance;
+    state.hierarchyRoot = createHierarchy();
 
     const colorMap = getGlobalColorMap();
 
-    const root = d3.hierarchy(hierarchyRoot);
+    const root = d3.hierarchy(state.hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
 
     clearExistingSVG(container);

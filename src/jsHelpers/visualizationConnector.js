@@ -14,7 +14,7 @@ import {
 
 import { findInstancePath } from "./ClassicDecisionTreeHelpers/dataProcessing_classicTree.js";
 import { highlightInstancePath } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
-import { highlightInstancePathInBlocks, resetBlocksLinkHighlights } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
+import { highlightInstancePathInBlocks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { 
     highlightBlocksTreeNode, 
     highlightBlocksTreePath,
@@ -24,11 +24,13 @@ import {
 import { 
     highlightTreeSpawnPath,
     highlightTreeSpawnNode,
-    highlightTreeSpawnDescendants,
+    highlightTreeSpawnDescendants
+} from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
+import { 
     resetTreeSpawnHighlights,
     getPathToNodeInTreeSpawn,
     addInstancePathHighlightToTreeSpawn
-} from "./TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
+} from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js"
 
 let scatterPlotVisualization = null;
 let treeVisualization = null;

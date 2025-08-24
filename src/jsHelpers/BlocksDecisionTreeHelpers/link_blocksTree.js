@@ -31,7 +31,7 @@ export function isLinkHighlighted(link, instancePath) {
     return sIdx !== -1 && tIdx !== -1 && Math.abs(sIdx - tIdx) === 1;
 }
 
-export function renderLinks(container, links, instancePath) {
+export function renderLinks(container, links, instancePath, SETTINGS) {
     return container
         .selectAll(".link")
         .data(links)

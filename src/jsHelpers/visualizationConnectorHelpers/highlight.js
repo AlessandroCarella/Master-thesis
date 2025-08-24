@@ -10,9 +10,12 @@ import {
     highlightTreeSpawnNode,
     highlightTreeSpawnPath,
     highlightTreeSpawnDescendants,
+    
+} from "../TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
+import { 
     resetTreeSpawnHighlights,
     getPathToNodeInTreeSpawn
-} from "../TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
+ } from "../TreeSpawnDecisionTreeHelpers/link_spawnTree.js"
 
 // Determine if a point belongs to a leaf node's decision path
 export function pointBelongsToLeaf(point, originalData, leafNode) {

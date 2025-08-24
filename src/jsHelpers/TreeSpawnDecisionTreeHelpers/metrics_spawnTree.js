@@ -1,3 +1,7 @@
+import { state } from "./state_spawnTree.js";
+import { traceInstancePath } from "./dataProcessing_spawnTree.js";
+import { createLinearPathLayout } from "./subtrees_spawnTree.js";
+
 export function calculateMetrics(root, SETTINGS) {
     const levelCounts = {};
     root.descendants().forEach((node) => {
@@ -47,16 +51,17 @@ export function calculateSeparation(a, b, metrics, SETTINGS, root) {
 }
 
 export function createTreeLayout(metrics, SETTINGS, root) {
-    const horizontalSpacing =
-        root.descendants().length * SETTINGS.tree.minSplitWidth;
-    const verticalSpacing =
-        root.descendants().length * SETTINGS.tree.minSplitHeight;
-    return d3
-        .tree()
-        .size([horizontalSpacing, verticalSpacing])
-        .separation((a, b) =>
-            calculateSeparation(a, b, metrics, SETTINGS, root)
-        );
+    // Get instance path from state or trace it
+    let instancePath = state.instancePath;
+    if (!instancePath || instancePath.length === 0) {
+        instancePath = traceInstancePath();
+    }
+
+    // Return a function that applies the linear path layout
+    // This maintains compatibility with the main file's expectation of treeLayout(root)
+    return function(rootNode) {
+        return createLinearPathLayout(rootNode, metrics, SETTINGS, instancePath);
+    };
 }
 
 export function calculateNodeRadius(d, metrics) {
@@ -65,7 +70,6 @@ export function calculateNodeRadius(d, metrics) {
 
 export function calculateInitialTransform(treeData, SETTINGS) {
     // Use ALL nodes (including hidden ones) for calculating initial zoom
-    // This ensures the zoom is set as if the full tree was visible
     const allNodes = treeData.descendants();
     const [minX, maxX] = d3.extent(allNodes, (d) => d.x);
     const [minY, maxY] = d3.extent(allNodes, (d) => d.y);
@@ -76,7 +80,7 @@ export function calculateInitialTransform(treeData, SETTINGS) {
     const scaleX = SETTINGS.size.innerWidth / treeWidth;
     const scaleY = SETTINGS.size.innerHeight / treeHeight;
     const k = Math.min(scaleX, scaleY);
-    
+
     const translateX =
         (SETTINGS.size.innerWidth - treeWidth * k) / 2 -
         minX * k +
@@ -94,10 +98,53 @@ export function calculateInitialTransform(treeData, SETTINGS) {
 }
 
 export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth) {
-    // This method differs from the get linkStrokeWidth() in calculateMetrics because this is used for
-    // determining the size of the link based on the number of samples that go from one node to the next
+    // Use total samples from state if not provided
+    if (!totalSamples && state.treeData && state.treeData.length > 0) {
+        totalSamples = state.treeData[0].n_samples;
+    }
+    
     const ratio = weighted_n_samples / totalSamples;
     const strokeWidth = ratio * 3 * linkStrokeWidth;
-
     return strokeWidth;
+}
+
+// Helper function to get tree depth from state
+export function getTreeDepth() {
+    if (!state.hierarchyRoot) return 0;
+    
+    function calculateDepth(node, depth = 0) {
+        if (!node.children || node.children.length === 0) {
+            return depth;
+        }
+        return Math.max(...node.children.map(child => calculateDepth(child, depth + 1)));
+    }
+    
+    return calculateDepth(state.hierarchyRoot);
+}
+
+// Helper function to get tree statistics
+export function getTreeStats() {
+    if (!state.hierarchyRoot || !state.treeData) {
+        return {
+            totalNodes: 0,
+            leafNodes: 0,
+            internalNodes: 0,
+            maxDepth: 0,
+            totalSamples: 0
+        };
+    }
+    
+    const totalNodes = state.treeData.length;
+    const leafNodes = state.treeData.filter(node => node.is_leaf).length;
+    const internalNodes = totalNodes - leafNodes;
+    const maxDepth = getTreeDepth();
+    const totalSamples = state.treeData[0]?.n_samples || 0;
+    
+    return {
+        totalNodes,
+        leafNodes,
+        internalNodes,
+        maxDepth,
+        totalSamples
+    };
 }

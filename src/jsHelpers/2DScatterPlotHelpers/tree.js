@@ -10,7 +10,7 @@ import {
 } from "../visualizationConnector.js";
 import { 
     resetTreeSpawnHighlights 
-} from "../TreeSpawnDecisionTreeHelpers/highlight_spawnTree.js";
+} from "../TreeSpawnDecisionTreeHelpers/link_spawnTree.js";
 import { findTreeSpawnPath, highlightTreeSpawnPathFromScatterPlot } from "../TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
 
 export function resetTreeHighlights(treeVisualization) {

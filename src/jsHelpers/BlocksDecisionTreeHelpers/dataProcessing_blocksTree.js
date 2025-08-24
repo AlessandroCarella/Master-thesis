@@ -1,12 +1,5 @@
 import { state } from "./state_blocksTree.js";
 
-export function getDatasetFiles(dataset) {
-    if (dataset === "dataset1") return "tree.json and instance.json";
-    if (dataset === "dataset2") return "tree2.json and instance2.json";
-    if (dataset === "dataset3") return "tree3.json and instance3.json";
-    return "the required data files";
-}
-
 // Build D3 hierarchy from flat array and compute a tree layout
 export function buildHierarchy(flatTreeData) {
     const nodeMap = new Map();
@@ -25,7 +18,7 @@ export function buildHierarchy(flatTreeData) {
     });
 
     const hierarchy = d3.hierarchy(root, (d) => d.children);
-    const tree = d3.tree().size([800, 800]);
+    const tree = d3.tree();
     tree(hierarchy);
     return hierarchy;
 }

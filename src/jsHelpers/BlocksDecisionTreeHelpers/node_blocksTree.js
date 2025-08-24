@@ -4,8 +4,11 @@ import {
     colorScheme,
     getBlocksTreeVisualization,
     getTreeVisualization,
-    getTreeSpawnVisualization
+    getScatterPlotVisualization,
+    getTreeSpawnVisualization,
+    getNodeColor,
 } from "../visualizationConnector.js";
+import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 
 export function getNodeById(nodeId) {
     const root = state.hierarchyRoot;
@@ -74,7 +77,65 @@ export function getNodeLabel(nodeId, instance) {
     return lines.join("\n");
 }
 
-// Enhanced tooltip content creation function (adapted from classic tree)
+// Helper function to get node color using global color management
+function getBlocksNodeColor(nodeId, SETTINGS) {
+    const nodeData = getNodeById(nodeId);
+    if (!nodeData) return SETTINGS.colors.splitNode;
+    
+    // Get the global color map
+    const globalColorMap = getGlobalColorMap();
+    if (!globalColorMap) return SETTINGS.colors.splitNode;
+    
+    // Create a node object that matches the global getNodeColor function interface
+    const nodeForColorFunction = {
+        data: nodeData
+    };
+    
+    // Use the global getNodeColor function
+    return getNodeColor(nodeForColorFunction, globalColorMap);
+}
+
+export function renderNodes(container, nodePositions, instancePath, tooltip, SETTINGS) {
+    const nodes = Object.values(nodePositions);
+
+    const nodeElements = container
+        .selectAll(".node")
+        .data(nodes)
+        .enter()
+        .append("rect")
+        .attr(
+            "class",
+            (d) => `node ${instancePath.includes(d.id) ? "highlighted" : ""}`
+        )
+        .attr("x", (d) => d.x - SETTINGS.node.width / 2)
+        .attr("y", (d) => d.y - SETTINGS.node.height / 2)
+        .attr("width", SETTINGS.node.width)
+        .attr("height", SETTINGS.node.height)
+        .attr("rx", SETTINGS.node.borderRadius)
+        .attr("ry", SETTINGS.node.borderRadius)
+        .attr("fill", (d) => getBlocksNodeColor(d.id, SETTINGS))
+        .on("mouseover", (event, d) => {
+            handleMouseOver(event, d, tooltip);
+        })
+        .on("mousemove", (event) => {
+            handleMouseMove(event, tooltip);
+        })
+        .on("mouseout", (event, d) => {
+            handleMouseOut(event, d, tooltip);
+        })
+        .on("click", (event, d) => {
+            handleNodeClick(
+                event,
+                d,
+                container,
+                getTreeVisualization(),
+                getScatterPlotVisualization()
+            );
+        });
+
+    return nodeElements;
+}
+
 function createNodeTooltipContent(node) {
     const content = [];
 
@@ -99,7 +160,7 @@ function createNodeTooltipContent(node) {
     // Add weighted samples if available
     if (node.weighted_n_samples) {
         const weightDiff = Math.abs(
-            node.weighted_n_samples - node.n_samples
+            node.weighted_n_samples - (node.n_samples || 0)
         );
         // Only show if there's a meaningful difference
         if (weightDiff > 0.01) {
@@ -130,36 +191,101 @@ function createNodeTooltipContent(node) {
     return content;
 }
 
-// Tooltip functionality
-export function createTooltip() {
-    return d3
-        .select("body")
-        .append("div")
-        .attr("class", "decision-tree-tooltip")
-        .style("opacity", 0);
-}
-
-export function showTooltip(event, nodeId, tooltip) {
-    const node = getNodeById(nodeId);
+export function handleMouseOver(event, d, tooltip) {
+    const node = getNodeById(d.id);
     if (!node) return;
 
     // Use the enhanced tooltip content creation logic
     const content = createNodeTooltipContent(node);
-    
-    // Convert content array to HTML
+
+    tooltip
+        .html(content.join("<br>"))
+        .style("class", "decision-tree-tooltip")
+        .style("visibility", "visible")
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 10 + "px");
+}
+
+export function handleMouseMove(event, tooltip) {
+    tooltip
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 10 + "px");
+}
+
+export function handleMouseOut(event, d, tooltip) {
+    tooltip.style("visibility", "hidden");
+}
+
+// Calculate optimal font size for multi-line labels inside a rectangle
+function calculateFontSize(lines, rectWidth, rectHeight) {
+    const padding = 10;
+    const lineHeight = 1.2;
+    const availableWidth = rectWidth - padding * 2;
+    const availableHeight = rectHeight - padding * 2;
+
+    const maxTextLength = Math.max(
+        ...lines.map((line) => (line ?? "").toString().length)
+    );
+    const fontSizeBasedOnWidth =
+        availableWidth / Math.max(1, maxTextLength * 0.6);
+    const fontSizeBasedOnHeight =
+        availableHeight / Math.max(1, lines.length * lineHeight);
+
+    let fontSize = Math.min(fontSizeBasedOnWidth, fontSizeBasedOnHeight);
+    fontSize = Math.max(8, Math.min(20, fontSize));
+    return fontSize;
+}
+
+export function renderLabels(container, nodePositions, SETTINGS) {
+    const nodes = Object.values(nodePositions);
+
+    container
+        .selectAll(".node-label-group")
+        .data(nodes)
+        .enter()
+        .append("g")
+        .attr("class", "node-label-group")
+        .each(function (d) {
+            const group = d3.select(this);
+            const lines = getNodeLabelLines(d.id, state.instanceData);
+            const fontSize = calculateFontSize(lines, SETTINGS.node.width, SETTINGS.node.height);
+            const lineHeight = fontSize * 1.2;
+
+            lines.forEach((line, idx) => {
+                group
+                    .append("text")
+                    .attr("class", "node-label")
+                    .attr("x", d.x)
+                    .attr(
+                        "y",
+                        d.y + (idx - (lines.length - 1) / 2) * lineHeight
+                    )
+                    .style("font-size", `${fontSize}px`)
+                    .text(line);
+            });
+        });
+}
+
+// Enhanced tooltip content creation function (adapted from classic tree)
+export function showTooltip(event, nodeId, tooltip) {
+    console.warn("showTooltip is deprecated, use handleMouseOver instead");
+    const node = getNodeById(nodeId);
+    if (!node) return;
+
+    const content = createNodeTooltipContent(node);
     const html = content.join("<br>");
 
     tooltip
         .html(html)
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY - 28}px`)
-        .transition()
-        .duration(200)
-        .style("opacity", 1);
+        .style("class", "decision-tree-tooltip")
+        .style("visibility", "visible")
+        .style("left", `${event.pageX + 10}px`)
+        .style("top", `${event.pageY - 10}px`);
 }
 
 export function hideTooltip(tooltip) {
-    tooltip.transition().duration(500).style("opacity", 0);
+    console.warn("hideTooltip is deprecated, use handleMouseOut instead");
+    tooltip.style("visibility", "hidden");
 }
 
 // FIXED: Helper function to find hierarchy node by ID in the CLASSIC TREE

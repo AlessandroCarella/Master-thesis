@@ -1,3 +1,5 @@
+import { state } from "./state_classicTree.js";
+
 export function calculateMetrics(root, SETTINGS) {
     const levelCounts = {};
     root.descendants().forEach((node) => {
@@ -92,10 +94,56 @@ export function calculateInitialTransform(treeData, SETTINGS) {
 }
 
 export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth) {
+    // Use total samples from state if not provided
+    if (!totalSamples && state.treeData && state.treeData.length > 0) {
+        totalSamples = state.treeData[0].n_samples;
+    }
+    
     // This method differs from the get linkStrokeWidth() in calculateMetrics because this is used for
     // determining the size of the link based on the number of samples that go from one node to the next
     const ratio = weighted_n_samples / totalSamples;
     const strokeWidth = ratio * 3 * linkStrokeWidth;
 
     return strokeWidth;
+}
+
+// Helper function to get tree depth from state
+export function getTreeDepth() {
+    if (!state.hierarchyRoot) return 0;
+    
+    function calculateDepth(node, depth = 0) {
+        if (!node.children || node.children.length === 0) {
+            return depth;
+        }
+        return Math.max(...node.children.map(child => calculateDepth(child, depth + 1)));
+    }
+    
+    return calculateDepth(state.hierarchyRoot);
+}
+
+// Helper function to get tree statistics
+export function getTreeStats() {
+    if (!state.hierarchyRoot || !state.treeData) {
+        return {
+            totalNodes: 0,
+            leafNodes: 0,
+            internalNodes: 0,
+            maxDepth: 0,
+            totalSamples: 0
+        };
+    }
+    
+    const totalNodes = state.treeData.length;
+    const leafNodes = state.treeData.filter(node => node.is_leaf).length;
+    const internalNodes = totalNodes - leafNodes;
+    const maxDepth = getTreeDepth();
+    const totalSamples = state.treeData[0]?.n_samples || 0;
+    
+    return {
+        totalNodes,
+        leafNodes,
+        internalNodes,
+        maxDepth,
+        totalSamples
+    };
 }

@@ -1,6 +1,3 @@
-import { colorScheme } from "../visualizationConnector.js";
-
-// Main settings function similar to other tree implementations
 export function getVisualizationSettings() {
     const margin = { top: 90, right: 90, bottom: 90, left: 90 };
     const width = 800;
@@ -18,7 +15,7 @@ export function getVisualizationSettings() {
             minSplitWidth: 30,
             minSplitHeight: 25,
             levelHeightScale: 100,
-            initialVisibleDepth: 5, // Show subtree nodes up to this depth initially
+            initialVisibleDepth: 2,
             get radianAngle() {
                 return (this.splitAngle * Math.PI) / 180;
             },
@@ -37,7 +34,7 @@ export function getVisualizationSettings() {
             rectWidth: 150,
             rectHeight: 100,
             rectBorderRadius: 8,
-            rectMargin: 100, // Base spacing between rectangles in path (minimum value)
+            rectMargin: 100, // Base spacing between rectangles in path
             
             // Subtree-based spacing configuration
             subtreeSizeSpacingMultiplier: 10, // Additional pixels per node in subtree
@@ -45,33 +42,10 @@ export function getVisualizationSettings() {
             // Layout spacing
             verticalGap: 100, // Gap between path and subtrees
             
-            // Use global color scheme to match other trees
-            colors: {
-                // Node colors - use global color scheme
-                nodeStroke: colorScheme.ui.nodeStroke,
-                nodeDefault: colorScheme.ui.default, // Default for non-leaf nodes
-                nodeDefaultLeaf: colorScheme.ui.default, // Default for leaf nodes without class
-                
-                // Highlight colors - use global color scheme
-                highlight: colorScheme.ui.highlight,
-                pathHighlight: colorScheme.ui.instancePathHighlight, // Match blocks tree
-                pathHighlightStroke: colorScheme.ui.instancePathHighlight, // Match blocks tree
-                
-                // Link colors - use global color scheme
-                linkStroke: colorScheme.ui.linkStroke,
-                highlightStroke: colorScheme.ui.instancePathHighlight // Match blocks tree
-            },
-            
-            // Opacity settings - use global opacity settings
-            opacity: {
-                hover: colorScheme.opacity.default,
-                normal: colorScheme.opacity.default,
-            },
-            
             // Stroke widths
             strokeWidth: {
                 highlightLink: 4,
-                pathHighlightMultiplier: 2 // Match the multiplier used in blocks tree
+                pathHighlightMultiplier: 2,
             }
         }
     };

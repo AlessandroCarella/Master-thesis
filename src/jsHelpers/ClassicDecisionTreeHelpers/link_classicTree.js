@@ -1,5 +1,7 @@
 import { colorScheme } from "../visualizationConnector.js";
-import { getStrokeWidth } from "./metrics_classicTree.js"
+import { getStrokeWidth } from "./metrics_classicTree.js";
+import { state } from "./state_classicTree.js";
+import { findInstancePath } from "./dataProcessing_classicTree.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;
@@ -24,9 +26,10 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .attr("data-target-id", (d) => d.target.data.node_id)
         .each(function(d) {
             // Calculate and store the original stroke width based on samples
+            const totalSamples = state.treeData ? state.treeData[0].n_samples : d.target.data.n_samples;
             const originalStrokeWidth = getStrokeWidth(
                 d.target.data.weighted_n_samples, 
-                treeData.data.n_samples, 
+                totalSamples, 
                 metrics.linkStrokeWidth
             );
             // Store as data attribute for later retrieval
@@ -47,6 +50,11 @@ export function highlightInstancePath(
     metrics,
     SETTINGS
 ) {
+    // If no pathNodeIds provided, calculate from state
+    if (!pathNodeIds && state.instanceData && state.hierarchyRoot) {
+        pathNodeIds = findInstancePath(state.hierarchyRoot, state.instanceData);
+    }
+
     // Add validation for pathNodeIds
     if (!contentGroup || !pathNodeIds) {
         console.warn("Missing required parameters for highlightInstancePath");
@@ -100,5 +108,27 @@ export function highlightInstancePath(
                 .lower();
 
             originalPath.classed("instance-path", true);
+        });
+}
+
+// Helper function to reset link highlights
+export function resetLinkHighlights(contentGroup) {
+    if (!contentGroup) return;
+
+    // Remove any highlight overlays
+    contentGroup.selectAll(".link-highlight").remove();
+    
+    // Reset link classes
+    contentGroup
+        .selectAll(".link.instance-path")
+        .classed("instance-path", false);
+
+    // Reset link styles
+    contentGroup
+        .selectAll(".link")
+        .style("stroke", colorScheme.ui.linkStroke)
+        .style("stroke-width", function(d) {
+            // Use the stored original stroke width
+            return `${d3.select(this).attr("data-original-stroke-width")}px`;
         });
 }

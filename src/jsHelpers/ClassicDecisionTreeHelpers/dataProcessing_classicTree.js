@@ -1,4 +1,8 @@
-export function createHierarchy(data) {
+import { state } from "./state_classicTree.js";
+
+export function createHierarchy() {
+    const data = state.treeData;
+    
     if (!data || !Array.isArray(data)) {
         console.error("Invalid data provided to createHierarchy:", data);
         return null;
@@ -28,15 +32,19 @@ export function createHierarchy(data) {
 }
 
 export function findInstancePath(rootNode, instance) {
+    // Use instance from state if not provided
+    const instanceData = instance || state.instanceData;
+    const root = rootNode || state.hierarchyRoot;
+    
     // Add validation for instance parameter
-    if (!rootNode || !instance || typeof instance !== "object") {
+    if (!root || !instanceData || typeof instanceData !== "object") {
         console.error("Invalid parameters provided to findInstancePath");
         return [];
     }
 
     // This function will return an array of node_ids that form the path
     const path = [];
-    let currentNode = rootNode;
+    let currentNode = root;
 
     while (currentNode) {
         path.push(currentNode.node_id);
@@ -51,7 +59,7 @@ export function findInstancePath(rootNode, instance) {
 
         // Determine which child to follow
         const featureName = currentNode.feature_name;
-        const featureValue = instance[featureName];
+        const featureValue = instanceData[featureName];
         const threshold = currentNode.threshold;
 
         // If feature value is less than threshold, go left; otherwise, go right
@@ -67,4 +75,57 @@ export function findInstancePath(rootNode, instance) {
     }
 
     return path;
+}
+
+// Helper function to get node by ID from the hierarchy
+export function getNodeById(nodeId) {
+    const root = state.hierarchyRoot;
+    if (!root) return null;
+
+    function dfs(node) {
+        if (node.node_id === nodeId) return node;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = dfs(child);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    return dfs(root);
+}
+
+// Helper function to get all leaf nodes
+export function getAllLeaves() {
+    const root = state.hierarchyRoot;
+    if (!root) return [];
+    
+    const leaves = [];
+    function traverse(node) {
+        if (node.is_leaf || !node.children || node.children.length === 0) {
+            leaves.push(node);
+        } else {
+            node.children.forEach(child => traverse(child));
+        }
+    }
+    
+    traverse(root);
+    return leaves;
+}
+
+// Helper function to get all nodes
+export function getAllNodes() {
+    const root = state.hierarchyRoot;
+    if (!root) return [];
+    
+    const nodes = [];
+    function traverse(node) {
+        nodes.push(node);
+        if (node.children) {
+            node.children.forEach(child => traverse(child));
+        }
+    }
+    
+    traverse(root);
+    return nodes;
 }
