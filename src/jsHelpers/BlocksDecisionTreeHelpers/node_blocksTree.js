@@ -150,6 +150,7 @@ function createNodeTooltipContent(node) {
                 node.feature_name
             } ≤ ${node.threshold.toFixed(2)}`
         );
+        content.push("<strong>Nodes disposition:</strong> Left True/Right False")
         content.push(`<strong>Feature Index:</strong> ${node.feature_index}`);
         content.push(`<strong>Impurity:</strong> ${node.impurity.toFixed(4)}`);
     }
@@ -173,7 +174,6 @@ function createNodeTooltipContent(node) {
     }
 
     if (!node.is_leaf) {
-        console.log("blocks", node)
         // Add class distribution if available (summarized)
         if (node.value && node.value.length > 0 && node.value[0].length > 0) {
             const valueArray = node.value[0];
@@ -346,7 +346,6 @@ export function highlightBlocksTreeNode(blocksTreeVis, nodeId) {
         .selectAll(".node")
         .filter((d) => d.id === nodeId)
         .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", "3px");
 }
 
 // Highlight a path in blocks tree
@@ -369,10 +368,7 @@ export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
                 return (d.sourceId === sourceId && d.targetId === targetId) ||
                        (d.sourceId === targetId && d.targetId === sourceId);
             })
-            .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", function(d) {
-                return `${d3.select(this).attr("data-original-stroke-width")}px`;
-            });
+            .style("stroke", colorScheme.ui.highlight);
     }
 }
 
@@ -423,10 +419,7 @@ export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
                             return (d.sourceId === currentId && d.targetId === childId) ||
                                    (d.sourceId === childId && d.targetId === currentId);
                         })
-                        .style("stroke", colorScheme.ui.highlight)
-                        .style("stroke-width", function(d) {
-                            return `${d3.select(this).attr("data-original-stroke-width")}px`;
-                        });
+                        .style("stroke", colorScheme.ui.highlight);
                 }
             });
         }
@@ -495,10 +488,7 @@ export function highlightBlocksTreePathFromScatterPlot(path) {
                        (linkData.sourceId === nextNode.data.node_id && 
                         linkData.targetId === currentNode.data.node_id);
             })
-            .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", function(d) {
-                return `${d3.select(this).attr("data-original-stroke-width")}px`;
-            });
+            .style("stroke", colorScheme.ui.highlight);
     }
 }
 
@@ -510,14 +500,9 @@ export function resetBlocksTreeHighlights(blocksTreeVis) {
     blocksTreeVis.container
         .selectAll(".node")
         .style("stroke", "#666666")
-        .style("stroke-width", "1px");
 
     // Reset link highlights
     blocksTreeVis.container
         .selectAll(".link")
-        .style("stroke", colorScheme.ui.linkStroke)
-        .style("stroke-width", function(d) {
-            // Use the stored original stroke width
-            return `${d3.select(this).attr("data-original-stroke-width")}px`;
-        });
+        .style("stroke", colorScheme.ui.linkStroke);
 }

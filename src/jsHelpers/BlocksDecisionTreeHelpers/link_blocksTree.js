@@ -105,7 +105,7 @@ export function highlightInstancePathInBlocks(container, pathNodeIds) {
                 .attr("y2", y2)
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style("opacity", colorScheme.opacity.originalInstancePath)
-                .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width")*2}px`)
+                .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width") * colorScheme.ui.strokeMultiplierInstancePath}px`)
                 .lower();
 
             originalLink.classed("instance-path", true);

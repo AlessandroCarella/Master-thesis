@@ -12,6 +12,7 @@ export const colorScheme = {
         linkStroke: "#999999",
         background: "#ffffff",
         instancePathHighlight: "#d40f15",
+        strokeMultiplierInstancePath: 2
     },
     // Opacity settings
     opacity: {

@@ -85,6 +85,7 @@ function createNodeTooltipContent(node) {
                 node.data.feature_name
             } ≤ ${node.data.threshold.toFixed(2)}`
         );
+        content.push("<strong>Nodes disposition:</strong> Left True/Right False")
         content.push(`<strong>Feature Index:</strong> ${node.data.feature_index}`);
         content.push(`<strong>Impurity:</strong> ${node.data.impurity.toFixed(4)}`);
     }

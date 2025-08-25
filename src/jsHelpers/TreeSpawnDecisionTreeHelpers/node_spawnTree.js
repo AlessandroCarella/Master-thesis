@@ -143,7 +143,7 @@ function createNodeTooltipContent(node) {
                 node.data.feature_name
             } ≤ ${node.data.threshold.toFixed(2)}`
         );
-        content.push("Left True/Right False")
+        content.push("<strong>Nodes disposition:</strong> Left True/Right False")
         content.push(`<strong>Feature Index:</strong> ${node.data.feature_index}`);
         content.push(`<strong>Impurity:</strong> ${node.data.impurity.toFixed(4)}`);
     }
@@ -166,7 +166,6 @@ function createNodeTooltipContent(node) {
     }
 
     if (!node.data.is_leaf) {
-        console.log("spawn", node)
         // Add class distribution if available (summarized)
         if (node.data.value && node.data.value.length > 0 && node.data.value[0].length > 0) {
             const valueArray = node.data.value[0];
@@ -242,6 +241,108 @@ function handleNodeClick(event, spawnNodeData, container) {
         blocksTreeVis,
         spawnTreeVis
     );
+    
+    // Additionally, highlight the TreeSpawn path to the clicked node
+    highlightTreeSpawnClickedNodePath(spawnNodeData.data.node_id);
+}
+
+// Highlight TreeSpawn path to a clicked node (based on instance path)
+function highlightTreeSpawnClickedNodePath(clickedNodeId) {
+    const treeSpawnVis = getTreeSpawnVisualization();
+    if (!treeSpawnVis || !treeSpawnVis.container) {
+        return;
+    }
+
+    // Reset existing highlights first
+    resetTreeSpawnHighlights(treeSpawnVis);
+
+    // Get the instance path from state
+    const instancePath = state.instancePath || [];
+    
+    // Find the index of the clicked node in the instance path
+    const clickedIndex = instancePath.indexOf(clickedNodeId);
+    
+    if (clickedIndex === -1) {
+        // If clicked node is not in instance path, try to find path to it
+        const pathToNode = findPathFromRootToNode(clickedNodeId);
+        if (pathToNode && pathToNode.length > 0) {
+            highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToNode);
+        }
+        return;
+    }
+    
+    // Get path from root to clicked node (inclusive)
+    const pathToClickedNode = instancePath.slice(0, clickedIndex + 1);
+    
+    // Highlight this path
+    highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToClickedNode);
+}
+
+// Find path from root to any node in the tree
+function findPathFromRootToNode(targetNodeId) {
+    if (!state.hierarchyRoot) return [];
+    
+    function findPath(node, targetId, currentPath) {
+        currentPath.push(node.node_id);
+        
+        if (node.node_id === targetId) {
+            return currentPath.slice(); // Return copy of path
+        }
+        
+        if (node.children) {
+            for (const child of node.children) {
+                const result = findPath(child, targetId, currentPath);
+                if (result) return result;
+            }
+        }
+        
+        currentPath.pop(); // Backtrack
+        return null;
+    }
+    
+    return findPath(state.hierarchyRoot, targetNodeId, []) || [];
+}
+
+// Highlight TreeSpawn path with red links
+function highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathNodeIds) {
+    if (!treeSpawnVis || !treeSpawnVis.container || !pathNodeIds || pathNodeIds.length === 0) {
+        return;
+    }
+
+    const container = treeSpawnVis.container;
+
+    // Highlight nodes in the path
+    let highlightedNodeCount = 0;
+    pathNodeIds.forEach(nodeId => {
+        const nodes = container
+            .selectAll(".node")
+            .filter((d) => d.data.node_id === nodeId);
+        
+        if (!nodes.empty()) {
+            nodes.selectAll("circle, rect")
+                .style("stroke", colorScheme.ui.highlight); // Red color for highlighted nodes
+            highlightedNodeCount++;
+        }
+    });
+
+    // Highlight links in the path with red color
+    let highlightedLinkCount = 0;
+    for (let i = 0; i < pathNodeIds.length - 1; i++) {
+        const sourceId = pathNodeIds[i];
+        const targetId = pathNodeIds[i + 1];
+
+        const links = container
+            .selectAll(".link")
+            .filter((d) => {
+                return (d.source.data.node_id === sourceId && d.target.data.node_id === targetId) ||
+                       (d.source.data.node_id === targetId && d.target.data.node_id === sourceId);
+            });
+        
+        if (!links.empty()) {
+            links.style("stroke", colorScheme.ui.highlight); // Red color for path links
+            highlightedLinkCount++;
+        }
+    }
 }
 
 // Helper function to find hierarchy node by ID in the classic tree
@@ -317,7 +418,6 @@ export function highlightTreeSpawnNode(visualization, nodeId) {
         .filter((d) => d.data.node_id === nodeId)
         .selectAll("circle, rect")
         .style("stroke", colorScheme.ui.highlight);
-        // .style("stroke-width", "3px");
 }
 
 export function resetTreeSpawnNodeHighlights(visualization) {
@@ -336,7 +436,6 @@ export function resetTreeSpawnNodeHighlights(visualization) {
         .selectAll(".node")
         .selectAll("circle, rect")
         .style("stroke", colorScheme.ui.nodeStroke);
-        // .style("stroke-width", "2px");
 }
 
 export function highlightTreeSpawnPath(visualization, pathNodeIds) {
@@ -348,9 +447,30 @@ export function highlightTreeSpawnPath(visualization, pathNodeIds) {
         return;
     }
 
+    const container = treeSpawnVis.container;
+
+    // Highlight nodes in the path
     pathNodeIds.forEach(nodeId => {
-        highlightTreeSpawnNode(treeSpawnVis, nodeId);
+        container
+            .selectAll(".node")
+            .filter((d) => d.data.node_id === nodeId)
+            .selectAll("circle, rect")
+            .style("stroke", colorScheme.ui.highlight); // Red color for highlighted nodes
     });
+
+    // Highlight links in the path with red color
+    for (let i = 0; i < pathNodeIds.length - 1; i++) {
+        const sourceId = pathNodeIds[i];
+        const targetId = pathNodeIds[i + 1];
+
+        container
+            .selectAll(".link")
+            .filter((d) => {
+                return (d.source.data.node_id === sourceId && d.target.data.node_id === targetId) ||
+                       (d.source.data.node_id === targetId && d.target.data.node_id === sourceId);
+            })
+            .style("stroke", colorScheme.ui.highlight); // Red color for path links
+    }
 }
 
 export function highlightTreeSpawnDescendants(visualization, nodeId) {
@@ -452,32 +572,11 @@ export function highlightTreeSpawnPathFromScatterPlot(path) {
         // Reset previous highlights first
         resetTreeSpawnHighlights(treeSpawnVis);
 
-        // Highlight nodes in the path
-        path.forEach((node) => {
-            treeSpawnVis.container
-                .selectAll(".node")
-                .filter((d) => d.data.node_id === node.data.node_id)
-                .selectAll("circle, rect")
-                .style("stroke", colorScheme.ui.highlight);
-                // .style("stroke-width", "3px");
-        });
-
-        // Highlight links in the path
-        for (let i = 0; i < path.length - 1; i++) {
-            const currentNode = path[i];
-            const nextNode = path[i + 1];
-
-            treeSpawnVis.container
-                .selectAll(".link")
-                .filter((linkData) => {
-                    return (linkData.source.data.node_id === currentNode.data.node_id && 
-                            linkData.target.data.node_id === nextNode.data.node_id) ||
-                           (linkData.source.data.node_id === nextNode.data.node_id && 
-                            linkData.target.data.node_id === currentNode.data.node_id);
-                })
-                .style("stroke", colorScheme.ui.highlight);
-                // .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width")}px`);
-        }
+        // Extract node IDs from path
+        const pathNodeIds = path.map(node => node.data.node_id);
+        
+        // Use the red link highlighting function
+        highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathNodeIds);
     } catch (error) {
         console.error("Error highlighting TreeSpawn path:", error);
     }
@@ -492,13 +591,9 @@ function resetTreeSpawnHighlights(treeSpawnVis) {
         .selectAll(".node")
         .selectAll("circle, rect")
         .style("stroke", colorScheme.ui.nodeStroke);
-        // .style("stroke-width", "2px");
 
     // Reset link highlights
     treeSpawnVis.container
         .selectAll(".link")
         .style("stroke", colorScheme.ui.linkStroke);
-        // .style("stroke-width", function(d) {
-        //     return `${d3.select(this).attr("data-original-stroke-width")}px`;
-        // });
 }

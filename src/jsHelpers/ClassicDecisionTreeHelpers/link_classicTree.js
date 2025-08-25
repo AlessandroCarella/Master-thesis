@@ -101,7 +101,7 @@ export function highlightInstancePath(
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style(
                     "stroke-width",
-                    `${baseStrokeWidth * 2}px`
+                    `${baseStrokeWidth * colorScheme.ui.strokeMultiplierInstancePath}px`
                 )
                 .style("fill", "none")
                 .style("opacity", colorScheme.opacity.originalInstancePath)

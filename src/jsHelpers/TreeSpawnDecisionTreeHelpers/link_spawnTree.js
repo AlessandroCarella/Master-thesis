@@ -112,7 +112,7 @@ export function highlightInstancePath(
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style(
                     "stroke-width",
-                    `${baseStrokeWidth * 2}px`
+                    `${baseStrokeWidth * colorScheme.ui.strokeMultiplierInstancePath}px`
                 )
                 .style("fill", "none")
                 .style("opacity", colorScheme.opacity.originalInstancePath)
@@ -152,7 +152,6 @@ export function highlightTreeSpawnNode(treeSpawnVis, nodeId) {
         .filter((d) => d.data.node_id === nodeId)
         .selectAll("circle, rect")
         .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", "3px");
 }
 
 // Highlight a path in TreeSpawn tree (for interactive highlighting)
@@ -244,56 +243,62 @@ export function resetTreeSpawnHighlights(treeSpawnVis) {
     treeSpawnVis.container
         .selectAll(".node")
         .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.nodeStroke)
-        .style("stroke-width", "2px");
+        .style("stroke", colorScheme.ui.nodeStroke);
 
     // Reset link highlights
     treeSpawnVis.container
         .selectAll(".link")
-        .style("stroke", colorScheme.ui.linkStroke)
-        .style("stroke-width", function(d) {
-            return `${d3.select(this).attr("data-original-stroke-width")}px`;
-        });
+        .style("stroke", colorScheme.ui.linkStroke);
 }
 
-// Additional functions that were in the original highlight_spawnTree.js
-// These need to be implemented here since they weren't moved to link_spawnTree.js
-
-// Get path to a specific node in TreeSpawn tree
+// FIXED: Get path to a specific node in TreeSpawn tree - works for ANY node
 export function getPathToNodeInTreeSpawn(treeSpawnVis, nodeId) {
-    if (!treeSpawnVis || !treeSpawnVis.instancePath) return [];
+    if (!treeSpawnVis) return [];
 
-    // Use the existing instance path if the node is in it
-    if (treeSpawnVis.instancePath.includes(nodeId)) {
+    // First try to use instance path if the node is in it
+    if (treeSpawnVis.instancePath && treeSpawnVis.instancePath.includes(nodeId)) {
         const nodeIndex = treeSpawnVis.instancePath.indexOf(nodeId);
         return treeSpawnVis.instancePath.slice(0, nodeIndex + 1);
     }
 
-    // If not in instance path, try to find path from tree structure
-    if (!treeSpawnVis.treeData) return [];
+    // If not in instance path or instance path not available, find path from tree structure
+    if (!treeSpawnVis.rawTreeData) return [];
 
-    const path = [];
+    // Create node lookup from raw tree data
+    const nodesById = {};
+    treeSpawnVis.rawTreeData.forEach(node => {
+        nodesById[node.node_id] = node;
+    });
     
-    function findPathToNode(node, targetId, currentPath) {
-        currentPath.push(node.data.node_id);
+    // Find path from root (node_id = 0) to target node
+    function findPath(currentNodeId, targetNodeId, path = []) {
+        const newPath = [...path, currentNodeId];
         
-        if (node.data.node_id === targetId) {
-            return currentPath.slice(); // Return a copy of the path
+        if (currentNodeId === targetNodeId) {
+            return newPath;
         }
         
-        if (node.children) {
-            for (const child of node.children) {
-                const result = findPathToNode(child, targetId, currentPath);
-                if (result) return result;
-            }
+        const currentNode = nodesById[currentNodeId];
+        if (!currentNode || currentNode.is_leaf) {
+            return null;
         }
         
-        currentPath.pop(); // Backtrack
+        // Try left child
+        if (currentNode.left_child !== null) {
+            const leftPath = findPath(currentNode.left_child, targetNodeId, newPath);
+            if (leftPath) return leftPath;
+        }
+        
+        // Try right child  
+        if (currentNode.right_child !== null) {
+            const rightPath = findPath(currentNode.right_child, targetNodeId, newPath);
+            if (rightPath) return rightPath;
+        }
+        
         return null;
     }
-
-    const foundPath = findPathToNode(treeSpawnVis.treeData, nodeId, []);
-    return foundPath || [];
+    
+    return findPath(0, nodeId) || [];
 }
 
 // Highlight instance path in TreeSpawn tree with background (called when explicitly requested)
@@ -356,7 +361,7 @@ function addInstancePathBackgroundDirect(treeSpawnVis, instancePath) {
             .style("stroke-width", function(d) {
                 // Use larger stroke width for background highlight
                 const originalWidth = d3.select(this).attr("data-original-stroke-width");
-                return `${originalWidth * 2}px`;
+                return `${originalWidth * colorScheme.ui.strokeMultiplierInstancePath}px`;
             })
             .attr("d", (d) => {
                 // Create path using same logic as normal links
