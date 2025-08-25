@@ -1,7 +1,7 @@
 import { colorScheme } from "../visualizationConnector.js";
-import { getStrokeWidth } from "./metrics_classicTree.js";
 import { classicTreeState } from "../TreesCommon/state.js";
-import { findInstancePath } from "./dataProcessing_classicTree.js";
+import { getStrokeWidth } from "../TreesCommon/metrics.js";
+import { findInstancePath } from "../TreesCommon/dataProcessing.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;
@@ -30,7 +30,8 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
             const originalStrokeWidth = getStrokeWidth(
                 d.target.data.weighted_n_samples, 
                 totalSamples, 
-                metrics.linkStrokeWidth
+                metrics.linkStrokeWidth,
+                "classic"
             );
             // Store as data attribute for later retrieval
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);

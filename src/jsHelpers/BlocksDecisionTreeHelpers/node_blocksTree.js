@@ -9,35 +9,8 @@ import {
     getNodeColor,
 } from "../visualizationConnector.js";
 import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
-
-export function getNodeById(nodeId) {
-    const root = blocksTreeState.hierarchyRoot;
-    if (!root) return null;
-
-    function dfs(node) {
-        if (node.data.node_id === nodeId) return node.data;
-        if (node.children) {
-            for (const c of node.children) {
-                const f = dfs(c);
-                if (f) return f;
-            }
-        }
-        return null;
-    }
-    return dfs(root);
-}
-
-export function getAllLeaves() {
-    return blocksTreeState.hierarchyRoot
-        ? blocksTreeState.hierarchyRoot.leaves().map((d) => d.data)
-        : [];
-}
-
-export function getAllNodes() {
-    return blocksTreeState.hierarchyRoot
-        ? blocksTreeState.hierarchyRoot.descendants().map((d) => d.data)
-        : [];
-}
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
+import { getNodeById } from "../TreesCommon/dataProcessing.js";
 
 export function getPathToNode(targetNodeId) {
     const root = blocksTreeState.hierarchyRoot;
@@ -59,7 +32,7 @@ export function getPathToNode(targetNodeId) {
 }
 
 export function getNodeLabelLines(nodeId, instance) {
-    const node = getNodeById(nodeId);
+    const node = getNodeById(nodeId, "blocks");
     if (!node) return [`Node ${nodeId}`];
 
     if (node.is_leaf) {
@@ -79,7 +52,7 @@ export function getNodeLabel(nodeId, instance) {
 
 // Helper function to get node color using global color management
 function getBlocksNodeColor(nodeId, SETTINGS) {
-    const nodeData = getNodeById(nodeId);
+    const nodeData = getNodeById(nodeId, "blocks");
     if (!nodeData) return colorScheme.ui.nodeStroke;
     
     // Get the global color map
@@ -115,13 +88,13 @@ export function renderNodes(container, nodePositions, instancePath, tooltip, SET
         .attr("ry", SETTINGS.node.borderRadius)
         .attr("fill", (d) => getBlocksNodeColor(d.id, SETTINGS))
         .on("mouseover", (event, d) => {
-            handleMouseOver(event, d, tooltip);
+            handleMouseOver(event, getNodeById(d.id, "blocks"), tooltip, null, "blocks");
         })
         .on("mousemove", (event) => {
             handleMouseMove(event, tooltip);
         })
         .on("mouseout", (event, d) => {
-            handleMouseOut(event, d, tooltip);
+            handleMouseOut(event, d, tooltip, "blocks");
         })
         .on("click", (event, d) => {
             handleNodeClick(
@@ -134,87 +107,6 @@ export function renderNodes(container, nodePositions, instancePath, tooltip, SET
         });
 
     return nodeElements;
-}
-
-function createNodeTooltipContent(node) {
-    const content = [];
-
-    // Node type and primary information
-    if (node.is_leaf) {
-        // Leaf node information
-        content.push(`<strong>Class:</strong> ${node.class_label || "Unknown"}`);
-    } else {
-        // Split node information
-        content.push(
-            `<strong>Split:</strong> ${
-                node.feature_name
-            } ≤ ${node.threshold.toFixed(2)}`
-        );
-        content.push("<strong>Nodes disposition:</strong> Left True/Right False")
-        content.push(`<strong>Feature Index:</strong> ${node.feature_index}`);
-        content.push(`<strong>Impurity:</strong> ${node.impurity.toFixed(4)}`);
-    }
-
-    // Common information for both node types
-    content.push(`<strong>Samples:</strong> ${node.n_samples || 0}`);
-
-    // Add weighted samples if available
-    if (node.weighted_n_samples) {
-        const weightDiff = Math.abs(
-            node.weighted_n_samples - (node.n_samples || 0)
-        );
-        // Only show if there's a meaningful difference
-        if (weightDiff > 0.01) {
-            content.push(
-                `<strong>Weighted Samples:</strong> ${node.weighted_n_samples.toFixed(
-                    2
-                )}`
-            );
-        }
-    }
-
-    if (!node.is_leaf) {
-        // Add class distribution if available (summarized)
-        if (node.value && node.value.length > 0 && node.value[0].length > 0) {
-            const valueArray = node.value[0];
-            if (valueArray.length > 1) {
-                const total = valueArray.reduce((sum, val) => sum + val, 0);
-                const distribution = valueArray
-                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
-                    .join(", ");
-                content.push(
-                    `<strong>Class Distribution:</strong> [${distribution}]`
-                );
-            }
-        }
-    }
-
-    return content;
-}
-
-export function handleMouseOver(event, d, tooltip) {
-    const node = getNodeById(d.id);
-    if (!node) return;
-
-    // Use the enhanced tooltip content creation logic
-    const content = createNodeTooltipContent(node);
-
-    tooltip
-        .html(content.join("<br>"))
-        .style("class", "decision-tree-tooltip")
-        .style("visibility", "visible")
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-}
-
-export function handleMouseMove(event, tooltip) {
-    tooltip
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-}
-
-export function handleMouseOut(event, d, tooltip) {
-    tooltip.style("visibility", "hidden");
 }
 
 // Calculate optimal font size for multi-line labels inside a rectangle
@@ -265,11 +157,6 @@ export function renderLabels(container, nodePositions, SETTINGS) {
                     .text(line);
             });
         });
-}
-
-export function hideTooltip(tooltip) {
-    console.warn("hideTooltip is deprecated, use handleMouseOut instead");
-    tooltip.style("visibility", "hidden");
 }
 
 // FIXED: Helper function to find hierarchy node by ID in the CLASSIC TREE
@@ -376,14 +263,14 @@ export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
 export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
     if (!blocksTreeVis || !blocksTreeVis.container) return;
 
-    const node = getNodeById(nodeId);
+    const node = getNodeById(nodeId, "blocks");
     if (!node) return;
 
     // Get all descendant node IDs using the blocks tree hierarchy
     const descendants = [];
     
     function collectDescendants(currentNodeId) {
-        const currentNode = getNodeById(currentNodeId);
+        const currentNode = getNodeById(currentNodeId, "blocks");
         if (!currentNode) return;
         
         descendants.push(currentNodeId);

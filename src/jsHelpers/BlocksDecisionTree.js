@@ -1,12 +1,9 @@
 import {
     setBlocksTreeVisualization,
 } from "./visualizationConnector.js";
-import { buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing_blocksTree.js";
+import { createHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./TreesCommon/dataProcessing.js";
 import { getVisualizationSettings } from "./TreesCommon/settings.js";
-import {
-    calculateTreeMetrics,
-    depthAlignedLayout,
-} from "./BlocksDecisionTreeHelpers/metrics_blocksTree.js";
+import { calculateTreeMetrics, depthAlignedLayout } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
     createSVGContainer,
@@ -25,7 +22,7 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     // Store the data
     blocksTreeState.treeData = rawTreeData;
     blocksTreeState.instanceData = instance;
-    blocksTreeState.hierarchyRoot = buildHierarchy(rawTreeData);
+    blocksTreeState.hierarchyRoot = createHierarchy("blocks");
 
     // Get the existing container
     const container = document.querySelector(containerSelector);
@@ -42,15 +39,15 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     const tooltip = createTooltip();
 
     // Get paths and calculate layout
-    const instancePath = traceInstancePath(blocksTreeState.instanceData);
-    const allPaths = getAllPathsFromHierarchy();
-    const metrics = calculateTreeMetrics(allPaths, SETTINGS, instancePath);
+    const instancePath = traceInstancePath(blocksTreeState.instanceData, "blocks");
+    const allPaths = getAllPathsFromHierarchy("blocks");
+    const metrics = calculateTreeMetrics(allPaths, SETTINGS, instancePath, "blocks");
 
     const {
         positions: nodePositions,
         width: effectiveWidth,
         height: effectiveHeight,
-    } = depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics);
+    } = depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics, "blocks");
 
     // Create SVG container
     const { svg, g } = createSVGContainer(

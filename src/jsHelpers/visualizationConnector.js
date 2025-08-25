@@ -12,7 +12,7 @@ import {
     highlightPointsForDescendants,
 } from "./visualizationConnectorHelpers/highlight.js";
 
-import { findInstancePath } from "./ClassicDecisionTreeHelpers/dataProcessing_classicTree.js";
+import { findInstancePath } from "./TreesCommon/dataProcessing.js";
 import { highlightInstancePath } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
 import { highlightInstancePathInBlocks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { 
@@ -190,8 +190,8 @@ export function highlightInstancePathInTree(instance) {
     const hierarchyRoot = treeData.data;
 
     // Find the path for this instance
-    const pathNodeIds = findInstancePath(hierarchyRoot, instance);
-
+    const pathNodeIds = findInstancePath(hierarchyRoot, instance, "classic");
+    
     // Highlight the path in the visualization
     highlightInstancePath(contentGroup, pathNodeIds);
 }

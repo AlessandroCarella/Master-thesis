@@ -1,5 +1,3 @@
-import { calculateSeparation } from './metrics_spawnTree.js';
-
 // Helper function to create a D3 hierarchy from a node and its descendants
 function createSubtreeHierarchy(node) {
     if (!node || !node.data) return null;

@@ -1,5 +1,7 @@
-import { getStrokeWidth } from "./metrics_blocksTree.js";
+import { getStrokeWidth } from "../TreesCommon/metrics.js";
 import { colorScheme } from "../visualizationConnector.js";
+import { getNodeById } from "../TreesCommon/dataProcessing.js";
+import { blocksTreeState } from "../TreesCommon/state.js";
 
 export function createLinks(allPaths, nodePositions) {
     const links = [];
@@ -49,10 +51,27 @@ export function renderLinks(container, links, instancePath, SETTINGS) {
         .attr("x2", (d) => d.target.x)
         .attr("y2", (d) => d.target.y)
         .style("stroke", colorScheme.ui.linkStroke)
-        .style("stroke-width", (d) => `${getStrokeWidth(d.targetId)}px`)
+        .style("stroke-width", (d) => {
+            // Get the actual node data using targetId
+            const targetNode = getNodeById(d.targetId, "blocks");
+            if (!targetNode) return "1px";
+            
+            const samples = targetNode.weighted_n_samples || targetNode.n_samples || 1;
+            const totalSamples = blocksTreeState.treeData ? blocksTreeState.treeData[0].n_samples : samples;
+            
+            return `${getStrokeWidth(samples, totalSamples, 3, "blocks")}px`;
+        })
         .each(function(d) {
             // Store original stroke width for highlighting
-            d3.select(this).attr("data-original-stroke-width", getStrokeWidth(d.targetId));
+            const targetNode = getNodeById(d.targetId, "blocks");
+            if (targetNode) {
+                const samples = targetNode.weighted_n_samples || targetNode.n_samples || 1;
+                const totalSamples = blocksTreeState.treeData ? blocksTreeState.treeData[0].n_samples : samples;
+                const strokeWidth = getStrokeWidth(samples, totalSamples, 3, "blocks");
+                d3.select(this).attr("data-original-stroke-width", strokeWidth);
+            } else {
+                d3.select(this).attr("data-original-stroke-width", 1);
+            }
         });
 }
 

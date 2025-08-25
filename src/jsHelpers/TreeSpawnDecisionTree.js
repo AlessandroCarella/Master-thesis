@@ -2,13 +2,9 @@ import {
     setTreeSpawnVisualization,
     highlightInstancePathInTreeSpawn,
 } from "./visualizationConnector.js";
-import { createHierarchy, traceInstancePath } from "./TreeSpawnDecisionTreeHelpers/dataProcessing_spawnTree.js";
+import { createHierarchy, findInstancePath } from "./TreesCommon/dataProcessing.js";
 import { getVisualizationSettings } from "./TreesCommon/settings.js";
-import {
-    calculateMetrics,
-    createTreeLayout,
-    calculateInitialTransform,
-} from "./TreeSpawnDecisionTreeHelpers/metrics_spawnTree.js";
+import { calculateMetrics, createTreeLayout, calculateInitialTransform } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
     createSVGContainer,
@@ -28,17 +24,17 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     // Store data in global spawnTreeState
     spawnTreeState.treeData = rawTreeData;
     spawnTreeState.instanceData = instance;
-    spawnTreeState.hierarchyRoot = createHierarchy();
+    spawnTreeState.hierarchyRoot = createHierarchy("spawn");
     
     // Trace instance path and store in spawnTreeState
     if (instance) {
-        spawnTreeState.instancePath = traceInstancePath(rawTreeData, instance);
+        spawnTreeState.instancePath = findInstancePath(null, instance, "spawn");
     }
 
     const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(spawnTreeState.hierarchyRoot);
-    const metrics = calculateMetrics(root, SETTINGS);
+    const metrics = calculateMetrics(root, SETTINGS, "spawn");
 
     const containerSelector = container || "#treespawn-tree-plot";
     clearExistingSVG(containerSelector);

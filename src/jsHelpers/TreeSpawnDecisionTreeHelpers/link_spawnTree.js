@@ -1,7 +1,7 @@
 import { colorScheme } from "../visualizationConnector.js";
-import { getStrokeWidth } from "./metrics_spawnTree.js";
 import { spawnTreeState } from "../TreesCommon/state.js";
-import { findInstancePath } from "./dataProcessing_spawnTree.js";
+import { getStrokeWidth } from "../TreesCommon/metrics.js";
+import { findInstancePath } from "../TreesCommon/dataProcessing.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
     const { x: sourceX, y: sourceY } = source;
@@ -43,7 +43,8 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
             const originalStrokeWidth = getStrokeWidth(
                 d.target.data.weighted_n_samples || d.target.data.n_samples, 
                 totalSamples, 
-                metrics.linkStrokeWidth
+                metrics.linkStrokeWidth,
+                "spawn"
             );
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
         })
@@ -64,7 +65,7 @@ export function highlightInstancePath(
 ) {
     // If no pathNodeIds provided, calculate from spawnTreeState
     if (!pathNodeIds && spawnTreeState.instanceData && spawnTreeState.hierarchyRoot) {
-        pathNodeIds = findInstancePath(spawnTreeState.hierarchyRoot, spawnTreeState.instanceData);
+        pathNodeIds = findInstancePath(spawnTreeState.hierarchyRoot, spawnTreeState.instanceData, "spawn");
     }
 
     // Add validation for pathNodeIds

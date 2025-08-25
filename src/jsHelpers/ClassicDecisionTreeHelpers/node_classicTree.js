@@ -7,8 +7,9 @@ import {
     getTreeVisualization,
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
-import { calculateNodeRadius } from "./metrics_classicTree.js";
+import { calculateNodeRadius } from "../TreesCommon/metrics.js";
 import { classicTreeState } from "../TreesCommon/state.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
 
 export function addNodes(
     contentGroup,
@@ -32,11 +33,11 @@ export function addNodes(
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("stroke", colorScheme.ui.nodeStroke)
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, metrics)
+            handleMouseOver(event, d, tooltip, metrics, "classic")
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
-            handleMouseOut(event, d, tooltip, metrics)
+            handleMouseOut(event, d, tooltip, metrics, "classic")
         );
         
     nodes.on("click", (event, d) => {
@@ -57,87 +58,6 @@ export function addNodes(
     });
 
     return nodes;
-}
-
-export function handleMouseOver(event, d, tooltip, metrics) {
-    // Extract tooltip content creation to a separate function
-    const content = createNodeTooltipContent(d);
-
-    tooltip
-        .html(content.join("<br>"))
-        .style("class", "decision-tree-tooltip")
-        .style("visibility", "visible")
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-}
-
-function createNodeTooltipContent(node) {
-    const content = [];
-
-    // Node type and primary information
-    if (node.data.is_leaf) {
-        // Leaf node information
-        content.push(`<strong>Class:</strong> ${node.data.class_label}`);
-    } else {
-        // Split node information
-        content.push(
-            `<strong>Split:</strong> ${
-                node.data.feature_name
-            } ≤ ${node.data.threshold.toFixed(2)}`
-        );
-        content.push("<strong>Nodes disposition:</strong> Left True/Right False")
-        content.push(`<strong>Feature Index:</strong> ${node.data.feature_index}`);
-        content.push(`<strong>Impurity:</strong> ${node.data.impurity.toFixed(4)}`);
-    }
-
-    // Common information for both node types
-    content.push(`<strong>Samples:</strong> ${node.data.n_samples}`);
-
-    // Add weighted samples if available
-    if (node.data.weighted_n_samples) {
-        const weightDiff = Math.abs(
-            node.data.weighted_n_samples - node.data.n_samples
-        );
-        // Only show if there's a meaningful difference
-        if (weightDiff > 0.01) {
-            content.push(
-                `<strong>Weighted Samples:</strong> ${node.data.weighted_n_samples.toFixed(
-                    2
-                )}`
-            );
-        }
-    }
-
-    if (!node.data.is_leaf) {
-        // Add class distribution if available (summarized)
-        if (node.data.value && node.data.value.length > 0 && node.data.value[0].length > 0) {
-            const valueArray = node.data.value[0];
-            if (valueArray.length > 1) {
-                const total = valueArray.reduce((sum, val) => sum + val, 0);
-                const distribution = valueArray
-                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
-                    .join(", ");
-                content.push(
-                    `<strong>Class Distribution:</strong> [${distribution}]`
-                );
-            }
-        }
-    }
-
-    return content;
-}
-
-export function handleMouseMove(event, tooltip) {
-    tooltip
-        .style("left", event.pageX + 10 + "px")
-        .style("top", event.pageY - 10 + "px");
-}
-
-export function handleMouseOut(event, d, tooltip, metrics) {
-    tooltip.style("visibility", "hidden");
-    d3.select(event.currentTarget)
-        .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-        .style("opacity", colorScheme.opacity.hover);
 }
 
 // Helper function to highlight a specific node
