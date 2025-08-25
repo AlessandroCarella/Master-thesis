@@ -1,4 +1,4 @@
-import { calculateSeparation } from "../TreesCommon/metrics.js";
+import { TREES_SETTINGS, calculateSeparation } from "../TreesCommon/settings.js";
 
 // Helper function to create a D3 hierarchy from a node and its descendants
 function createSubtreeHierarchy(node) {
@@ -17,21 +17,21 @@ function createSubtreeHierarchy(node) {
 }
 
 // Create D3 tree layout with the same settings as original implementation
-function createSubtreeLayout(subtreeRoot, metrics, SETTINGS) {
+function createSubtreeLayout(subtreeRoot) {
     if (!subtreeRoot) return null;
     
     const subtreeNodes = subtreeRoot.descendants();
-    const horizontalSpacing = subtreeNodes.length * SETTINGS.tree.minSplitWidth;
-    const verticalSpacing = subtreeNodes.length * SETTINGS.tree.minSplitHeight;
-    
+    const horizontalSpacing = subtreeNodes.length * TREES_SETTINGS.tree.minSplitWidth;
+    const verticalSpacing = subtreeNodes.length * TREES_SETTINGS.tree.minSplitHeight;
+
     return d3.tree()
         .size([horizontalSpacing, verticalSpacing])
-        .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, subtreeRoot));
+        .separation((a, b) => calculateSeparation());
 }
 
 // Helper function to set up node expansion states with configurable initial depth
-function setupNodeExpansionStates(node, isSubtreeRoot = false, SETTINGS, currentDepth = 0) {
-    const maxInitialDepth = SETTINGS.tree.initialVisibleDepth;
+function setupNodeExpansionStates(node, isSubtreeRoot = false, currentDepth = 0) {
+    const maxInitialDepth = TREES_SETTINGS.tree.initialVisibleDepth;
     
     // Only non-leaf nodes can be expanded/collapsed
     if (!node.data.is_leaf && node.children && node.children.length > 0) {
@@ -55,14 +55,14 @@ function setupNodeExpansionStates(node, isSubtreeRoot = false, SETTINGS, current
         // For subtree root, set visibility based on depth
         if (node.children) {
             node.children.forEach(child => {
-                setupNodeExpansionStatesRecursive(child, SETTINGS, currentDepth + 1, maxInitialDepth);
+                setupNodeExpansionStatesRecursive(child, currentDepth + 1, maxInitialDepth);
             });
         }
     }
 }
 
 // Recursive helper to set up expansion states for all nodes in subtree
-function setupNodeExpansionStatesRecursive(node, SETTINGS, currentDepth, maxInitialDepth) {
+function setupNodeExpansionStatesRecursive(node, currentDepth, maxInitialDepth) {
     // Set visibility based on depth
     node.isHidden = currentDepth > maxInitialDepth;
     
@@ -85,7 +85,7 @@ function setupNodeExpansionStatesRecursive(node, SETTINGS, currentDepth, maxInit
     // Continue recursively for all children
     if (node.children) {
         node.children.forEach(child => {
-            setupNodeExpansionStatesRecursive(child, SETTINGS, currentDepth + 1, maxInitialDepth);
+            setupNodeExpansionStatesRecursive(child, currentDepth + 1, maxInitialDepth);
         });
     }
 }
@@ -134,7 +134,7 @@ function calculatePathNodeSubtreeSizes(pathNodes, instancePath) {
 }
 
 // Position a subtree using D3 tree layout with hierarchical expand/collapse
-function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, metrics, SETTINGS) {
+function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove) {
     if (!subtreeRoot) return;
     
     // Create D3 hierarchy for the subtree
@@ -142,7 +142,7 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     if (!hierarchy) return;
     
     // Apply D3 tree layout
-    const treeLayout = createSubtreeLayout(hierarchy, metrics, SETTINGS);
+    const treeLayout = createSubtreeLayout(hierarchy);
     if (!treeLayout) return;
 
     const layoutResult = treeLayout(hierarchy);
@@ -186,11 +186,11 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
             if (isAbove) {
                 // For trees above the path, we want them to grow upward
                 const distanceFromRoot = hierarchyNode.y - minY;
-                originalNode.y = anchorY - SETTINGS.visual.verticalGap - distanceFromRoot;
+                originalNode.y = anchorY - TREES_SETTINGS.visual.verticalGap - distanceFromRoot;
             } else {
                 // For trees below the path, normal positioning
                 const distanceFromRoot = hierarchyNode.y - minY;
-                originalNode.y = anchorY + SETTINGS.visual.verticalGap + distanceFromRoot;
+                originalNode.y = anchorY + TREES_SETTINGS.visual.verticalGap + distanceFromRoot;
             }
             
             originalNode.isInPath = false;
@@ -199,17 +199,17 @@ function positionSubtreeWithD3Layout(subtreeRoot, anchorX, anchorY, isAbove, met
     });
     
     // Set up expansion states for all nodes in the subtree
-    setupNodeExpansionStates(subtreeRoot, true, SETTINGS);
+    setupNodeExpansionStates(subtreeRoot, true);
 }
 
 // Helper function to distribute path nodes horizontally with variable spacing based on subtree sizes
-function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius, SETTINGS, subtreeSizes) {
+function distributePathNodesHorizontally(pathNodes, totalWidth, subtreeSizes) {
     if (pathNodes.length === 0) return [];
     if (pathNodes.length === 1) return [totalWidth / 2];
     
     // Calculate variable margins based on subtree sizes
-    const baseMargin = SETTINGS.visual.rectMargin; // Minimum margin
-    const subtreeSizeMultiplier = SETTINGS.visual.subtreeSizeSpacingMultiplier || 2; // How much extra space per node
+    const baseMargin = TREES_SETTINGS.visual.rectMargin; // Minimum margin
+    const subtreeSizeMultiplier = TREES_SETTINGS.visual.subtreeSizeSpacingMultiplier || 2; // How much extra space per node
     
     // Calculate margins between each pair of adjacent nodes
     const margins = [];
@@ -225,12 +225,12 @@ function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius, SETT
     }
     
     // Calculate total width needed
-    const totalRectWidth = pathNodes.length * SETTINGS.visual.rectWidth;
+    const totalRectWidth = pathNodes.length * TREES_SETTINGS.visual.rectWidth;
     const totalMarginWidth = margins.reduce((sum, margin) => sum + margin, 0);
     const requiredWidth = totalRectWidth + totalMarginWidth;
     
     // Calculate starting position to center the entire group
-    const startX = (totalWidth - requiredWidth) / 2 + SETTINGS.visual.rectWidth / 2;
+    const startX = (totalWidth - requiredWidth) / 2 + TREES_SETTINGS.visual.rectWidth / 2;
     
     // Calculate positions with variable spacing
     const positions = [];
@@ -241,7 +241,7 @@ function distributePathNodesHorizontally(pathNodes, totalWidth, nodeRadius, SETT
         
         // Move to next position (if not the last node)
         if (i < pathNodes.length - 1) {
-            currentX += SETTINGS.visual.rectWidth + margins[i];
+            currentX += TREES_SETTINGS.visual.rectWidth + margins[i];
         }
     }
     
@@ -259,7 +259,7 @@ function positionPathNodes(pathNodes, pathPositions, centerY) {
 }
 
 // Position all off-path subtrees using D3 tree layout
-function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETTINGS) {
+function positionOffPathSubtrees(pathNodes, instancePath) {
     let globalOffPathCounter = 0;
     
     pathNodes.forEach(pathNode => {
@@ -277,9 +277,7 @@ function positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETT
                 subtreeRoot, 
                 pathNode.x, 
                 pathNode.y, 
-                isAbove, 
-                metrics, 
-                SETTINGS
+                isAbove
             );
             globalOffPathCounter++;
         });
@@ -343,7 +341,7 @@ function resetExpansionStates(node) {
 }
 
 // Main function to create the linear path layout
-export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
+export function createLinearPathLayout(root, metrics, instancePath) {
     // Create node lookup and validate path
     const nodeMap = new Map(
         root.descendants().map(node => [node.data.node_id, node])
@@ -355,12 +353,12 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
     
     // Fallback to original D3 tree layout if no valid path
     if (pathNodes.length === 0) {
-        const horizontalSpacing = root.descendants().length * SETTINGS.tree.minSplitWidth;
-        const verticalSpacing = root.descendants().length * SETTINGS.tree.minSplitHeight;
-        
+        const horizontalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitWidth;
+        const verticalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitHeight;
+ 
         const treeLayout = d3.tree()
             .size([horizontalSpacing, verticalSpacing])
-            .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, root));
+            .separation((a, b) => calculateSeparation());
         
         const result = treeLayout(root);
         
@@ -374,7 +372,7 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
         return result;
     }
 
-    const centerY = SETTINGS.size.innerHeight / 2;
+    const centerY = TREES_SETTINGS.size.innerHeight / 2;
 
     // Calculate subtree sizes for each path node
     const subtreeSizes = calculatePathNodeSubtreeSizes(pathNodes, instancePath);
@@ -382,9 +380,8 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
     // Calculate horizontal positions for path nodes with variable spacing based on subtree sizes
     const pathPositions = distributePathNodesHorizontally(
         pathNodes,
-        SETTINGS.size.innerWidth,
+        TREES_SETTINGS.size.innerWidth,
         metrics.nodeRadius,
-        SETTINGS,
         subtreeSizes
     );
     
@@ -392,7 +389,7 @@ export function createLinearPathLayout(root, metrics, SETTINGS, instancePath) {
     positionPathNodes(pathNodes, pathPositions, centerY);
     
     // Position off-path subtrees with hierarchical expand/collapse
-    positionOffPathSubtrees(pathNodes, instancePath, centerY, metrics, SETTINGS);
+    positionOffPathSubtrees(pathNodes, instancePath);
 
     // Mark all nodes with path status and ensure visibility flags are set
     root.descendants().forEach(node => {

@@ -2,16 +2,17 @@ import { getTreeState } from "./state.js";
 import { blocksTreeState } from "./state.js";
 import { traceInstancePath } from "./dataProcessing.js";
 import { createLinearPathLayout } from "../TreeSpawnDecisionTreeHelpers/subtrees_spawnTree.js";
+import { TREES_SETTINGS, calculateSeparation } from "./settings.js";
 
-export function calculateMetrics(root, SETTINGS, treeKind) {
+export function calculateMetrics(root, treeKind) {
     if (treeKind === "blocks") {
-        return calculateBlocksMetrics(root, SETTINGS);
+        return calculateBlocksMetrics(root);
     } else {
-        return calculateStandardMetrics(root, SETTINGS, treeKind);
+        return calculateStandardMetrics(root);
     }
 }
 
-function calculateStandardMetrics(root, SETTINGS, treeKind) {
+function calculateStandardMetrics(root) {
     const levelCounts = {};
     root.descendants().forEach((node) => {
         levelCounts[node.depth] = (levelCounts[node.depth] || 0) + 1;
@@ -30,13 +31,13 @@ function calculateStandardMetrics(root, SETTINGS, treeKind) {
         get nodeRadius() {
             return calculateLogScale(
                 this.totalNodes,
-                SETTINGS.node.baseRadius,
-                SETTINGS.node.minRadius,
-                SETTINGS.node.maxRadius
+                TREES_SETTINGS.node.baseRadius,
+                TREES_SETTINGS.node.minRadius,
+                TREES_SETTINGS.node.maxRadius
             );
         },
         get depthSpacing() {
-            return SETTINGS.size.innerHeight / (maxDepth + 1);
+            return TREES_SETTINGS.size.innerHeight / (maxDepth + 1);
         },
         get treeWidth() {
             return this.depthSpacing * (maxDepth + 1);
@@ -44,9 +45,9 @@ function calculateStandardMetrics(root, SETTINGS, treeKind) {
         get linkStrokeWidth() {
             return calculateLogScale(
                 this.totalNodes,
-                SETTINGS.node.baseLinkAndNodeBorderStrokeWidth,
-                SETTINGS.node.minLinkAndNodeBorderStrokeWidth,
-                SETTINGS.node.maxLinkAndNodeBorderStrokeWidth
+                TREES_SETTINGS.node.baseLinkAndNodeBorderStrokeWidth,
+                TREES_SETTINGS.node.minLinkAndNodeBorderStrokeWidth,
+                TREES_SETTINGS.node.maxLinkAndNodeBorderStrokeWidth
             );
         },
         get nodeBorderStrokeWidth() {
@@ -55,7 +56,7 @@ function calculateStandardMetrics(root, SETTINGS, treeKind) {
     };
 }
 
-function calculateBlocksMetrics(allPaths, SETTINGS, instancePath) {
+function calculateBlocksMetrics(allPaths) {
     // Unique nodes count
     const allNodes = new Set();
     allPaths.forEach((path) => path.forEach((id) => allNodes.add(id)));
@@ -69,31 +70,27 @@ function calculateBlocksMetrics(allPaths, SETTINGS, instancePath) {
         maxDepth,
         nodeScaleFactor,
         get nodeSpacing() {
-            return SETTINGS.layout.minSpacing * this.nodeScaleFactor;
+            return TREES_SETTINGS.layout.minSpacing * this.nodeScaleFactor;
         },
         get requiredWidth() {
             return (this.maxDepth + 1) * this.nodeSpacing * 2;
         },
         get requiredHeight() {
-            return allPaths.length * this.nodeSpacing * SETTINGS.layout.scaleFactor.multiplier;
+            return allPaths.length * this.nodeSpacing * TREES_SETTINGS.layout.scaleFactorMultiplier;
         },
         get linkStrokeWidth() {
             return Math.max(
-                SETTINGS.node.minLinkAndNodeBorderStrokeWidth,
+                TREES_SETTINGS.node.minLinkAndNodeBorderStrokeWidth,
                 Math.min(
-                    SETTINGS.node.maxLinkAndNodeBorderStrokeWidth,
-                    SETTINGS.node.baseLinkAndNodeBorderStrokeWidth * Math.sqrt(this.totalNodes / 30)
+                    TREES_SETTINGS.node.maxLinkAndNodeBorderStrokeWidth,
+                    TREES_SETTINGS.node.baseLinkAndNodeBorderStrokeWidth * Math.sqrt(this.totalNodes / 30)
                 )
             );
         },
     };
 }
 
-export function calculateSeparation(a, b, metrics, SETTINGS, root, treeKind) {
-    return SETTINGS.tree.minSplitWidth * 2;
-}
-
-export function createTreeLayout(metrics, SETTINGS, root, treeKind) {
+export function createTreeLayout(metrics, root, treeKind) {
     if (treeKind === "spawn") {
         // Get instance path from spawnTreeState or trace it
         const state = getTreeState(treeKind);
@@ -104,24 +101,20 @@ export function createTreeLayout(metrics, SETTINGS, root, treeKind) {
 
         // Return a function that applies the linear path layout
         return function(rootNode) {
-            return createLinearPathLayout(rootNode, metrics, SETTINGS, instancePath);
+            return createLinearPathLayout(rootNode, metrics, instancePath);
         };
     } else {
         // Standard D3 tree layout for classic trees
-        const horizontalSpacing = root.descendants().length * SETTINGS.tree.minSplitWidth;
-        const verticalSpacing = root.descendants().length * SETTINGS.tree.minSplitHeight;
-        
+        const horizontalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitWidth;
+        const verticalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitHeight;
+
         return d3.tree()
             .size([horizontalSpacing, verticalSpacing])
-            .separation((a, b) => calculateSeparation(a, b, metrics, SETTINGS, root, treeKind));
+            .separation((a, b) => calculateSeparation());
     }
 }
 
-export function calculateNodeRadius(d, metrics, treeKind) {
-    return metrics.nodeRadius;
-}
-
-export function calculateInitialTransform(treeData, SETTINGS, treeKind) {
+export function calculateInitialTransform(treeData) {
     // Use ALL nodes (including hidden ones for spawn) for calculating initial zoom
     const allNodes = treeData.descendants();
     const [minX, maxX] = d3.extent(allNodes, (d) => d.x);
@@ -130,18 +123,18 @@ export function calculateInitialTransform(treeData, SETTINGS, treeKind) {
     const treeWidth = maxX - minX;
     const treeHeight = maxY - minY;
 
-    const scaleX = SETTINGS.size.innerWidth / treeWidth;
-    const scaleY = SETTINGS.size.innerHeight / treeHeight;
+    const scaleX = TREES_SETTINGS.size.innerWidth / treeWidth;
+    const scaleY = TREES_SETTINGS.size.innerHeight / treeHeight;
     const k = Math.min(scaleX, scaleY);
 
     const translateX =
-        (SETTINGS.size.innerWidth - treeWidth * k) / 2 -
+        (TREES_SETTINGS.size.innerWidth - treeWidth * k) / 2 -
         minX * k +
-        SETTINGS.margin.left;
+        TREES_SETTINGS.margin.left;
     const translateY =
-        (SETTINGS.size.innerHeight - treeHeight * k) / 2 -
+        (TREES_SETTINGS.size.innerHeight - treeHeight * k) / 2 -
         minY * k +
-        SETTINGS.margin.top;
+        TREES_SETTINGS.margin.top;
 
     const transform = d3.zoomIdentity
         .translate(translateX, translateY)
@@ -164,98 +157,17 @@ export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth
     return strokeWidth;
 }
 
-export function getTreeDepth(treeKind) {
-    const state = getTreeState(treeKind);
-    if (!state.hierarchyRoot) return 0;
-    
-    if (treeKind === "blocks") {
-        return state.hierarchyRoot.height;
-    } else {
-        function calculateDepth(node, depth = 0) {
-            if (!node.children || node.children.length === 0) {
-                return depth;
-            }
-            return Math.max(...node.children.map(child => calculateDepth(child, depth + 1)));
-        }
-        return calculateDepth(state.hierarchyRoot);
-    }
-}
-
-export function getTreeStats(treeKind) {
-    const state = getTreeState(treeKind);
-    
-    if (!state.hierarchyRoot || !state.treeData) {
-        return {
-            totalNodes: 0,
-            leafNodes: 0,
-            internalNodes: 0,
-            maxDepth: 0,
-            totalSamples: 0
-        };
-    }
-    
-    const totalNodes = state.treeData.length;
-    const leafNodes = state.treeData.filter(node => node.is_leaf).length;
-    const internalNodes = totalNodes - leafNodes;
-    const maxDepth = getTreeDepth(treeKind);
-    const totalSamples = state.treeData[0]?.n_samples || 0;
-    
-    if (treeKind === "blocks") {
-        const leaves = state.hierarchyRoot.leaves().map((d) => d.data);
-        const classDistribution = getClassDistribution(leaves);
-        
-        return {
-            totalNodes,
-            leafNodes,
-            internalNodes,
-            maxDepth,
-            totalSamples,
-            classDistribution
-        };
-    }
-    
-    return {
-        totalNodes,
-        leafNodes,
-        internalNodes,
-        maxDepth,
-        totalSamples
-    };
-}
-
-function getClassDistribution(leaves) {
-    const dist = {};
-    leaves.forEach((leaf) => {
-        const cls = leaf.class_label || "unknown";
-        dist[cls] = (dist[cls] || 0) + 1;
-    });
-    return dist;
-}
-
-export function getUniqueClasses(treeKind) {
-    if (treeKind === "blocks") {
-        const state = getTreeState(treeKind);
-        const leaves = state.hierarchyRoot ? state.hierarchyRoot.leaves().map((l) => l.data) : [];
-        return [...new Set(leaves.map((l) => l.class_label || "unknown"))].sort();
-    } else {
-        // For classic and spawn trees, get unique classes from tree data
-        const state = getTreeState(treeKind);
-        const leafNodes = state.treeData ? state.treeData.filter(node => node.is_leaf) : [];
-        return [...new Set(leafNodes.map((l) => l.class_label || "unknown"))].sort();
-    }
-}
-
 // Blocks-specific metrics functions
-export function calculateTreeMetrics(allPaths, SETTINGS, instancePath, treeKind) {
+export function calculateTreeMetrics(allPaths, treeKind) {
     if (treeKind === "blocks") {
-        return calculateBlocksMetrics(allPaths, SETTINGS, instancePath);
+        return calculateBlocksMetrics(allPaths);
     } else {
         console.warn("calculateTreeMetrics is blocks-specific, use calculateMetrics for other trees");
         return null;
     }
 }
 
-export function depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics, treeKind) {
+export function depthAlignedLayout(allPaths, instancePath, metrics, treeKind) {
     if (treeKind !== "blocks") {
         console.warn("depthAlignedLayout is blocks-specific");
         return null;
@@ -263,14 +175,14 @@ export function depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics, tr
 
     const positions = {};
 
-    const effectiveWidth = Math.max(SETTINGS.size.width, metrics.requiredWidth);
-    const effectiveHeight = Math.max(SETTINGS.size.height, metrics.requiredHeight);
+    const effectiveWidth = Math.max(TREES_SETTINGS.size.width, metrics.requiredWidth);
+    const effectiveHeight = Math.max(TREES_SETTINGS.size.height, metrics.requiredHeight);
 
     const margin = {
-        top: SETTINGS.margin.top * metrics.nodeScaleFactor,
-        right: SETTINGS.margin.right * metrics.nodeScaleFactor,
-        bottom: SETTINGS.margin.bottom * metrics.nodeScaleFactor,
-        left: SETTINGS.margin.left * metrics.nodeScaleFactor,
+        top: TREES_SETTINGS.margin.top * metrics.nodeScaleFactor,
+        right: TREES_SETTINGS.margin.right * metrics.nodeScaleFactor,
+        bottom: TREES_SETTINGS.margin.bottom * metrics.nodeScaleFactor,
+        left: TREES_SETTINGS.margin.left * metrics.nodeScaleFactor,
     };
 
     const availableWidth = effectiveWidth - margin.left - margin.right;
@@ -331,16 +243,6 @@ function arraysEqual(a, b) {
     return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
-function findBranchPoint(path, instancePath) {
-    let branchPoint = 0;
-    const n = Math.min(path.length, instancePath.length);
-    for (let i = 0; i < n; i++) {
-        if (path[i] === instancePath[i]) branchPoint = i;
-        else break;
-    }
-    return branchPoint;
-}
-
 function getNodeLabel(nodeId, instance) {
     // Import from blocks node helpers
     const getNodeLabelLines = function(nodeId, instance) {
@@ -377,4 +279,21 @@ function getNodeLabel(nodeId, instance) {
     
     const lines = getNodeLabelLines(nodeId, instance);
     return lines.join("\n");
+}
+
+function findBranchPoint(path, instancePath) {
+    if (!path || !instancePath) return 0;
+    
+    let branchPoint = 0;
+    const n = Math.min(path.length, instancePath.length);
+    
+    for (let i = 0; i < n; i++) {
+        if (path[i] === instancePath[i]) {
+            branchPoint = i;
+        } else {
+            break;
+        }
+    }
+    
+    return branchPoint;
 }

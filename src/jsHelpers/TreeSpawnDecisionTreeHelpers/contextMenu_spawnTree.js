@@ -1,10 +1,9 @@
 import { expandSubtree, collapseSubtree } from "./subtrees_spawnTree.js";
 import { addNodes } from "./node_spawnTree.js";
 import { addLinks } from "./link_spawnTree.js";
-import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 
 // Create and show context menu
-export function createContextMenu(event, d, contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData) {
+export function createContextMenu(event, d, contentGroup, treeData, metrics, tooltip, colorMap) {
     // Remove any existing context menu
     d3.select('.context-menu').remove();
     
@@ -45,7 +44,7 @@ export function createContextMenu(event, d, contentGroup, treeData, metrics, SET
             })
             .on('click', () => {
                 expandSubtree(d);                
-                updateNodesAndLinks(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap);
+                updateNodesAndLinks(contentGroup, treeData, metrics, tooltip, colorMap);
                 d3.select('.context-menu').remove();
             });
     }
@@ -65,7 +64,7 @@ export function createContextMenu(event, d, contentGroup, treeData, metrics, SET
             })
             .on('click', () => {
                 collapseSubtree(d);                
-                updateNodesAndLinks(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap);
+                updateNodesAndLinks(contentGroup, treeData, metrics, tooltip, colorMap);
                 d3.select('.context-menu').remove();
             });
     }
@@ -82,13 +81,13 @@ export function createContextMenu(event, d, contentGroup, treeData, metrics, SET
     }, 10);
 }
 
-function updateNodesAndLinks(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap) {
+function updateNodesAndLinks(contentGroup, treeData, metrics, tooltip, colorMap) {
     // Completely recreate nodes to handle newly visible ones
     // Remove all existing nodes first
     contentGroup.selectAll(".node").remove();
     contentGroup.selectAll(".link").remove();
     
     // Recreate all visible nodes and links
-    addLinks(contentGroup, treeData, metrics, SETTINGS);
-    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap || getGlobalColorMap());
+    addLinks(contentGroup, treeData, metrics);
+    addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
 }

@@ -2,7 +2,6 @@ import {
     setBlocksTreeVisualization,
 } from "./visualizationConnector.js";
 import { createHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./TreesCommon/dataProcessing.js";
-import { getVisualizationSettings } from "./TreesCommon/settings.js";
 import { calculateTreeMetrics, depthAlignedLayout } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -16,7 +15,6 @@ import { renderNodes, renderLabels } from "./BlocksDecisionTreeHelpers/node_bloc
 import { blocksTreeState } from "./TreesCommon/state.js";
 
 export function createBlocksTreeVisualization(rawTreeData, instance) {
-    const SETTINGS = getVisualizationSettings("blocks");
     const containerSelector = "#blocks-tree-plot";
 
     // Store the data
@@ -41,17 +39,16 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     // Get paths and calculate layout
     const instancePath = traceInstancePath(blocksTreeState.instanceData, "blocks");
     const allPaths = getAllPathsFromHierarchy("blocks");
-    const metrics = calculateTreeMetrics(allPaths, SETTINGS, instancePath, "blocks");
+    const metrics = calculateTreeMetrics(allPaths, "blocks");
 
     const {
         positions: nodePositions,
         width: effectiveWidth,
         height: effectiveHeight,
-    } = depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics, "blocks");
+    } = depthAlignedLayout(allPaths, instancePath, metrics, "blocks");
 
     // Create SVG container
     const { svg, g } = createSVGContainer(
-        SETTINGS,
         containerSelector, 
         "blocks",
         effectiveWidth, 
@@ -59,15 +56,15 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     );
 
     // Setup zoom
-    initializeZoom(svg, g, SETTINGS, "blocks");
+    initializeZoom(svg, g, "blocks");
 
     // Create and render links
     const links = createLinks(allPaths, nodePositions);
-    const linkElements = renderLinks(g, links, instancePath, SETTINGS);
+    const linkElements = renderLinks(g, links, instancePath);
 
     // Render nodes and labels
-    const nodeElements = renderNodes(g, nodePositions, instancePath, tooltip, SETTINGS);
-    renderLabels(g, nodePositions, SETTINGS);
+    const nodeElements = renderNodes(g, nodePositions, instancePath, tooltip);
+    renderLabels(g, nodePositions);
 
     // Create visualization object for interaction
     const visualization = {

@@ -2,6 +2,7 @@ import { getStrokeWidth } from "../TreesCommon/metrics.js";
 import { colorScheme } from "../visualizationConnector.js";
 import { getNodeById } from "../TreesCommon/dataProcessing.js";
 import { blocksTreeState } from "../TreesCommon/state.js";
+import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 export function createLinks(allPaths, nodePositions) {
     const links = [];
@@ -27,13 +28,13 @@ export function createLinks(allPaths, nodePositions) {
     return links;
 }
 
-export function isLinkHighlighted(link, instancePath) {
+function isLinkHighlighted(link, instancePath) {
     const sIdx = instancePath.indexOf(link.sourceId);
     const tIdx = instancePath.indexOf(link.targetId);
     return sIdx !== -1 && tIdx !== -1 && Math.abs(sIdx - tIdx) === 1;
 }
 
-export function renderLinks(container, links, instancePath, SETTINGS) {
+export function renderLinks(container, links, instancePath) {
     return container
         .selectAll(".link")
         .data(links)
@@ -124,108 +125,9 @@ export function highlightInstancePathInBlocks(container, pathNodeIds) {
                 .attr("y2", y2)
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style("opacity", colorScheme.opacity.originalInstancePath)
-                .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width") * colorScheme.ui.strokeMultiplierInstancePath}px`)
+                .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width") * TREES_SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`)
                 .lower();
 
             originalLink.classed("instance-path", true);
         });
-}
-
-// Reset all link highlights in blocks tree
-export function resetBlocksLinkHighlights(container) {
-    if (!container) return;
-
-    // Remove any highlight overlays
-    container.selectAll(".link-highlight").remove();
-    
-    // Reset link classes
-    container
-        .selectAll(".link.instance-path")
-        .classed("instance-path", false);
-
-    // Reset link styles
-    container
-        .selectAll(".link")
-        .style("stroke", colorScheme.ui.linkStroke)
-        .style("stroke-width", function(d) {
-            // Use the stored original stroke width
-            return `${d3.select(this).attr("data-original-stroke-width")}px`;
-        });
-}
-
-// Highlight specific links in blocks tree
-export function highlightBlocksLinks(container, linkPairs) {
-    if (!container || !linkPairs) return;
-
-    linkPairs.forEach(pair => {
-        container
-            .selectAll(".link")
-            .filter((d) => {
-                return (d.sourceId === pair.source && d.targetId === pair.target) ||
-                       (d.sourceId === pair.target && d.targetId === pair.source);
-            })
-            .style("stroke", colorScheme.ui.highlight);
-    });
-}
-
-// Highlight path to root for leaf nodes (similar to classic tree functionality)
-export function highlightPathToRootInBlocks(container, leafNodeId, allPaths) {
-    if (!container || !leafNodeId || !allPaths) return;
-
-    // Find the path that contains this leaf node
-    const pathToRoot = allPaths.find(path => 
-        path[path.length - 1] === leafNodeId
-    );
-
-    if (!pathToRoot) return;
-
-    // Highlight all links in the path to root
-    for (let i = 0; i < pathToRoot.length - 1; i++) {
-        const sourceId = pathToRoot[i];
-        const targetId = pathToRoot[i + 1];
-
-        container
-            .selectAll(".link")
-            .filter((d) => {
-                return (d.sourceId === sourceId && d.targetId === targetId) ||
-                       (d.sourceId === targetId && d.targetId === sourceId);
-            })
-            .style("stroke", colorScheme.ui.highlight);
-    }
-}
-
-// Highlight descendant links for split nodes
-export function highlightDescendantLinksInBlocks(container, nodeId, allPaths) {
-    if (!container || !nodeId || !allPaths) return;
-
-    // Find all paths that pass through this node
-    const descendantPaths = allPaths.filter(path => path.includes(nodeId));
-    
-    // Collect all links in these paths that are descendants of the node
-    const descendantLinks = new Set();
-    
-    descendantPaths.forEach(path => {
-        const nodeIndex = path.indexOf(nodeId);
-        if (nodeIndex !== -1) {
-            // Add all links from this node onwards in the path
-            for (let i = nodeIndex; i < path.length - 1; i++) {
-                const sourceId = path[i];
-                const targetId = path[i + 1];
-                descendantLinks.add(`${sourceId}-${targetId}`);
-            }
-        }
-    });
-
-    // Highlight all descendant links
-    descendantLinks.forEach(linkId => {
-        const [sourceId, targetId] = linkId.split('-').map(id => parseInt(id));
-        
-        container
-            .selectAll(".link")
-            .filter((d) => {
-                return (d.sourceId === sourceId && d.targetId === targetId) ||
-                       (d.sourceId === targetId && d.targetId === sourceId);
-            })
-            .style("stroke", colorScheme.ui.highlight);
-    });
 }

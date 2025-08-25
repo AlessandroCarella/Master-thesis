@@ -11,13 +11,12 @@ import { spawnTreeState } from "../TreesCommon/state.js";
 import { createContextMenu } from "./contextMenu_spawnTree.js"
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
 import { isNodeInPath, getInstanceValue } from "../TreesCommon/dataProcessing.js";
-import { calculateNodeRadius } from "../TreesCommon/metrics.js";
+import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 export function addNodes(
     contentGroup,
     treeData,
     metrics,
-    SETTINGS,
     tooltip,
     colorMap
 ) {
@@ -45,12 +44,12 @@ export function addNodes(
         if (isInPath) {
             // Rectangle for path nodes
             element.append("rect")
-                .attr("x", -SETTINGS.visual.rectWidth / 2)
-                .attr("y", -SETTINGS.visual.rectHeight / 2)
-                .attr("width", SETTINGS.visual.rectWidth)
-                .attr("height", SETTINGS.visual.rectHeight)
-                .attr("rx", SETTINGS.visual.rectBorderRadius)
-                .attr("ry", SETTINGS.visual.rectBorderRadius)
+                .attr("x", -TREES_SETTINGS.visual.rectWidth / 2)
+                .attr("y", -TREES_SETTINGS.visual.rectHeight / 2)
+                .attr("width", TREES_SETTINGS.visual.rectWidth)
+                .attr("height", TREES_SETTINGS.visual.rectHeight)
+                .attr("rx", TREES_SETTINGS.visual.rectBorderRadius)
+                .attr("ry", TREES_SETTINGS.visual.rectBorderRadius)
                 .style("fill", getNodeColor(d, colorMap))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
                 .style("stroke", colorScheme.ui.nodeStroke)
@@ -58,7 +57,7 @@ export function addNodes(
 
             // Add text for path nodes
             const textLines = getNodeTextLines(d, instanceData);
-            const fontSize = calculateFontSize(textLines, SETTINGS.visual.rectWidth, SETTINGS.visual.rectHeight);
+            const fontSize = calculateFontSize(textLines);
             const lineHeight = fontSize * 1.2;
             
             const totalTextHeight = textLines.length * lineHeight;
@@ -78,7 +77,7 @@ export function addNodes(
         } else {
             // Circle for non-path nodes
             element.append("circle")
-                .attr("r", calculateNodeRadius(d, metrics))
+                .attr("r", metrics.nodeRadius)
                 .style("fill", getNodeColor(d, colorMap))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
                 .style("stroke", colorScheme.ui.nodeStroke)
@@ -114,7 +113,7 @@ export function addNodes(
         })
         .on("contextmenu", (event, d) => {
             if (d.hasHiddenChildren || d.isExpanded) {
-                createContextMenu(event, d, contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap, instancePath, instanceData);
+                createContextMenu(event, d, contentGroup, treeData, metrics, tooltip, colorMap);
             }
         });
 
@@ -122,7 +121,7 @@ export function addNodes(
 }
 
 // Handle node clicks - integration with global highlighting system
-function handleNodeClick(event, spawnNodeData, container) {
+function handleNodeClick(event, spawnNodeData) {
     event.stopPropagation();
 
     // Get all tree visualizations
@@ -245,28 +244,6 @@ function findClassicTreeHierarchyNode(nodeId) {
     return descendants.find(node => node.data.node_id === nodeId);
 }
 
-// Calculate optimal font size for multi-line labels inside a rectangle
-function calculateFontSize(lines, rectWidth, rectHeight) {
-    const padding = 10;
-    const lineHeight = 1.2;
-    const charWidthRatio = 0.6;
-    
-    const availableWidth = rectWidth - padding * 2;
-    const availableHeight = rectHeight - padding * 2;
-
-    const maxTextLength = Math.max(
-        ...lines.map((line) => (line ?? "").toString().length)
-    );
-    
-    const fontSizeBasedOnWidth = availableWidth / Math.max(1, maxTextLength * charWidthRatio);
-    const fontSizeBasedOnHeight = availableHeight / Math.max(1, lines.length * lineHeight);
-
-    let fontSize = Math.min(fontSizeBasedOnWidth, fontSizeBasedOnHeight);
-    fontSize = Math.max(8, Math.min(20, fontSize));
-    
-    return fontSize;
-}
-
 // Function to prepare text lines for a node
 function getNodeTextLines(d, instanceData) {
     const lines = [];
@@ -311,24 +288,6 @@ export function highlightTreeSpawnNode(visualization, nodeId) {
         .style("stroke", colorScheme.ui.highlight);
 }
 
-export function resetTreeSpawnNodeHighlights(visualization) {
-    // Get the TreeSpawn visualization if not provided
-    const treeSpawnVis = visualization || getTreeSpawnVisualization();
-    
-    if (!treeSpawnVis || !treeSpawnVis.container) {
-        console.warn("TreeSpawn visualization not available for resetting highlights");
-        return;
-    }
-
-    // Use the container from the visualization object
-    const contentGroup = treeSpawnVis.container;
-    
-    contentGroup
-        .selectAll(".node")
-        .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.nodeStroke);
-}
-
 export function highlightTreeSpawnPath(visualization, pathNodeIds) {
     // Get the TreeSpawn visualization if not provided
     const treeSpawnVis = visualization || getTreeSpawnVisualization();
@@ -365,7 +324,7 @@ export function highlightTreeSpawnPath(visualization, pathNodeIds) {
 }
 
 // Highlight TreeSpawn path to root for leaf nodes
-export function highlightTreeSpawnPathToRoot(leafNodeId) {
+function highlightTreeSpawnPathToRoot(leafNodeId) {
     const treeSpawnVis = getTreeSpawnVisualization();
     if (!treeSpawnVis || !treeSpawnVis.container) {
         return;

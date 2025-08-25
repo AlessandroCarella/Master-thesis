@@ -1,4 +1,4 @@
-export function createNodeTooltipContent(nodeData, treeKind) {
+function createNodeTooltipContent(nodeData, treeKind) {
     const content = [];
 
     // Get actual node data based on tree type
@@ -104,24 +104,6 @@ export function handleMouseOut(event, nodeData, tooltip, metrics, treeKind) {
             .style("opacity", 1);
     }
     // Blocks tree doesn't have specific hover reset styling
-}
-
-// Utility function to calculate font size for text in rectangles (used by spawn and blocks)
-export function calculateFontSize(lines, rectWidth, rectHeight, padding = 10, lineHeight = 1.2, charWidthRatio = 0.6) {
-    const availableWidth = rectWidth - padding * 2;
-    const availableHeight = rectHeight - padding * 2;
-
-    const maxTextLength = Math.max(
-        ...lines.map((line) => (line ?? "").toString().length)
-    );
-    
-    const fontSizeBasedOnWidth = availableWidth / Math.max(1, maxTextLength * charWidthRatio);
-    const fontSizeBasedOnHeight = availableHeight / Math.max(1, lines.length * lineHeight);
-
-    let fontSize = Math.min(fontSizeBasedOnWidth, fontSizeBasedOnHeight);
-    fontSize = Math.max(8, Math.min(20, fontSize));
-    
-    return fontSize;
 }
 
 // Get node text lines for path nodes (spawn tree specific)

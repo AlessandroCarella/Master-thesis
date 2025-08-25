@@ -3,7 +3,6 @@ import {
     highlightInstancePathInTreeSpawn,
 } from "./visualizationConnector.js";
 import { createHierarchy, findInstancePath } from "./TreesCommon/dataProcessing.js";
-import { getVisualizationSettings } from "./TreesCommon/settings.js";
 import { calculateMetrics, createTreeLayout, calculateInitialTransform } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -19,8 +18,6 @@ import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { spawnTreeState } from "./TreesCommon/state.js";
 
 export function createTreeSpawnVisualization(rawTreeData, instance, container) {
-    const SETTINGS = getVisualizationSettings("spawn");
-    
     // Store data in global spawnTreeState
     spawnTreeState.treeData = rawTreeData;
     spawnTreeState.instanceData = instance;
@@ -34,26 +31,25 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(spawnTreeState.hierarchyRoot);
-    const metrics = calculateMetrics(root, SETTINGS, "spawn");
+    const metrics = calculateMetrics(root, "spawn");
 
     const containerSelector = container || "#treespawn-tree-plot";
     clearExistingSVG(containerSelector);
-    const svg = createSVGContainer(SETTINGS, containerSelector);
-    const contentGroup = createContentGroup(svg, SETTINGS);
+    const svg = createSVGContainer(containerSelector);
+    const contentGroup = createContentGroup(svg);
     const tooltip = createTooltip();
 
-    const treeLayout = createTreeLayout(metrics, SETTINGS, root, "spawn");
+    const treeLayout = createTreeLayout(metrics, root, "spawn");
     const treeData = treeLayout(root);
 
-    addBackgroundLayer(contentGroup, SETTINGS, metrics);
-    addLinks(contentGroup, treeData, metrics, SETTINGS);
-    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap);
+    addBackgroundLayer(contentGroup, metrics);
+    addLinks(contentGroup, treeData, metrics);
+    addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
 
-    const initialTransform = calculateInitialTransform(treeData, SETTINGS);
+    const initialTransform = calculateInitialTransform(treeData);
     const zoom = initializeZoom(
         svg,
         contentGroup,
-        SETTINGS,
         metrics,
         initialTransform.k
     );

@@ -11,25 +11,7 @@ import {
 import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
 import { getNodeById } from "../TreesCommon/dataProcessing.js";
-
-export function getPathToNode(targetNodeId) {
-    const root = blocksTreeState.hierarchyRoot;
-    if (!root) return [];
-
-    function findPath(node, path = []) {
-        const current = [...path, node.data.node_id];
-        if (node.data.node_id === targetNodeId) return current;
-        if (node.children) {
-            for (const child of node.children) {
-                const found = findPath(child, current);
-                if (found.length) return found;
-            }
-        }
-        return [];
-    }
-
-    return findPath(root);
-}
+import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 export function getNodeLabelLines(nodeId, instance) {
     const node = getNodeById(nodeId, "blocks");
@@ -51,7 +33,7 @@ export function getNodeLabel(nodeId, instance) {
 }
 
 // Helper function to get node color using global color management
-function getBlocksNodeColor(nodeId, SETTINGS) {
+function getBlocksNodeColor(nodeId) {
     const nodeData = getNodeById(nodeId, "blocks");
     if (!nodeData) return colorScheme.ui.nodeStroke;
     
@@ -68,7 +50,7 @@ function getBlocksNodeColor(nodeId, SETTINGS) {
     return getNodeColor(nodeForColorFunction, globalColorMap);
 }
 
-export function renderNodes(container, nodePositions, instancePath, tooltip, SETTINGS) {
+export function renderNodes(container, nodePositions, instancePath, tooltip) {
     const nodes = Object.values(nodePositions);
 
     const nodeElements = container
@@ -80,13 +62,13 @@ export function renderNodes(container, nodePositions, instancePath, tooltip, SET
             "class",
             (d) => `node ${instancePath.includes(d.id) ? "highlighted" : ""}`
         )
-        .attr("x", (d) => d.x - SETTINGS.node.width / 2)
-        .attr("y", (d) => d.y - SETTINGS.node.height / 2)
-        .attr("width", SETTINGS.node.width)
-        .attr("height", SETTINGS.node.height)
-        .attr("rx", SETTINGS.node.borderRadius)
-        .attr("ry", SETTINGS.node.borderRadius)
-        .attr("fill", (d) => getBlocksNodeColor(d.id, SETTINGS))
+        .attr("x", (d) => d.x - TREES_SETTINGS.node.width / 2)
+        .attr("y", (d) => d.y - TREES_SETTINGS.node.height / 2)
+        .attr("width", TREES_SETTINGS.node.width)
+        .attr("height", TREES_SETTINGS.node.height)
+        .attr("rx", TREES_SETTINGS.node.borderRadius)
+        .attr("ry", TREES_SETTINGS.node.borderRadius)
+        .attr("fill", (d) => getBlocksNodeColor(d.id))
         .on("mouseover", (event, d) => {
             handleMouseOver(event, getNodeById(d.id, "blocks"), tooltip, null, "blocks");
         })
@@ -109,27 +91,7 @@ export function renderNodes(container, nodePositions, instancePath, tooltip, SET
     return nodeElements;
 }
 
-// Calculate optimal font size for multi-line labels inside a rectangle
-function calculateFontSize(lines, rectWidth, rectHeight) {
-    const padding = 10;
-    const lineHeight = 1.2;
-    const availableWidth = rectWidth - padding * 2;
-    const availableHeight = rectHeight - padding * 2;
-
-    const maxTextLength = Math.max(
-        ...lines.map((line) => (line ?? "").toString().length)
-    );
-    const fontSizeBasedOnWidth =
-        availableWidth / Math.max(1, maxTextLength * 0.6);
-    const fontSizeBasedOnHeight =
-        availableHeight / Math.max(1, lines.length * lineHeight);
-
-    let fontSize = Math.min(fontSizeBasedOnWidth, fontSizeBasedOnHeight);
-    fontSize = Math.max(8, Math.min(20, fontSize));
-    return fontSize;
-}
-
-export function renderLabels(container, nodePositions, SETTINGS) {
+export function renderLabels(container, nodePositions) {
     const nodes = Object.values(nodePositions);
 
     container
@@ -141,7 +103,7 @@ export function renderLabels(container, nodePositions, SETTINGS) {
         .each(function (d) {
             const group = d3.select(this);
             const lines = getNodeLabelLines(d.id, blocksTreeState.instanceData);
-            const fontSize = calculateFontSize(lines, SETTINGS.node.width, SETTINGS.node.height);
+            const fontSize = calculateFontSize(lines);
             const lineHeight = fontSize * 1.2;
 
             lines.forEach((line, idx) => {
@@ -189,7 +151,7 @@ function findBlocksTreeHierarchyNode(nodeId) {
 }
 
 // Handle node clicks in the blocks tree - FIXED VERSION
-export function handleNodeClick(event, blocksNodeData, container, treeVis, scatterPlotVis) {
+function handleNodeClick(event, blocksNodeData, container, treeVis, scatterPlotVis) {
     event.stopPropagation();
 
     // Get the other tree visualizations

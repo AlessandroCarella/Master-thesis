@@ -2,20 +2,21 @@ import { colorScheme } from "../visualizationConnector.js";
 import { classicTreeState } from "../TreesCommon/state.js";
 import { getStrokeWidth } from "../TreesCommon/metrics.js";
 import { findInstancePath } from "../TreesCommon/dataProcessing.js";
+import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
-export function createSplitPath({ source, target }, SETTINGS) {
+function createSplitPath({ source, target }) {
     const { x: sourceX, y: sourceY } = source;
     const { x: targetX, y: targetY } = target;
     const midY = (sourceY + targetY) / 2;
     const controlX = sourceX + (targetX - sourceX) / 2;
     const controlY =
         midY -
-        Math.abs(targetX - sourceX) * Math.tan(SETTINGS.tree.radianAngle / 2);
+        Math.abs(targetX - sourceX) * Math.tan(TREES_SETTINGS.tree.radianAngle / 2);
 
     return `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`;
 }
 
-export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
+export function addLinks(contentGroup, treeData, metrics) {
     contentGroup
         .selectAll(".link")
         .data(treeData.links())
@@ -40,17 +41,12 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
             // Use the stored original stroke width
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
         })
-        .attr("d", (d) => createSplitPath(d, SETTINGS))
+        .attr("d", (d) => createSplitPath(d))
         .style("fill", "none")
         .style("stroke", colorScheme.ui.linkStroke);
 }
 
-export function highlightInstancePath(
-    contentGroup,
-    pathNodeIds,
-    metrics,
-    SETTINGS
-) {
+export function highlightInstancePath(contentGroup, pathNodeIds) {
     // If no pathNodeIds provided, calculate from classicTreeState
     if (!pathNodeIds && classicTreeState.instanceData && classicTreeState.hierarchyRoot) {
         pathNodeIds = findInstancePath(classicTreeState.hierarchyRoot, classicTreeState.instanceData);
@@ -102,34 +98,12 @@ export function highlightInstancePath(
                 .style("stroke", colorScheme.ui.instancePathHighlight)
                 .style(
                     "stroke-width",
-                    `${baseStrokeWidth * colorScheme.ui.strokeMultiplierInstancePath}px`
+                    `${baseStrokeWidth * TREES_SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`
                 )
                 .style("fill", "none")
                 .style("opacity", colorScheme.opacity.originalInstancePath)
                 .lower();
 
             originalPath.classed("instance-path", true);
-        });
-}
-
-// Helper function to reset link highlights
-export function resetLinkHighlights(contentGroup) {
-    if (!contentGroup) return;
-
-    // Remove any highlight overlays
-    contentGroup.selectAll(".link-highlight").remove();
-    
-    // Reset link classes
-    contentGroup
-        .selectAll(".link.instance-path")
-        .classed("instance-path", false);
-
-    // Reset link styles
-    contentGroup
-        .selectAll(".link")
-        .style("stroke", colorScheme.ui.linkStroke)
-        .style("stroke-width", function(d) {
-            // Use the stored original stroke width
-            return `${d3.select(this).attr("data-original-stroke-width")}px`;
         });
 }

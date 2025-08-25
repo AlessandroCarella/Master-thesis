@@ -3,7 +3,6 @@ import {
     highlightInstancePathInTree,
 } from "./visualizationConnector.js";
 import { createHierarchy } from "./TreesCommon/dataProcessing.js";
-import { getVisualizationSettings } from "./TreesCommon/settings.js";
 import { calculateMetrics, createTreeLayout, calculateInitialTransform } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -18,9 +17,7 @@ import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { classicTreeState } from "./TreesCommon/state.js";
 
-export function createTreeVisualization(rawTreeData, instance, container) {
-    const SETTINGS = getVisualizationSettings("classic");
-    
+export function createTreeVisualization(rawTreeData, instance, container) {    
     // Store data in global classicTreeState
     classicTreeState.treeData = rawTreeData;
     classicTreeState.instanceData = instance;
@@ -29,27 +26,24 @@ export function createTreeVisualization(rawTreeData, instance, container) {
     const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(classicTreeState.hierarchyRoot);
-    const metrics = calculateMetrics(root, SETTINGS, "classic");
+    const metrics = calculateMetrics(root, "classic");
 
     clearExistingSVG(container);
-    const svg = createSVGContainer(SETTINGS, container);
-    const contentGroup = createContentGroup(svg, SETTINGS);
+    const svg = createSVGContainer(container);
+    const contentGroup = createContentGroup(svg);
     const tooltip = createTooltip();
 
-    const treeLayout = createTreeLayout(metrics, SETTINGS, root);
+    const treeLayout = createTreeLayout(metrics, root, "classic");
     const treeData = treeLayout(root);
 
-    addBackgroundLayer(contentGroup, SETTINGS, metrics);
-    addLinks(contentGroup, treeData, metrics, SETTINGS);
-    addNodes(contentGroup, treeData, metrics, SETTINGS, tooltip, colorMap);
+    addBackgroundLayer(contentGroup, metrics);
+    addLinks(contentGroup, treeData, metrics);
+    addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
 
-    const initialTransform = calculateInitialTransform(treeData, SETTINGS);
+    const initialTransform = calculateInitialTransform(treeData);
     const zoom = initializeZoom(
         svg,
         contentGroup,
-        SETTINGS,
-        metrics,
-        initialTransform.k
     );
 
     svg.call(zoom.transform, initialTransform);

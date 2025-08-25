@@ -1,3 +1,6 @@
+import { TREES_SETTINGS } from "./settings.js";
+
+
 export function clearExistingSVG(containerSelector, treeKind = "general") {
     d3.select(`${containerSelector} svg`).remove();
     if (treeKind === "blocks") {
@@ -9,19 +12,13 @@ export function clearExistingSVG(containerSelector, treeKind = "general") {
     }
 }
 
-export function createSVGContainer(
-    SETTINGS,
-    containerOrSelector,
-    treeKind = "general",
-    effectiveWidth = null,
-    effectiveHeight = null
-) {
+export function createSVGContainer(containerOrSelector, treeKind = "general", effectiveWidth = null, effectiveHeight = null) {
     if (treeKind === "blocks") {
         const container = d3.select(containerOrSelector);
         const svg = container
             .append("svg")
-            .attr("width", SETTINGS.size.width)
-            .attr("height", SETTINGS.size.height)
+            .attr("width", TREES_SETTINGS.size.width)
+            .attr("height", TREES_SETTINGS.size.height)
             .attr("viewBox", `0 0 ${effectiveWidth} ${effectiveHeight}`)
             .attr("preserveAspectRatio", "xMidYMid meet");
 
@@ -34,25 +31,25 @@ export function createSVGContainer(
             .append("svg")
             .attr(
                 "width",
-                SETTINGS.size.innerWidth +
-                    SETTINGS.margin.left +
-                    SETTINGS.margin.right
+                TREES_SETTINGS.size.innerWidth +
+                    TREES_SETTINGS.margin.left +
+                    TREES_SETTINGS.margin.right
             )
             .attr(
                 "height",
-                SETTINGS.size.innerHeight +
-                    SETTINGS.margin.top +
-                    SETTINGS.margin.bottom
+                TREES_SETTINGS.size.innerHeight +
+                    TREES_SETTINGS.margin.top +
+                    TREES_SETTINGS.margin.bottom
             );
     }
 }
 
-export function createContentGroup(svg, SETTINGS) {
+export function createContentGroup(svg) {
     return svg
         .append("g")
         .attr(
             "transform",
-            `translate(${SETTINGS.margin.left},${SETTINGS.margin.top})`
+            `translate(${TREES_SETTINGS.margin.left},${TREES_SETTINGS.margin.top})`
         );
 }
 
@@ -64,18 +61,14 @@ export function createTooltip() {
         .style("visibility", "hidden");
 }
 
-export function addBackgroundLayer(
-    contentGroup,
-    SETTINGS,
-    metrics,
-) {
+export function addBackgroundLayer(contentGroup, metrics) {
     contentGroup
         .append("rect")
         .attr(
             "width",
-            Math.max(SETTINGS.size.innerWidth, metrics.treeWidth)
+            Math.max(TREES_SETTINGS.size.innerWidth, metrics.treeWidth)
         )
-        .attr("height", SETTINGS.size.innerHeight * 3)
+        .attr("height", TREES_SETTINGS.size.innerHeight * 3)
         .style("fill", "transparent")
         .style("pointer-events", "all");
 }
@@ -96,14 +89,10 @@ export function ensureVisualizationVisibility() {
     }
 }
 
-export function initializeZoom(
-    svg,
-    contentGroup,
-    SETTINGS
-) {
+export function initializeZoom(svg, contentGroup) {
     const zoom = d3
         .zoom()
-        .scaleExtent(SETTINGS.zoom.scaleExtent)
+        .scaleExtent(TREES_SETTINGS.zoom.scaleExtent)
         .on("zoom", (event) => {
             contentGroup.attr("transform", event.transform);
         });

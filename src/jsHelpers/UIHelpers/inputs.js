@@ -24,20 +24,20 @@ function createNumericInput(container, featureName, details) {
     input.type = "number";
     input.step = "any";
     input.id = `feature-${featureName}`;
-    input.min = details.min;
-    input.max = details.max;
+    input.min = details.min.toFixed(2);
+    input.max = details.max.toFixed(2);
 
     const stats = `Min: ${details.min}
-                    Max: ${details.max}
-                    Mean: ${details.mean.toFixed(2)}
-                    Median: ${details.median}
-                    Std: ${details.std.toFixed(2)}`;
+Max: ${details.max.toFixed(5)}
+Mean: ${details.mean.toFixed(5)}
+Median: ${details.median.toFixed(5)}
+Std: ${details.std.toFixed(5)}`;
 
     box.innerHTML = `
         <div class="feature-label" title="${stats}">
             ${featureName}
             <span class="feature-type">Numeric</span>
-            <div class="feature-range">Range: ${details.min} - ${details.max}</div>
+            <div class="feature-range">Range: ${details.min.toFixed(2)} - ${details.max.toFixed(2)}</div>
         </div>
     `;
     box.appendChild(input);
