@@ -67,7 +67,7 @@ export function getNodeLabelLines(nodeId, instance) {
     }
     const th = Number(node.threshold) ?? 0;
     return [
-        `${node.feature_name} > ${Number.isFinite(th) ? th.toFixed(3) : th}`,
+        `${node.feature_name} ≤ ${Number.isFinite(th) ? th.toFixed(3) : th}`,
         `Instance: ${instance?.[node.feature_name]}`,
     ];
 }
@@ -148,7 +148,7 @@ function createNodeTooltipContent(node) {
         content.push(
             `<strong>Split:</strong> ${
                 node.feature_name
-            } > ${node.threshold.toFixed(2)}`
+            } ≤ ${node.threshold.toFixed(2)}`
         );
         content.push(`<strong>Feature Index:</strong> ${node.feature_index}`);
         content.push(`<strong>Impurity:</strong> ${node.impurity.toFixed(4)}`);
@@ -173,6 +173,7 @@ function createNodeTooltipContent(node) {
     }
 
     if (!node.is_leaf) {
+        console.log("blocks", node)
         // Add class distribution if available (summarized)
         if (node.value && node.value.length > 0 && node.value[0].length > 0) {
             const valueArray = node.value[0];
@@ -264,23 +265,6 @@ export function renderLabels(container, nodePositions, SETTINGS) {
                     .text(line);
             });
         });
-}
-
-// Enhanced tooltip content creation function (adapted from classic tree)
-export function showTooltip(event, nodeId, tooltip) {
-    console.warn("showTooltip is deprecated, use handleMouseOver instead");
-    const node = getNodeById(nodeId);
-    if (!node) return;
-
-    const content = createNodeTooltipContent(node);
-    const html = content.join("<br>");
-
-    tooltip
-        .html(html)
-        .style("class", "decision-tree-tooltip")
-        .style("visibility", "visible")
-        .style("left", `${event.pageX + 10}px`)
-        .style("top", `${event.pageY - 10}px`);
 }
 
 export function hideTooltip(tooltip) {

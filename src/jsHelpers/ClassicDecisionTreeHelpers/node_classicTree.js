@@ -71,39 +71,55 @@ export function handleMouseOver(event, d, tooltip, metrics) {
         .style("top", event.pageY - 10 + "px");
 }
 
-function createNodeTooltipContent(d) {
+function createNodeTooltipContent(node) {
     const content = [];
 
     // Node type and primary information
-    if (d.data.is_leaf) {
+    if (node.data.is_leaf) {
         // Leaf node information
-        content.push(`<strong>Class:</strong> ${d.data.class_label}`);
+        content.push(`<strong>Class:</strong> ${node.data.class_label}`);
     } else {
         // Split node information
         content.push(
             `<strong>Split:</strong> ${
-                d.data.feature_name
-            } > ${d.data.threshold.toFixed(2)}`
+                node.data.feature_name
+            } ≤ ${node.data.threshold.toFixed(2)}`
         );
-        content.push(`<strong>Feature Index:</strong> ${d.data.feature_index}`);
-        content.push(`<strong>Impurity:</strong> ${d.data.impurity.toFixed(4)}`);
+        content.push(`<strong>Feature Index:</strong> ${node.data.feature_index}`);
+        content.push(`<strong>Impurity:</strong> ${node.data.impurity.toFixed(4)}`);
     }
 
     // Common information for both node types
-    content.push(`<strong>Samples:</strong> ${d.data.n_samples}`);
+    content.push(`<strong>Samples:</strong> ${node.data.n_samples}`);
 
     // Add weighted samples if available
-    if (d.data.weighted_n_samples) {
+    if (node.data.weighted_n_samples) {
         const weightDiff = Math.abs(
-            d.data.weighted_n_samples - d.data.n_samples
+            node.data.weighted_n_samples - node.data.n_samples
         );
         // Only show if there's a meaningful difference
         if (weightDiff > 0.01) {
             content.push(
-                `<strong>Weighted Samples:</strong> ${d.data.weighted_n_samples.toFixed(
+                `<strong>Weighted Samples:</strong> ${node.data.weighted_n_samples.toFixed(
                     2
                 )}`
             );
+        }
+    }
+
+    if (!node.data.is_leaf) {
+        // Add class distribution if available (summarized)
+        if (node.data.value && node.data.value.length > 0 && node.data.value[0].length > 0) {
+            const valueArray = node.data.value[0];
+            if (valueArray.length > 1) {
+                const total = valueArray.reduce((sum, val) => sum + val, 0);
+                const distribution = valueArray
+                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
+                    .join(", ");
+                content.push(
+                    `<strong>Class Distribution:</strong> [${distribution}]`
+                );
+            }
         }
     }
 

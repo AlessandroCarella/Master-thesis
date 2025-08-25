@@ -131,43 +131,61 @@ export function handleMouseOver(event, d, tooltip, metrics) {
         .style("top", event.pageY - 10 + "px");
 }
 
-function createNodeTooltipContent(d) {
+function createNodeTooltipContent(node) {
     const content = [];
 
     // Node type and primary information
-    if (d.data.is_leaf) {
-        content.push(`<strong>Class:</strong> ${d.data.class_label}`);
+    if (node.data.is_leaf) {
+        content.push(`<strong>Class:</strong> ${node.data.class_label}`);
     } else {
         content.push(
             `<strong>Split:</strong> ${
-                d.data.feature_name
-            } â‰¤ ${d.data.threshold.toFixed(2)}`
+                node.data.feature_name
+            } ≤ ${node.data.threshold.toFixed(2)}`
         );
-        content.push(`<strong>Feature Index:</strong> ${d.data.feature_index}`);
-        content.push(`<strong>Impurity:</strong> ${d.data.impurity.toFixed(4)}`);
+        content.push("Left True/Right False")
+        content.push(`<strong>Feature Index:</strong> ${node.data.feature_index}`);
+        content.push(`<strong>Impurity:</strong> ${node.data.impurity.toFixed(4)}`);
     }
 
     // Common information for both node types
-    content.push(`<strong>Samples:</strong> ${d.data.n_samples}`);
+    content.push(`<strong>Samples:</strong> ${node.data.n_samples}`);
 
     // Add weighted samples if available
-    if (d.data.weighted_n_samples) {
+    if (node.data.weighted_n_samples) {
         const weightDiff = Math.abs(
-            d.data.weighted_n_samples - d.data.n_samples
+            node.data.weighted_n_samples - node.data.n_samples
         );
         if (weightDiff > 0.01) {
             content.push(
-                `<strong>Weighted Samples:</strong> ${d.data.weighted_n_samples.toFixed(
+                `<strong>Weighted Samples:</strong> ${node.data.weighted_n_samples.toFixed(
                     2
                 )}`
             );
         }
     }
 
+    if (!node.data.is_leaf) {
+        console.log("spawn", node)
+        // Add class distribution if available (summarized)
+        if (node.data.value && node.data.value.length > 0 && node.data.value[0].length > 0) {
+            const valueArray = node.data.value[0];
+            if (valueArray.length > 1) {
+                const total = valueArray.reduce((sum, val) => sum + val, 0);
+                const distribution = valueArray
+                    .map((val) => ((val / total) * 100).toFixed(1) + "%")
+                    .join(", ");
+                content.push(
+                    `<strong>Class Distribution:</strong> [${distribution}]`
+                );
+            }
+        }
+    }
+
     // Add subtree information
-    if (d.hasHiddenChildren) {
+    if (node.hasHiddenChildren) {
         content.push(`<strong>Subtree:</strong> Right-click to expand`);
-    } else if (d.isExpanded) {
+    } else if (node.isExpanded) {
         content.push(`<strong>Subtree:</strong> Right-click to collapse`);
     }
 
@@ -267,7 +285,7 @@ function getNodeTextLines(d, instanceData) {
         const threshold = d.data.threshold !== undefined ? d.data.threshold.toFixed(2) : 'N/A';
         const instanceValue = getInstanceValue(featureName, instanceData);
         
-        lines.push(`${featureName} â‰¤ ${threshold}`);
+        lines.push(`${featureName} ≤ ${threshold}`);
         
         if (instanceValue !== null && instanceValue !== undefined) {
             const formattedValue = typeof instanceValue === 'number' ? instanceValue.toFixed(2) : instanceValue;
@@ -281,7 +299,7 @@ function getNodeTextLines(d, instanceData) {
     return lines;
 }
 
-// Helper functions for highlighting - FIXED VERSION
+// Helper functions for highlighting
 export function highlightTreeSpawnNode(visualization, nodeId) {
     // Get the TreeSpawn visualization if not provided
     const treeSpawnVis = visualization || getTreeSpawnVisualization();
@@ -298,8 +316,8 @@ export function highlightTreeSpawnNode(visualization, nodeId) {
         .selectAll(".node")
         .filter((d) => d.data.node_id === nodeId)
         .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.highlight)
-        .style("stroke-width", "3px");
+        .style("stroke", colorScheme.ui.highlight);
+        // .style("stroke-width", "3px");
 }
 
 export function resetTreeSpawnNodeHighlights(visualization) {
@@ -317,8 +335,8 @@ export function resetTreeSpawnNodeHighlights(visualization) {
     contentGroup
         .selectAll(".node")
         .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.nodeStroke)
-        .style("stroke-width", "2px");
+        .style("stroke", colorScheme.ui.nodeStroke);
+        // .style("stroke-width", "2px");
 }
 
 export function highlightTreeSpawnPath(visualization, pathNodeIds) {
@@ -440,8 +458,8 @@ export function highlightTreeSpawnPathFromScatterPlot(path) {
                 .selectAll(".node")
                 .filter((d) => d.data.node_id === node.data.node_id)
                 .selectAll("circle, rect")
-                .style("stroke", colorScheme.ui.highlight)
-                .style("stroke-width", "3px");
+                .style("stroke", colorScheme.ui.highlight);
+                // .style("stroke-width", "3px");
         });
 
         // Highlight links in the path
@@ -457,18 +475,8 @@ export function highlightTreeSpawnPathFromScatterPlot(path) {
                            (linkData.source.data.node_id === nextNode.data.node_id && 
                             linkData.target.data.node_id === currentNode.data.node_id);
                 })
-                .style("stroke", colorScheme.ui.highlight)
-                .style("stroke-width", function(d) {
-                    const originalWidth = d3.select(this).attr("data-original-stroke-width");
-                    // Fallback to metrics if attribute doesn't exist
-                    if (originalWidth && originalWidth !== null) {
-                        return `${originalWidth}px`;
-                    } else {
-                        // Use fallback stroke width from metrics
-                        const fallbackWidth = treeSpawnVis.metrics ? treeSpawnVis.metrics.linkStrokeWidth : 2;
-                        return `${fallbackWidth}px`;
-                    }
-                });
+                .style("stroke", colorScheme.ui.highlight);
+                // .style("stroke-width", `${d3.select(this).attr("data-original-stroke-width")}px`);
         }
     } catch (error) {
         console.error("Error highlighting TreeSpawn path:", error);
@@ -483,14 +491,14 @@ function resetTreeSpawnHighlights(treeSpawnVis) {
     treeSpawnVis.container
         .selectAll(".node")
         .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.nodeStroke)
-        .style("stroke-width", "2px");
+        .style("stroke", colorScheme.ui.nodeStroke);
+        // .style("stroke-width", "2px");
 
     // Reset link highlights
     treeSpawnVis.container
         .selectAll(".link")
-        .style("stroke", colorScheme.ui.linkStroke)
-        .style("stroke-width", function(d) {
-            return `${d3.select(this).attr("data-original-stroke-width")}px`;
-        });
+        .style("stroke", colorScheme.ui.linkStroke);
+        // .style("stroke-width", function(d) {
+        //     return `${d3.select(this).attr("data-original-stroke-width")}px`;
+        // });
 }
