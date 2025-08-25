@@ -10,7 +10,6 @@ import numpy as np
 import os
 import joblib
 import logging
-import pickle
 from sklearn.preprocessing import LabelEncoder
 
 # Available datasets with kind information
@@ -225,9 +224,6 @@ def load_dataset_adult():
             # Option 1: Fill with most frequent value
             most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
             X[col] = X[col].fillna(most_frequent)
-            
-            # Option 2: Alternatively, you could fill with a placeholder like 'Unknown'
-            # X[col] = X[col].fillna('Unknown')
     
     # Encode categorical variables using LabelEncoder
     label_encoders = {}

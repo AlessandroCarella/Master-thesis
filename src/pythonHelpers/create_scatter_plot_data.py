@@ -1,11 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from shapely.ops import unary_union
-import networkx as nx
 import logging
-logging.getLogger('numba').setLevel(logging.WARNING)
-from umap import UMAP
 
 def preprocess_data(X, method, random_state):
     """
@@ -27,6 +22,8 @@ def preprocess_data(X, method, random_state):
     tuple
         (transformed_data, model, scaler_model)
     """
+    from sklearn.preprocessing import StandardScaler
+    
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
@@ -47,6 +44,9 @@ def preprocess_data(X, method, random_state):
         model = TSNE(n_components=2, random_state=random_state, **tsne_params)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'umap':
+        # Set numba logging to warning to reduce startup noise
+        logging.getLogger('numba').setLevel(logging.WARNING)
+        from umap import UMAP
         model = UMAP(n_components=2, random_state=random_state)
         X_transformed = model.fit_transform(X_scaled)
     elif method.lower() == 'mds':
@@ -166,6 +166,11 @@ def create_voronoi_regions(xx, yy, Z, class_names):
     tuple
         (merged_regions, merged_classes) where merged_classes contains actual class names
     """
+    # Import heavy dependencies only when needed
+    from shapely.ops import unary_union
+    import networkx as nx
+    from scipy.spatial import Voronoi
+    
     # Identify unique class indices present in Z
     unique_z = np.unique(Z)
     
@@ -181,7 +186,6 @@ def create_voronoi_regions(xx, yy, Z, class_names):
     G = nx.Graph()
     
     # Compute the Voronoi diagram from grid coordinates
-    from scipy.spatial import Voronoi
     vor = Voronoi(np.c_[xx.ravel(), yy.ravel()])
     
     # Extract Voronoi regions and vertices

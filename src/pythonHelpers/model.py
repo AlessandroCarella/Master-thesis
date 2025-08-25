@@ -1,14 +1,9 @@
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
 from lore_sa.dataset import TabularDataset
 from typing import Dict, Any
 import numpy as np
 
 from pythonHelpers.datasets import load_dataset
 from pythonHelpers.lore import load_cached_classifier
-from pythonHelpers.datasets import DATASETS
 
 """
 Module for training machine learning classifiers using the LORE framework.
@@ -75,14 +70,19 @@ def create_classifier(classifier_name: str, parameters: Dict[str, Any]):
         ValueError: If the provided classifier_name is not supported.
     """
     if classifier_name == "RandomForestClassifier":
+        from sklearn.ensemble import RandomForestClassifier
         return RandomForestClassifier(**parameters)
     elif classifier_name == "LogisticRegression":
+        from sklearn.linear_model import LogisticRegression
         return LogisticRegression(**parameters)
     elif classifier_name == "SVC":
+        from sklearn.svm import SVC
         return SVC(**parameters)
     elif classifier_name == "KNeighborsClassifier":
+        from sklearn.neighbors import KNeighborsClassifier
         return KNeighborsClassifier(**parameters)
     elif classifier_name == "GradientBoostingClassifier":
+        from sklearn.ensemble import GradientBoostingClassifier
         return GradientBoostingClassifier(**parameters)
     else:
         raise ValueError(f"Unsupported classifier: {classifier_name}")

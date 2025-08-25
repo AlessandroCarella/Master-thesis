@@ -1,28 +1,17 @@
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import logging
 import os
 import joblib
 
-from lore_sa.bbox import sklearn_classifier_bbox
-from lore_sa.dataset import TabularDataset
-from lore_sa.neighgen import GeneticGenerator
-from lore_sa.encoder_decoder import ColumnTransformerEnc
-from lore_sa.surrogate import DecisionTreeSurrogate
-
 from pythonHelpers.routes.state import global_state
 
-def get_feature_indices(dataset: TabularDataset):
+def get_feature_indices(dataset):
     """
     Extract indices for numeric and categorical features from the dataset descriptor.
 
     Parameters:
-        dataset (TabularDataset): The dataset object containing a descriptor with feature information.
+        dataset: The dataset object containing a descriptor with feature information.
 
     Returns:
         tuple: A tuple containing two lists:
@@ -49,6 +38,10 @@ def create_preprocessor(numeric_indices, categorical_indices):
     Returns:
         ColumnTransformer: A preprocessor with defined transformations.
     """
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+    from sklearn.compose import ColumnTransformer
+    
     return ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), numeric_indices),    # Scale numeric features
@@ -57,14 +50,14 @@ def create_preprocessor(numeric_indices, categorical_indices):
     )
 
 
-def filter_rare_classes(dataset: TabularDataset, target_name: str):
+def filter_rare_classes(dataset, target_name: str):
     """
     Filter out rows in the dataset that belong to target classes with only one occurrence.
     
     This helps avoid issues with stratified sampling or model training due to rare classes.
 
     Parameters:
-        dataset (TabularDataset): The dataset object containing the dataframe.
+        dataset: The dataset object containing the dataframe.
         target_name (str): The name of the target column.
     """
     # Get value counts for each target class
@@ -75,12 +68,12 @@ def filter_rare_classes(dataset: TabularDataset, target_name: str):
     dataset.df = dataset.df[dataset.df[target_name].isin(valid_classes)]
 
 
-def split_dataset(dataset: TabularDataset, numeric_indices, categorical_indices, target_name: str):
+def split_dataset(dataset, numeric_indices, categorical_indices, target_name: str):
     """
     Split the dataset into training and testing sets using stratified sampling on the target variable.
 
     Parameters:
-        dataset (TabularDataset): The dataset object containing the dataframe.
+        dataset: The dataset object containing the dataframe.
         numeric_indices (list): List of indices for numeric features.
         categorical_indices (list): List of indices for categorical features.
         target_name (str): The name of the target column.
@@ -88,6 +81,8 @@ def split_dataset(dataset: TabularDataset, numeric_indices, categorical_indices,
     Returns:
         tuple: A tuple containing the training and testing splits (X_train, X_test, y_train, y_test).
     """
+    from sklearn.model_selection import train_test_split
+    
     # Select features by combining numeric and categorical indices
     X = dataset.df.iloc[:, numeric_indices + categorical_indices]
     # Select the target variable
@@ -96,7 +91,7 @@ def split_dataset(dataset: TabularDataset, numeric_indices, categorical_indices,
     return train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
 
-def train_model_generalized(dataset: TabularDataset, target_name: str, classifier=None):
+def train_model_generalized(dataset, target_name: str, classifier=None):
     """
     Train a generalized classification model using a pipeline with preprocessing and a classifier.
 
@@ -105,15 +100,19 @@ def train_model_generalized(dataset: TabularDataset, target_name: str, classifie
     using a black-box interface.
 
     Parameters:
-        dataset (TabularDataset): The dataset object containing the dataframe and descriptor.
+        dataset: The dataset object containing the dataframe and descriptor.
         target_name (str): The name of the target column.
         classifier (optional): A scikit-learn classifier. Defaults to RandomForestClassifier.
 
     Returns:
         object: A black-box classifier object wrapped using sklearn_classifier_bbox.
     """
+    from sklearn.pipeline import make_pipeline
+    from lore_sa.bbox import sklearn_classifier_bbox
+    
     # Use default classifier if none provided
     if classifier is None:
+        from sklearn.ensemble import RandomForestClassifier
         classifier = RandomForestClassifier(n_estimators=100, random_state=42)
     
     # Retrieve indices for numeric and categorical features
@@ -136,7 +135,7 @@ def train_model_generalized(dataset: TabularDataset, target_name: str, classifie
     return sklearn_classifier_bbox.sklearnBBox(model), X_train, X_test, y_train, y_test
 
 
-def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_name:str, classifier:any, classifier_name:str, cache_dir='cache'):
+def load_cached_classifier(dataset, target_name: str, dataset_name:str, classifier:any, classifier_name:str, cache_dir='cache'):
     """
     Load a cached trained classifier if available; otherwise, train it and cache the result.
     
@@ -146,7 +145,7 @@ def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_na
       - The classifier's parameters (via joblib.hash)
       
     Parameters:
-        dataset (TabularDataset): The dataset object containing the dataframe and descriptor.
+        dataset: The dataset object containing the dataframe and descriptor.
         target_name (str): The name of the target column.
         classifier (optional): A scikit-learn classifier. If None, defaults to RandomForestClassifier(n_estimators=100, random_state=42).
         cache_dir (str, optional): Directory where the cached classifier will be stored. Defaults to 'cache'.
@@ -182,7 +181,7 @@ def load_cached_classifier(dataset: TabularDataset, target_name: str, dataset_na
     return classifier_bbox
 
 
-def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset: TabularDataset, neighbourhood_size=100):
+def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbourhood_size=100):
     """
     Generate a neighbourhood of instances around a given instance using LORE (Local Rule-based Explanation).
 
@@ -194,7 +193,7 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset: TabularDa
     Parameters:
         instance (pd.Series): The input instance for which to generate the neighbourhood.
         bbox: The black-box model used to predict the target variable.
-        dataset (TabularDataset): The dataset object containing the descriptor and data.
+        dataset: The dataset object containing the descriptor and data.
         neighbourhood_size (int, optional): Number of instances to generate in the neighbourhood. Defaults to 100.
 
     Returns:
@@ -204,6 +203,10 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset: TabularDa
             - neighb_train_y: Predictions from the black-box model on the decoded instances.
             - neighb_train_yz: Encoded target predictions.
     """
+    # Import only when needed
+    from lore_sa.encoder_decoder import ColumnTransformerEnc
+    from lore_sa.neighgen import GeneticGenerator
+    
     def remove_duplicates(neighbourhood):
         """Remove duplicate rows from the neighbourhood."""
         unique_neighbourhood = []
@@ -269,6 +272,9 @@ def get_lore_decision_tree_surrogate(neighbour, neighb_train_yz):
     Returns:
         DecisionTreeSurrogate: A trained decision tree surrogate model.
     """
+    # Import only when needed
+    from lore_sa.surrogate import DecisionTreeSurrogate
+    
     # Initialize the decision tree surrogate model
     dt = DecisionTreeSurrogate()
     # Train the surrogate model on the neighbourhood data and encoded target predictions

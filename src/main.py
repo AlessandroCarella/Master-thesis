@@ -1,11 +1,8 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 import os
-
-# Configure logging
-from pythonHelpers.logging_config import configure_logging
-configure_logging()
 
 from pythonHelpers.routes.health import router as health_router
 from pythonHelpers.routes.datasetDataInfo import router as dataset_router
@@ -13,7 +10,20 @@ from pythonHelpers.routes.model import router as model_router
 from pythonHelpers.routes.explain import router as explain_router
 from pythonHelpers.routes.colors import router as colors_router
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    from pythonHelpers.logging_config import configure_logging
+    configure_logging()
+    
+    # Pre-warm critical imports to reduce cold start for first requests
+    import numpy as np
+    import pandas as pd
+    
+    yield
+    # Shutdown (if needed)
+
+app = FastAPI(lifespan=lifespan)
 
 # Allowed origins for CORS - make configurable through environment variables
 origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:8080,http://192.168.1.191:8080").split(",")
