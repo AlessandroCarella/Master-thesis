@@ -148,14 +148,27 @@ export function handleTreeNodeClick(
         
         highlightPointsForLeaf(d, scatterPlotVis);
     } else {
+        // For split nodes: highlight the node, its descendants, AND the path to root
         highlightNode(contentGroup, d, metrics);
+        highlightPathToRoot(contentGroup, d, metrics); // ADD THIS LINE
         highlightDescendants(contentGroup, d, metrics);
         
         if (blocksTreeVis) {
+            highlightBlocksTreeNode(blocksTreeVis, d.data.node_id);
+            // Get path to root for blocks tree
+            const pathToRoot = getPathToNodeInBlocks(d.data.node_id);
+            if (pathToRoot.length > 0) {
+                highlightBlocksTreePath(blocksTreeVis, pathToRoot);
+            }
             highlightBlocksTreeDescendants(blocksTreeVis, d.data.node_id);
         }
         
         if (treeSpawnVis) {
+            highlightTreeSpawnNode(treeSpawnVis, d.data.node_id);
+            const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVis, d.data.node_id);
+            if (treeSpawnPath.length > 0) {
+                highlightTreeSpawnPath(treeSpawnVis, treeSpawnPath);
+            }
             highlightTreeSpawnDescendants(treeSpawnVis, d.data.node_id);
         }
         
