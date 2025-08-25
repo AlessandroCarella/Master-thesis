@@ -8,7 +8,7 @@ import {
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
 import { calculateNodeRadius } from "./metrics_spawnTree.js";
-import { state } from "./state_spawnTree.js";
+import { spawnTreeState } from "../TreesCommon/state.js";
 import { isNodeInPath, getInstanceValue } from "./dataProcessing_spawnTree.js";
 import { createContextMenu } from "./contextMenu_spawnTree.js"
 
@@ -20,9 +20,9 @@ export function addNodes(
     tooltip,
     colorMap
 ) {
-    // Get instance path from state
-    const instancePath = state.instancePath || [];
-    const instanceData = state.instanceData;
+    // Get instance path from spawnTreeState
+    const instancePath = spawnTreeState.instancePath || [];
+    const instanceData = spawnTreeState.instanceData;
     
     const visibleNodes = treeData.descendants().filter(d => !d.isHidden);
     
@@ -256,8 +256,8 @@ function highlightTreeSpawnClickedNodePath(clickedNodeId) {
     // Reset existing highlights first
     resetTreeSpawnHighlights(treeSpawnVis);
 
-    // Get the instance path from state
-    const instancePath = state.instancePath || [];
+    // Get the instance path from spawnTreeState
+    const instancePath = spawnTreeState.instancePath || [];
     
     // Find the index of the clicked node in the instance path
     const clickedIndex = instancePath.indexOf(clickedNodeId);
@@ -280,7 +280,7 @@ function highlightTreeSpawnClickedNodePath(clickedNodeId) {
 
 // Find path from root to any node in the tree
 function findPathFromRootToNode(targetNodeId) {
-    if (!state.hierarchyRoot) return [];
+    if (!spawnTreeState.hierarchyRoot) return [];
     
     function findPath(node, targetId, currentPath) {
         currentPath.push(node.node_id);
@@ -300,7 +300,7 @@ function findPathFromRootToNode(targetNodeId) {
         return null;
     }
     
-    return findPath(state.hierarchyRoot, targetNodeId, []) || [];
+    return findPath(spawnTreeState.hierarchyRoot, targetNodeId, []) || [];
 }
 
 // Highlight TreeSpawn path with red links
@@ -477,7 +477,7 @@ export function highlightTreeSpawnDescendants(visualization, nodeId) {
     // Get the TreeSpawn visualization if not provided
     const treeSpawnVis = visualization || getTreeSpawnVisualization();
     
-    if (!treeSpawnVis || !treeSpawnVis.container || !state.hierarchyRoot) {
+    if (!treeSpawnVis || !treeSpawnVis.container || !spawnTreeState.hierarchyRoot) {
         console.warn("TreeSpawn visualization or hierarchy data not available for highlighting descendants");
         return;
     }
@@ -503,7 +503,7 @@ export function highlightTreeSpawnDescendants(visualization, nodeId) {
         return null;
     }
 
-    const startNode = findNode(state.hierarchyRoot, nodeId);
+    const startNode = findNode(spawnTreeState.hierarchyRoot, nodeId);
     if (startNode) {
         collectDescendants(startNode);
         

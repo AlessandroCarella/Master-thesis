@@ -1,7 +1,7 @@
-import { state } from "./state_spawnTree.js";
+import { spawnTreeState } from "../TreesCommon/state.js";
 
 export function createHierarchy() {
-    const data = state.treeData;
+    const data = spawnTreeState.treeData;
     
     if (!data || !Array.isArray(data)) {
         console.error("Invalid data provided to createHierarchy:", data);
@@ -32,9 +32,9 @@ export function createHierarchy() {
 }
 
 export function findInstancePath(rootNode, instance) {
-    // Use instance from state if not provided
-    const instanceData = instance || state.instanceData;
-    const root = rootNode || state.hierarchyRoot;
+    // Use instance from spawnTreeState if not provided
+    const instanceData = instance || spawnTreeState.instanceData;
+    const root = rootNode || spawnTreeState.hierarchyRoot;
     
     // Add validation for instance parameter
     if (!root || !instanceData || typeof instanceData !== "object") {
@@ -82,9 +82,9 @@ export function traceInstancePath(rawTreeData, instanceData) {
     const path = [];
     const nodesById = {};
     
-    // Use state data if not provided
-    const treeData = rawTreeData || state.treeData;
-    const instance = instanceData || state.instanceData;
+    // Use spawnTreeState data if not provided
+    const treeData = rawTreeData || spawnTreeState.treeData;
+    const instance = instanceData || spawnTreeState.instanceData;
     
     if (!treeData || !instance) {
         console.warn("Missing tree data or instance data for path tracing");
@@ -123,14 +123,14 @@ export function traceInstancePath(rawTreeData, instanceData) {
         path.push(currentNode.node_id);
     }
     
-    // Store in state
-    state.instancePath = path;
+    // Store in spawnTreeState
+    spawnTreeState.instancePath = path;
     return path;
 }
 
 // Helper function to get node by ID from the hierarchy
 export function getNodeById(nodeId) {
-    const root = state.hierarchyRoot;
+    const root = spawnTreeState.hierarchyRoot;
     if (!root) return null;
 
     function dfs(node) {
@@ -148,7 +148,7 @@ export function getNodeById(nodeId) {
 
 // Helper function to get all leaf nodes
 export function getAllLeaves() {
-    const root = state.hierarchyRoot;
+    const root = spawnTreeState.hierarchyRoot;
     if (!root) return [];
     
     const leaves = [];
@@ -166,7 +166,7 @@ export function getAllLeaves() {
 
 // Helper function to get all nodes
 export function getAllNodes() {
-    const root = state.hierarchyRoot;
+    const root = spawnTreeState.hierarchyRoot;
     if (!root) return [];
     
     const nodes = [];
@@ -183,13 +183,13 @@ export function getAllNodes() {
 
 // Helper function to check if a node is in the instance path
 export function isNodeInPath(nodeId, instancePath) {
-    const path = instancePath || state.instancePath;
+    const path = instancePath || spawnTreeState.instancePath;
     return path && path.includes(nodeId);
 }
 
 // Function to get instance value for a feature
 export function getInstanceValue(featureName, instanceData) {
-    const instance = instanceData || state.instanceData;
+    const instance = instanceData || spawnTreeState.instanceData;
     if (!instance || !featureName) return null;
     return instance[featureName];
 }

@@ -3,7 +3,7 @@ import {
     highlightInstancePathInTree,
 } from "./visualizationConnector.js";
 import { createHierarchy } from "./ClassicDecisionTreeHelpers/dataProcessing_classicTree.js";
-import { getVisualizationSettings } from "./ClassicDecisionTreeHelpers/settings_classicTree.js";
+import { getVisualizationSettings } from "./TreesCommon/settings.js";
 import {
     calculateMetrics,
     createTreeLayout,
@@ -15,24 +15,24 @@ import {
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
-} from "./ClassicDecisionTreeHelpers/svg_classicTree.js";
+} from "./TreesCommon/svg.js";
 import { addLinks } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
 import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
-import { initializeZoom } from "./ClassicDecisionTreeHelpers/zoom_classicTree.js";
+import { initializeZoom } from "./TreesCommon/zoom.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
-import { state } from "./ClassicDecisionTreeHelpers/state_classicTree.js";
+import { classicTreeState } from "./TreesCommon/state.js";
 
 export function createTreeVisualization(rawTreeData, instance, container) {
-    const SETTINGS = getVisualizationSettings();
+    const SETTINGS = getVisualizationSettings("classic");
     
-    // Store data in global state
-    state.treeData = rawTreeData;
-    state.instanceData = instance;
-    state.hierarchyRoot = createHierarchy();
+    // Store data in global classicTreeState
+    classicTreeState.treeData = rawTreeData;
+    classicTreeState.instanceData = instance;
+    classicTreeState.hierarchyRoot = createHierarchy();
 
     const colorMap = getGlobalColorMap();
 
-    const root = d3.hierarchy(state.hierarchyRoot);
+    const root = d3.hierarchy(classicTreeState.hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
 
     clearExistingSVG(container);

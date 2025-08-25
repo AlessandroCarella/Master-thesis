@@ -8,7 +8,7 @@ import {
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
 import { calculateNodeRadius } from "./metrics_classicTree.js";
-import { state } from "./state_classicTree.js";
+import { classicTreeState } from "../TreesCommon/state.js";
 
 export function addNodes(
     contentGroup,
@@ -177,7 +177,7 @@ export function highlightClassicTreePath(contentGroup, pathNodeIds) {
 
 // Helper function to highlight descendants of a node
 export function highlightClassicTreeDescendants(contentGroup, nodeId) {
-    if (!contentGroup || !state.hierarchyRoot) return;
+    if (!contentGroup || !classicTreeState.hierarchyRoot) return;
 
     // Find all descendant node IDs
     const descendants = [];
@@ -201,7 +201,7 @@ export function highlightClassicTreeDescendants(contentGroup, nodeId) {
         return null;
     }
 
-    const startNode = findNode(state.hierarchyRoot, nodeId);
+    const startNode = findNode(classicTreeState.hierarchyRoot, nodeId);
     if (startNode) {
         collectDescendants(startNode);
         

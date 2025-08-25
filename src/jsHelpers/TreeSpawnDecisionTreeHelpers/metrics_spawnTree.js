@@ -1,4 +1,4 @@
-import { state } from "./state_spawnTree.js";
+import { spawnTreeState } from "../TreesCommon/state.js";
 import { traceInstancePath } from "./dataProcessing_spawnTree.js";
 import { createLinearPathLayout } from "./subtrees_spawnTree.js";
 
@@ -51,8 +51,8 @@ export function calculateSeparation(a, b, metrics, SETTINGS, root) {
 }
 
 export function createTreeLayout(metrics, SETTINGS, root) {
-    // Get instance path from state or trace it
-    let instancePath = state.instancePath;
+    // Get instance path from spawnTreeState or trace it
+    let instancePath = spawnTreeState.instancePath;
     if (!instancePath || instancePath.length === 0) {
         instancePath = traceInstancePath();
     }
@@ -98,9 +98,9 @@ export function calculateInitialTransform(treeData, SETTINGS) {
 }
 
 export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth) {
-    // Use total samples from state if not provided
-    if (!totalSamples && state.treeData && state.treeData.length > 0) {
-        totalSamples = state.treeData[0].n_samples;
+    // Use total samples from spawnTreeState if not provided
+    if (!totalSamples && spawnTreeState.treeData && spawnTreeState.treeData.length > 0) {
+        totalSamples = spawnTreeState.treeData[0].n_samples;
     }
     
     const ratio = weighted_n_samples / totalSamples;
@@ -108,9 +108,9 @@ export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth
     return strokeWidth;
 }
 
-// Helper function to get tree depth from state
+// Helper function to get tree depth from spawnTreeState
 export function getTreeDepth() {
-    if (!state.hierarchyRoot) return 0;
+    if (!spawnTreeState.hierarchyRoot) return 0;
     
     function calculateDepth(node, depth = 0) {
         if (!node.children || node.children.length === 0) {
@@ -119,12 +119,12 @@ export function getTreeDepth() {
         return Math.max(...node.children.map(child => calculateDepth(child, depth + 1)));
     }
     
-    return calculateDepth(state.hierarchyRoot);
+    return calculateDepth(spawnTreeState.hierarchyRoot);
 }
 
 // Helper function to get tree statistics
 export function getTreeStats() {
-    if (!state.hierarchyRoot || !state.treeData) {
+    if (!spawnTreeState.hierarchyRoot || !spawnTreeState.treeData) {
         return {
             totalNodes: 0,
             leafNodes: 0,
@@ -134,11 +134,11 @@ export function getTreeStats() {
         };
     }
     
-    const totalNodes = state.treeData.length;
-    const leafNodes = state.treeData.filter(node => node.is_leaf).length;
+    const totalNodes = spawnTreeState.treeData.length;
+    const leafNodes = spawnTreeState.treeData.filter(node => node.is_leaf).length;
     const internalNodes = totalNodes - leafNodes;
     const maxDepth = getTreeDepth();
-    const totalSamples = state.treeData[0]?.n_samples || 0;
+    const totalSamples = spawnTreeState.treeData[0]?.n_samples || 0;
     
     return {
         totalNodes,

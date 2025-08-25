@@ -1,5 +1,4 @@
 import { expandSubtree, collapseSubtree } from "./subtrees_spawnTree.js";
-import { refreshVisualization } from "../TreeSpawnDecisionTree.js";
 import { addNodes } from "./node_spawnTree.js";
 import { addLinks } from "./link_spawnTree.js";
 import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";

@@ -1,4 +1,4 @@
-import { state } from "./state_blocksTree.js";
+import { blocksTreeState } from "../TreesCommon/state.js"
 import { getNodeById, getAllNodes, getAllLeaves, getNodeLabel } from "./node_blocksTree.js";
 
 function arraysEqual(a, b) {
@@ -80,7 +80,7 @@ export function depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics) {
             id: nodeId,
             x: depthToX[depth],
             y: bottomY,
-            label: getNodeLabel(nodeId, state.instanceData),
+            label: getNodeLabel(nodeId, blocksTreeState.instanceData),
         };
     });
 
@@ -107,7 +107,7 @@ export function depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics) {
                     id: nodeId,
                     x: depthToX[depth],
                     y,
-                    label: getNodeLabel(nodeId, state.instanceData),
+                    label: getNodeLabel(nodeId, blocksTreeState.instanceData),
                 };
             }
         });
@@ -117,7 +117,7 @@ export function depthAlignedLayout(allPaths, SETTINGS, instancePath, metrics) {
 }
 
 export function getTreeDepth() {
-    return state.hierarchyRoot ? state.hierarchyRoot.height : 0;
+    return blocksTreeState.hierarchyRoot ? blocksTreeState.hierarchyRoot.height : 0;
 }
 
 export function getClassDistribution(leaves) {
@@ -130,7 +130,7 @@ export function getClassDistribution(leaves) {
 }
 
 export function getTreeStats() {
-    if (!state.hierarchyRoot) return {};
+    if (!blocksTreeState.hierarchyRoot) return {};
     const allNodes = getAllNodes();
     const leaves = getAllLeaves();
     return {
@@ -149,7 +149,7 @@ export function getUniqueClasses() {
 
 export function getStrokeWidth(targetNodeId) {
     const targetNode = getNodeById(targetNodeId);    
-    const totalSamples = state.treeData[0].n_samples;
+    const totalSamples = blocksTreeState.treeData[0].n_samples;
 
     const ratio = targetNode.weighted_n_samples / totalSamples;
     const strokeWidth = ratio * 3 * totalSamples / 30;

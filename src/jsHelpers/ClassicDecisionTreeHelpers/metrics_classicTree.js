@@ -1,4 +1,4 @@
-import { state } from "./state_classicTree.js";
+import { classicTreeState } from "../TreesCommon/state.js"
 
 export function calculateMetrics(root, SETTINGS) {
     const levelCounts = {};
@@ -94,9 +94,9 @@ export function calculateInitialTransform(treeData, SETTINGS) {
 }
 
 export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth) {
-    // Use total samples from state if not provided
-    if (!totalSamples && state.treeData && state.treeData.length > 0) {
-        totalSamples = state.treeData[0].n_samples;
+    // Use total samples from classicTreeState if not provided
+    if (!totalSamples && classicTreeState.treeData && classicTreeState.treeData.length > 0) {
+        totalSamples = classicTreeState.treeData[0].n_samples;
     }
     
     // This method differs from the get linkStrokeWidth() in calculateMetrics because this is used for
@@ -107,9 +107,9 @@ export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth
     return strokeWidth;
 }
 
-// Helper function to get tree depth from state
+// Helper function to get tree depth from classicTreeState
 export function getTreeDepth() {
-    if (!state.hierarchyRoot) return 0;
+    if (!classicTreeState.hierarchyRoot) return 0;
     
     function calculateDepth(node, depth = 0) {
         if (!node.children || node.children.length === 0) {
@@ -118,12 +118,12 @@ export function getTreeDepth() {
         return Math.max(...node.children.map(child => calculateDepth(child, depth + 1)));
     }
     
-    return calculateDepth(state.hierarchyRoot);
+    return calculateDepth(classicTreeState.hierarchyRoot);
 }
 
 // Helper function to get tree statistics
 export function getTreeStats() {
-    if (!state.hierarchyRoot || !state.treeData) {
+    if (!classicTreeState.hierarchyRoot || !classicTreeState.treeData) {
         return {
             totalNodes: 0,
             leafNodes: 0,
@@ -133,11 +133,11 @@ export function getTreeStats() {
         };
     }
     
-    const totalNodes = state.treeData.length;
-    const leafNodes = state.treeData.filter(node => node.is_leaf).length;
+    const totalNodes = classicTreeState.treeData.length;
+    const leafNodes = classicTreeState.treeData.filter(node => node.is_leaf).length;
     const internalNodes = totalNodes - leafNodes;
     const maxDepth = getTreeDepth();
-    const totalSamples = state.treeData[0]?.n_samples || 0;
+    const totalSamples = classicTreeState.treeData[0]?.n_samples || 0;
     
     return {
         totalNodes,

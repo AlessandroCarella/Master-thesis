@@ -2,7 +2,7 @@ import {
     setBlocksTreeVisualization,
 } from "./visualizationConnector.js";
 import { buildHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./BlocksDecisionTreeHelpers/dataProcessing_blocksTree.js";
-import { getVisualizationSettings } from "./BlocksDecisionTreeHelpers/settings_blocksTree.js";
+import { getVisualizationSettings } from "./TreesCommon/settings.js";
 import {
     calculateTreeMetrics,
     depthAlignedLayout,
@@ -12,20 +12,20 @@ import {
     createSVGContainer,
     createTooltip,
     ensureVisualizationVisibility,
-} from "./BlocksDecisionTreeHelpers/svg_blocksTree.js";
+}from "./TreesCommon/svg.js";
 import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { renderNodes, renderLabels } from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
-import { setupZoom } from "./BlocksDecisionTreeHelpers/zoom_blocksTree.js";
-import { state } from "./BlocksDecisionTreeHelpers/state_blocksTree.js";
+import { initializeZoom } from "./TreesCommon/zoom.js";
+import { blocksTreeState } from "./TreesCommon/state.js";
 
 export function createBlocksTreeVisualization(rawTreeData, instance) {
-    const SETTINGS = getVisualizationSettings();
+    const SETTINGS = getVisualizationSettings("blocks");
     const containerSelector = "#blocks-tree-plot";
 
     // Store the data
-    state.treeData = rawTreeData;
-    state.instanceData = instance;
-    state.hierarchyRoot = buildHierarchy(rawTreeData);
+    blocksTreeState.treeData = rawTreeData;
+    blocksTreeState.instanceData = instance;
+    blocksTreeState.hierarchyRoot = buildHierarchy(rawTreeData);
 
     // Get the existing container
     const container = document.querySelector(containerSelector);
@@ -35,14 +35,14 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     }
 
     // Clear any existing content and ensure visibility
-    clearExistingSVG(containerSelector);
+    clearExistingSVG(containerSelector, "blocks");
     ensureVisualizationVisibility();
 
     // Create tooltip
     const tooltip = createTooltip();
 
     // Get paths and calculate layout
-    const instancePath = traceInstancePath(state.instanceData);
+    const instancePath = traceInstancePath(blocksTreeState.instanceData);
     const allPaths = getAllPathsFromHierarchy();
     const metrics = calculateTreeMetrics(allPaths, SETTINGS, instancePath);
 
@@ -54,14 +54,15 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
 
     // Create SVG container
     const { svg, g } = createSVGContainer(
+        SETTINGS,
         containerSelector, 
+        "blocks",
         effectiveWidth, 
         effectiveHeight,
-        SETTINGS
     );
 
     // Setup zoom
-    setupZoom(svg, g, SETTINGS);
+    initializeZoom(svg, g, SETTINGS, "blocks");
 
     // Create and render links
     const links = createLinks(allPaths, nodePositions);

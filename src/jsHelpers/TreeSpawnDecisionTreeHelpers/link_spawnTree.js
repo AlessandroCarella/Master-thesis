@@ -1,6 +1,6 @@
 import { colorScheme } from "../visualizationConnector.js";
 import { getStrokeWidth } from "./metrics_spawnTree.js";
-import { state } from "./state_spawnTree.js";
+import { spawnTreeState } from "../TreesCommon/state.js";
 import { findInstancePath } from "./dataProcessing_spawnTree.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
@@ -39,7 +39,7 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .attr("data-target-id", (d) => d.target.data.node_id)
         .each(function(d) {
             // Calculate and store the original stroke width based on samples
-            const totalSamples = state.treeData ? state.treeData[0].n_samples : d.target.data.n_samples;
+            const totalSamples = spawnTreeState.treeData ? spawnTreeState.treeData[0].n_samples : d.target.data.n_samples;
             const originalStrokeWidth = getStrokeWidth(
                 d.target.data.weighted_n_samples || d.target.data.n_samples, 
                 totalSamples, 
@@ -62,9 +62,9 @@ export function highlightInstancePath(
     metrics,
     SETTINGS
 ) {
-    // If no pathNodeIds provided, calculate from state
-    if (!pathNodeIds && state.instanceData && state.hierarchyRoot) {
-        pathNodeIds = findInstancePath(state.hierarchyRoot, state.instanceData);
+    // If no pathNodeIds provided, calculate from spawnTreeState
+    if (!pathNodeIds && spawnTreeState.instanceData && spawnTreeState.hierarchyRoot) {
+        pathNodeIds = findInstancePath(spawnTreeState.hierarchyRoot, spawnTreeState.instanceData);
     }
 
     // Add validation for pathNodeIds

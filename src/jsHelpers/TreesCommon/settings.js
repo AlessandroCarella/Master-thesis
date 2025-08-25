@@ -2,6 +2,7 @@ export function getVisualizationSettings() {
     const margin = { top: 90, right: 90, bottom: 90, left: 90 };
     const width = 800;
     const height = 800;
+    
     return {
         margin,
         size: {
@@ -27,7 +28,19 @@ export function getVisualizationSettings() {
             baseLinkAndNodeBorderStrokeWidth: 3,
             minLinkAndNodeBorderStrokeWidth: 1,
             maxLinkAndNodeBorderStrokeWidth: 8,
-            maxZoom: 20,
+            width: 150,
+            height: 100,
+            borderRadius: 4,
+        },
+        zoom: {
+            scaleExtent: [0.5, 20],
+        },
+        layout: {
+            minSpacing: 100,
+            scaleFactor: {
+                base: 100,
+                multiplier: 1.5,
+            },
         },
         visual: {
             // Rectangle dimensions for path nodes
@@ -35,18 +48,18 @@ export function getVisualizationSettings() {
             rectHeight: 100,
             rectBorderRadius: 8,
             rectMargin: 100, // Base spacing between rectangles in path
-            
+
             // Subtree-based spacing configuration
             subtreeSizeSpacingMultiplier: 10, // Additional pixels per node in subtree
-            
+
             // Layout spacing
             verticalGap: 100, // Gap between path and subtrees
-            
+
             // Stroke widths
             strokeWidth: {
                 highlightLink: 4,
                 pathHighlightMultiplier: 2,
-            }
-        }
+            },
+        },
     };
 }

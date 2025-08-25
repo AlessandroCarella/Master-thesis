@@ -3,7 +3,7 @@ import {
     highlightInstancePathInTreeSpawn,
 } from "./visualizationConnector.js";
 import { createHierarchy, traceInstancePath } from "./TreeSpawnDecisionTreeHelpers/dataProcessing_spawnTree.js";
-import { getVisualizationSettings } from "./TreeSpawnDecisionTreeHelpers/settings_spawnTree.js";
+import { getVisualizationSettings } from "./TreesCommon/settings.js";
 import {
     calculateMetrics,
     createTreeLayout,
@@ -15,29 +15,29 @@ import {
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
-} from "./TreeSpawnDecisionTreeHelpers/svg_spawnTree.js";
+} from "./TreesCommon/svg.js";
 import { addLinks } from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js";
 import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
-import { initializeZoom } from "./TreeSpawnDecisionTreeHelpers/zoom_spawnTree.js";
+import { initializeZoom } from "./TreesCommon/zoom.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
-import { state } from "./TreeSpawnDecisionTreeHelpers/state_spawnTree.js";
+import { spawnTreeState } from "./TreesCommon/state.js";
 
 export function createTreeSpawnVisualization(rawTreeData, instance, container) {
-    const SETTINGS = getVisualizationSettings();
+    const SETTINGS = getVisualizationSettings("spawn");
     
-    // Store data in global state
-    state.treeData = rawTreeData;
-    state.instanceData = instance;
-    state.hierarchyRoot = createHierarchy();
+    // Store data in global spawnTreeState
+    spawnTreeState.treeData = rawTreeData;
+    spawnTreeState.instanceData = instance;
+    spawnTreeState.hierarchyRoot = createHierarchy();
     
-    // Trace instance path and store in state
+    // Trace instance path and store in spawnTreeState
     if (instance) {
-        state.instancePath = traceInstancePath(rawTreeData, instance);
+        spawnTreeState.instancePath = traceInstancePath(rawTreeData, instance);
     }
 
     const colorMap = getGlobalColorMap();
 
-    const root = d3.hierarchy(state.hierarchyRoot);
+    const root = d3.hierarchy(spawnTreeState.hierarchyRoot);
     const metrics = calculateMetrics(root, SETTINGS);
 
     const containerSelector = container || "#treespawn-tree-plot";
@@ -71,7 +71,7 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
         svg,
         container: contentGroup,
         rawTreeData: rawTreeData,
-        instancePath: state.instancePath
+        instancePath: spawnTreeState.instancePath
     };
 
     setTreeSpawnVisualization(visualization);
@@ -86,11 +86,11 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
 
 // Function to refresh the visualization after expand/collapse operations
 export function refreshVisualization() {
-    if (!state.treeData || !state.instanceData) {
-        console.error("No visualization state stored for refresh");
+    if (!spawnTreeState.treeData || !spawnTreeState.instanceData) {
+        console.error("No visualization spawnTreeState stored for refresh");
         return;
     }
     
-    // Recreate the visualization with current state
-    createTreeSpawnVisualization(state.treeData, state.instanceData, "#treespawn-tree-plot");
+    // Recreate the visualization with current spawnTreeState
+    createTreeSpawnVisualization(spawnTreeState.treeData, spawnTreeState.instanceData, "#treespawn-tree-plot");
 }

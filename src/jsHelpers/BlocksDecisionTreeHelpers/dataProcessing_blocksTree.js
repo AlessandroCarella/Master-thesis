@@ -1,4 +1,4 @@
-import { state } from "./state_blocksTree.js";
+import { blocksTreeState } from "../TreesCommon/state.js"
 
 // Build D3 hierarchy from flat array and compute a tree layout
 export function buildHierarchy(flatTreeData) {
@@ -35,7 +35,7 @@ function findParent(nodeId, nodeMap) {
 }
 
 export function traceInstancePath(instance) {
-    let node = state.hierarchyRoot;
+    let node = blocksTreeState.hierarchyRoot;
     const path = [];
     while (node) {
         path.push(node.data.node_id);
@@ -68,6 +68,6 @@ export function getAllPathsFromHierarchy() {
             node.children.forEach((c) => traverse(c, next));
         }
     }
-    if (state.hierarchyRoot) traverse(state.hierarchyRoot, []);
+    if (blocksTreeState.hierarchyRoot) traverse(blocksTreeState.hierarchyRoot, []);
     return paths;
 }

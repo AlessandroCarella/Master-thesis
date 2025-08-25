@@ -1,4 +1,4 @@
-import { state } from "./state_blocksTree.js";
+import { blocksTreeState } from "../TreesCommon/state.js"
 import { 
     handleTreeNodeClick,
     colorScheme,
@@ -11,7 +11,7 @@ import {
 import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 
 export function getNodeById(nodeId) {
-    const root = state.hierarchyRoot;
+    const root = blocksTreeState.hierarchyRoot;
     if (!root) return null;
 
     function dfs(node) {
@@ -28,19 +28,19 @@ export function getNodeById(nodeId) {
 }
 
 export function getAllLeaves() {
-    return state.hierarchyRoot
-        ? state.hierarchyRoot.leaves().map((d) => d.data)
+    return blocksTreeState.hierarchyRoot
+        ? blocksTreeState.hierarchyRoot.leaves().map((d) => d.data)
         : [];
 }
 
 export function getAllNodes() {
-    return state.hierarchyRoot
-        ? state.hierarchyRoot.descendants().map((d) => d.data)
+    return blocksTreeState.hierarchyRoot
+        ? blocksTreeState.hierarchyRoot.descendants().map((d) => d.data)
         : [];
 }
 
 export function getPathToNode(targetNodeId) {
-    const root = state.hierarchyRoot;
+    const root = blocksTreeState.hierarchyRoot;
     if (!root) return [];
 
     function findPath(node, path = []) {
@@ -80,11 +80,11 @@ export function getNodeLabel(nodeId, instance) {
 // Helper function to get node color using global color management
 function getBlocksNodeColor(nodeId, SETTINGS) {
     const nodeData = getNodeById(nodeId);
-    if (!nodeData) return SETTINGS.colors.splitNode;
+    if (!nodeData) return colorScheme.ui.nodeStroke;
     
     // Get the global color map
     const globalColorMap = getGlobalColorMap();
-    if (!globalColorMap) return SETTINGS.colors.splitNode;
+    if (!globalColorMap) return colorScheme.ui.nodeStroke;
     
     // Create a node object that matches the global getNodeColor function interface
     const nodeForColorFunction = {
@@ -248,7 +248,7 @@ export function renderLabels(container, nodePositions, SETTINGS) {
         .attr("class", "node-label-group")
         .each(function (d) {
             const group = d3.select(this);
-            const lines = getNodeLabelLines(d.id, state.instanceData);
+            const lines = getNodeLabelLines(d.id, blocksTreeState.instanceData);
             const fontSize = calculateFontSize(lines, SETTINGS.node.width, SETTINGS.node.height);
             const lineHeight = fontSize * 1.2;
 
@@ -284,7 +284,7 @@ function findClassicTreeHierarchyNode(nodeId) {
 
 // Helper function to find hierarchy node by ID in the BLOCKS TREE (for internal blocks tree operations)
 function findBlocksTreeHierarchyNode(nodeId) {
-    const root = state.hierarchyRoot;
+    const root = blocksTreeState.hierarchyRoot;
     if (!root) return null;
 
     function search(node) {
@@ -428,7 +428,7 @@ export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
 
 // Function to find tree path for scatter plot integration (similar to classical tree)
 export function findBlocksTreePath(features) {
-    const root = state.hierarchyRoot;
+    const root = blocksTreeState.hierarchyRoot;
     if (!root) return [];
 
     let path = [];

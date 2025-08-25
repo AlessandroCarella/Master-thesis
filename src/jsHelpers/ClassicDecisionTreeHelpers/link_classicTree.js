@@ -1,6 +1,6 @@
 import { colorScheme } from "../visualizationConnector.js";
 import { getStrokeWidth } from "./metrics_classicTree.js";
-import { state } from "./state_classicTree.js";
+import { classicTreeState } from "../TreesCommon/state.js";
 import { findInstancePath } from "./dataProcessing_classicTree.js";
 
 export function createSplitPath({ source, target }, SETTINGS) {
@@ -26,7 +26,7 @@ export function addLinks(contentGroup, treeData, metrics, SETTINGS) {
         .attr("data-target-id", (d) => d.target.data.node_id)
         .each(function(d) {
             // Calculate and store the original stroke width based on samples
-            const totalSamples = state.treeData ? state.treeData[0].n_samples : d.target.data.n_samples;
+            const totalSamples = classicTreeState.treeData ? classicTreeState.treeData[0].n_samples : d.target.data.n_samples;
             const originalStrokeWidth = getStrokeWidth(
                 d.target.data.weighted_n_samples, 
                 totalSamples, 
@@ -50,9 +50,9 @@ export function highlightInstancePath(
     metrics,
     SETTINGS
 ) {
-    // If no pathNodeIds provided, calculate from state
-    if (!pathNodeIds && state.instanceData && state.hierarchyRoot) {
-        pathNodeIds = findInstancePath(state.hierarchyRoot, state.instanceData);
+    // If no pathNodeIds provided, calculate from classicTreeState
+    if (!pathNodeIds && classicTreeState.instanceData && classicTreeState.hierarchyRoot) {
+        pathNodeIds = findInstancePath(classicTreeState.hierarchyRoot, classicTreeState.instanceData);
     }
 
     // Add validation for pathNodeIds

@@ -1,7 +1,7 @@
-import { state } from "./state_classicTree.js";
+import { classicTreeState } from "../TreesCommon/state.js";
 
 export function createHierarchy() {
-    const data = state.treeData;
+    const data = classicTreeState.treeData;
     
     if (!data || !Array.isArray(data)) {
         console.error("Invalid data provided to createHierarchy:", data);
@@ -32,9 +32,9 @@ export function createHierarchy() {
 }
 
 export function findInstancePath(rootNode, instance) {
-    // Use instance from state if not provided
-    const instanceData = instance || state.instanceData;
-    const root = rootNode || state.hierarchyRoot;
+    // Use instance from classicTreeState if not provided
+    const instanceData = instance || classicTreeState.instanceData;
+    const root = rootNode || classicTreeState.hierarchyRoot;
     
     // Add validation for instance parameter
     if (!root || !instanceData || typeof instanceData !== "object") {
@@ -79,7 +79,7 @@ export function findInstancePath(rootNode, instance) {
 
 // Helper function to get node by ID from the hierarchy
 export function getNodeById(nodeId) {
-    const root = state.hierarchyRoot;
+    const root = classicTreeState.hierarchyRoot;
     if (!root) return null;
 
     function dfs(node) {
@@ -97,7 +97,7 @@ export function getNodeById(nodeId) {
 
 // Helper function to get all leaf nodes
 export function getAllLeaves() {
-    const root = state.hierarchyRoot;
+    const root = classicTreeState.hierarchyRoot;
     if (!root) return [];
     
     const leaves = [];
@@ -115,7 +115,7 @@ export function getAllLeaves() {
 
 // Helper function to get all nodes
 export function getAllNodes() {
-    const root = state.hierarchyRoot;
+    const root = classicTreeState.hierarchyRoot;
     if (!root) return [];
     
     const nodes = [];

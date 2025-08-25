@@ -1,12 +1,14 @@
-export function setupZoom(svg, g, SETTINGS) {
+export function initializeZoom(
+    svg,
+    contentGroup,
+    SETTINGS
+) {
     const zoom = d3
         .zoom()
         .scaleExtent(SETTINGS.zoom.scaleExtent)
         .on("zoom", (event) => {
-            g.attr("transform", event.transform);
+            contentGroup.attr("transform", event.transform);
         });
-
     svg.call(zoom);
-    
     return zoom;
 }
