@@ -1,3 +1,4 @@
+import { TREES_SETTINGS } from "./settings.js";
 import { getTreeState } from "./state";
 
 // Find path from root to a specific node in any tree
@@ -7,9 +8,9 @@ export function getPathToNode(targetNodeId, treeKind) {
     
     if (!root) return [];
 
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         return getPathToNodeBlocks(targetNodeId);
-    } else if (treeKind === "spawn") {
+    } else if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         return getPathToNodeSpawn(targetNodeId, state);
     } else {
         return getPathToNodeClassic(targetNodeId, root);
@@ -33,7 +34,7 @@ function getPathToNodeClassic(targetNodeId, root) {
 }
 
 function getPathToNodeBlocks(targetNodeId) {
-    const state = getTreeState("blocks");
+    const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
     const root = state.hierarchyRoot;
     
     if (!root) return [];
@@ -149,9 +150,9 @@ export function validatePath(path, treeKind) {
     
     const state = getTreeState(treeKind);
     
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         return validateBlocksPath(path, state);
-    } else if (treeKind === "spawn") {
+    } else if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         return validateSpawnPath(path, state);
     } else {
         return validateClassicPath(path, state);
@@ -251,7 +252,7 @@ function findBlocksNodeById(root, nodeId) {
 export function getAllPathsToLeaves(treeKind) {
     const state = getTreeState(treeKind);
     
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         return getAllPathsFromHierarchy();
     } else {
         return getAllPathsStandard(state.hierarchyRoot);
@@ -280,7 +281,7 @@ function getAllPathsStandard(root) {
 }
 
 function getAllPathsFromHierarchy() {
-    const state = getTreeState("blocks");
+    const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
     const paths = [];
     
     function traverse(node, current) {

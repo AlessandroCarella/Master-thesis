@@ -1,3 +1,5 @@
+import { TREES_SETTINGS } from "./settings.js"
+
 export function createTreeState() {
     return {
         treeData: null,
@@ -17,11 +19,11 @@ export const spawnTreeState = createTreeState();
 // Get state object based on tree type
 export function getTreeState(treeKind) {
     switch (treeKind) {
-        case "classic":
+        case TREES_SETTINGS.treeKindID.classic:
             return classicTreeState;
-        case "blocks":
+        case TREES_SETTINGS.treeKindID.blocks:
             return blocksTreeState;
-        case "spawn":
+        case TREES_SETTINGS.treeKindID.spawn:
             return spawnTreeState;
         default:
             console.warn(

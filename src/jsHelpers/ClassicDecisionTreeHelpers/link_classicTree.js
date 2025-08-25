@@ -32,7 +32,7 @@ export function addLinks(contentGroup, treeData, metrics) {
                 d.target.data.weighted_n_samples, 
                 totalSamples, 
                 metrics.linkStrokeWidth,
-                "classic"
+                TREES_SETTINGS.treeKindID.classic
             );
             // Store as data attribute for later retrieval
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);

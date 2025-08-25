@@ -16,22 +16,23 @@ import { addLinks } from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js";
 import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { spawnTreeState } from "./TreesCommon/state.js";
+import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 
 export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     // Store data in global spawnTreeState
     spawnTreeState.treeData = rawTreeData;
     spawnTreeState.instanceData = instance;
-    spawnTreeState.hierarchyRoot = createHierarchy("spawn");
+    spawnTreeState.hierarchyRoot = createHierarchy(TREES_SETTINGS.treeKindID.spawn);
     
     // Trace instance path and store in spawnTreeState
     if (instance) {
-        spawnTreeState.instancePath = findInstancePath(null, instance, "spawn");
+        spawnTreeState.instancePath = findInstancePath(null, instance, TREES_SETTINGS.treeKindID.spawn);
     }
 
     const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(spawnTreeState.hierarchyRoot);
-    const metrics = calculateMetrics(root, "spawn");
+    const metrics = calculateMetrics(root, TREES_SETTINGS.treeKindID.spawn);
 
     const containerSelector = container || "#treespawn-tree-plot";
     clearExistingSVG(containerSelector);
@@ -39,7 +40,7 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     const contentGroup = createContentGroup(svg);
     const tooltip = createTooltip();
 
-    const treeLayout = createTreeLayout(metrics, root, "spawn");
+    const treeLayout = createTreeLayout(metrics, root, TREES_SETTINGS.treeKindID.spawn);
     const treeData = treeLayout(root);
 
     addBackgroundLayer(contentGroup, metrics);

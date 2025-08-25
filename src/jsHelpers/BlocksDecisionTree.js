@@ -13,6 +13,7 @@ import {
 import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { renderNodes, renderLabels } from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
 import { blocksTreeState } from "./TreesCommon/state.js";
+import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 
 export function createBlocksTreeVisualization(rawTreeData, instance) {
     const containerSelector = "#blocks-tree-plot";
@@ -20,7 +21,7 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     // Store the data
     blocksTreeState.treeData = rawTreeData;
     blocksTreeState.instanceData = instance;
-    blocksTreeState.hierarchyRoot = createHierarchy("blocks");
+    blocksTreeState.hierarchyRoot = createHierarchy(TREES_SETTINGS.treeKindID.blocks);
 
     // Get the existing container
     const container = document.querySelector(containerSelector);
@@ -30,33 +31,33 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     }
 
     // Clear any existing content and ensure visibility
-    clearExistingSVG(containerSelector, "blocks");
+    clearExistingSVG(containerSelector, TREES_SETTINGS.treeKindID.blocks);
     ensureVisualizationVisibility();
 
     // Create tooltip
     const tooltip = createTooltip();
 
     // Get paths and calculate layout
-    const instancePath = traceInstancePath(blocksTreeState.instanceData, "blocks");
-    const allPaths = getAllPathsFromHierarchy("blocks");
-    const metrics = calculateTreeMetrics(allPaths, "blocks");
+    const instancePath = traceInstancePath(blocksTreeState.instanceData, TREES_SETTINGS.treeKindID.blocks);
+    const allPaths = getAllPathsFromHierarchy(TREES_SETTINGS.treeKindID.blocks);
+    const metrics = calculateTreeMetrics(allPaths, TREES_SETTINGS.treeKindID.blocks);
 
     const {
         positions: nodePositions,
         width: effectiveWidth,
         height: effectiveHeight,
-    } = depthAlignedLayout(allPaths, instancePath, metrics, "blocks");
+    } = depthAlignedLayout(allPaths, instancePath, metrics, TREES_SETTINGS.treeKindID.blocks);
 
     // Create SVG container
     const { svg, g } = createSVGContainer(
         containerSelector, 
-        "blocks",
+        TREES_SETTINGS.treeKindID.blocks,
         effectiveWidth, 
         effectiveHeight,
     );
 
     // Setup zoom
-    initializeZoom(svg, g, "blocks");
+    initializeZoom(svg, g, TREES_SETTINGS.treeKindID.blocks);
 
     // Create and render links
     const links = createLinks(allPaths, nodePositions);

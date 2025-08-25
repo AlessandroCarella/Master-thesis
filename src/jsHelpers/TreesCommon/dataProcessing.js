@@ -1,3 +1,4 @@
+import { TREES_SETTINGS } from "./settings.js";
 import { getTreeState } from "./state.js";
 
 export function createHierarchy(treeKind) {
@@ -9,13 +10,11 @@ export function createHierarchy(treeKind) {
         return null;
     }
 
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         // Blocks tree uses different hierarchy building logic
         return buildBlocksHierarchy(data);
-    } else {
-        // Classic and spawn use the same logic
-        return buildStandardHierarchy(data);
-    }
+    } 
+    return buildStandardHierarchy(data);
 }
 
 function buildStandardHierarchy(data) {
@@ -87,7 +86,7 @@ export function findInstancePath(rootNode, instance, treeKind) {
         return [];
     }
 
-    if (treeKind === "spawn") {
+    if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         return traceSpawnInstancePath(root, instanceData, state);
     } else {
         return traceStandardInstancePath(root, instanceData);
@@ -177,7 +176,7 @@ export function getNodeById(nodeId, treeKind) {
     
     if (!root) return null;
 
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         // Blocks tree uses different node access
         function dfs(node) {
             if (node.data.node_id === nodeId) return node.data;
@@ -208,7 +207,7 @@ export function getNodeById(nodeId, treeKind) {
 
 // Utility functions for spawn tree
 export function isNodeInPath(nodeId, instancePath, treeKind) {
-    if (treeKind === "spawn") {
+    if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         const state = getTreeState(treeKind);
         const path = instancePath || state.instancePath;
         return path && path.includes(nodeId);
@@ -217,7 +216,7 @@ export function isNodeInPath(nodeId, instancePath, treeKind) {
 }
 
 export function getInstanceValue(featureName, instanceData, treeKind) {
-    if (treeKind === "spawn") {
+    if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         const state = getTreeState(treeKind);
         const instance = instanceData || state.instanceData;
         if (!instance || !featureName) return null;
@@ -230,7 +229,7 @@ export function getInstanceValue(featureName, instanceData, treeKind) {
 
 // Blocks tree specific utilities
 export function traceInstancePath(instance, treeKind) {
-    if (treeKind !== "blocks") {
+    if (treeKind !== TREES_SETTINGS.treeKindID.blocks) {
         console.warn("traceInstancePath is blocks-specific, use findInstancePath for other trees");
         return findInstancePath(null, instance, treeKind);
     }
@@ -261,7 +260,7 @@ export function traceInstancePath(instance, treeKind) {
 }
 
 export function getAllPathsFromHierarchy(treeKind) {
-    if (treeKind !== "blocks") {
+    if (treeKind !== TREES_SETTINGS.treeKindID.blocks) {
         console.warn("getAllPathsFromHierarchy is blocks-specific");
         return [];
     }

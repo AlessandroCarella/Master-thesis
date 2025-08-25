@@ -45,7 +45,7 @@ export function addLinks(contentGroup, treeData, metrics) {
                 d.target.data.weighted_n_samples || d.target.data.n_samples, 
                 totalSamples, 
                 metrics.linkStrokeWidth,
-                "spawn"
+                TREES_SETTINGS.treeKindID.spawn
             );
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
         })

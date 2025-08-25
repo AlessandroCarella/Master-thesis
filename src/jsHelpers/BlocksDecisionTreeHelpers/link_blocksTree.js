@@ -54,21 +54,21 @@ export function renderLinks(container, links, instancePath) {
         .style("stroke", colorScheme.ui.linkStroke)
         .style("stroke-width", (d) => {
             // Get the actual node data using targetId
-            const targetNode = getNodeById(d.targetId, "blocks");
+            const targetNode = getNodeById(d.targetId, TREES_SETTINGS.treeKindID.blocks);
             if (!targetNode) return "1px";
             
             const samples = targetNode.weighted_n_samples || targetNode.n_samples || 1;
             const totalSamples = blocksTreeState.treeData ? blocksTreeState.treeData[0].n_samples : samples;
             
-            return `${getStrokeWidth(samples, totalSamples, 3, "blocks")}px`;
+            return `${getStrokeWidth(samples, totalSamples, 3, TREES_SETTINGS.treeKindID.blocks)}px`;
         })
         .each(function(d) {
             // Store original stroke width for highlighting
-            const targetNode = getNodeById(d.targetId, "blocks");
+            const targetNode = getNodeById(d.targetId, TREES_SETTINGS.treeKindID.blocks);
             if (targetNode) {
                 const samples = targetNode.weighted_n_samples || targetNode.n_samples || 1;
                 const totalSamples = blocksTreeState.treeData ? blocksTreeState.treeData[0].n_samples : samples;
-                const strokeWidth = getStrokeWidth(samples, totalSamples, 3, "blocks");
+                const strokeWidth = getStrokeWidth(samples, totalSamples, 3, TREES_SETTINGS.treeKindID.blocks);
                 d3.select(this).attr("data-original-stroke-width", strokeWidth);
             } else {
                 d3.select(this).attr("data-original-stroke-width", 1);

@@ -52,6 +52,11 @@ export const TREES_SETTINGS = {
             pathHighlightMultiplier: 2,
         },
     },
+    treeKindID: {
+        classic: 1,
+        spawn: 2,
+        blocks: 3
+    }
 };
 
 export function calculateSeparation() {

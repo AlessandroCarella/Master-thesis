@@ -16,24 +16,25 @@ import { addLinks } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
 import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { classicTreeState } from "./TreesCommon/state.js";
+import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 
 export function createTreeVisualization(rawTreeData, instance, container) {    
     // Store data in global classicTreeState
     classicTreeState.treeData = rawTreeData;
     classicTreeState.instanceData = instance;
-    classicTreeState.hierarchyRoot = createHierarchy("classic");
+    classicTreeState.hierarchyRoot = createHierarchy(TREES_SETTINGS.treeKindID.classic);
 
     const colorMap = getGlobalColorMap();
 
     const root = d3.hierarchy(classicTreeState.hierarchyRoot);
-    const metrics = calculateMetrics(root, "classic");
+    const metrics = calculateMetrics(root, TREES_SETTINGS.treeKindID.classic);
 
     clearExistingSVG(container);
     const svg = createSVGContainer(container);
     const contentGroup = createContentGroup(svg);
     const tooltip = createTooltip();
 
-    const treeLayout = createTreeLayout(metrics, root, "classic");
+    const treeLayout = createTreeLayout(metrics, root, TREES_SETTINGS.treeKindID.classic);
     const treeData = treeLayout(root);
 
     addBackgroundLayer(contentGroup, metrics);
@@ -52,6 +53,6 @@ export function createTreeVisualization(rawTreeData, instance, container) {
     window.treeVisualization = { contentGroup, treeData, metrics };
 
     if (instance) {
-        highlightInstancePathInTree(instance, "classic");
+        highlightInstancePathInTree(instance, TREES_SETTINGS.treeKindID.classic);
     }
 }

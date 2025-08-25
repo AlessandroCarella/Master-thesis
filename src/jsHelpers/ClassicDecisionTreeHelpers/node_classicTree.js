@@ -8,6 +8,7 @@ import {
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
+import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 export function addNodes(
     contentGroup,
@@ -30,11 +31,11 @@ export function addNodes(
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("stroke", colorScheme.ui.nodeStroke)
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, metrics, "classic")
+            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.classic)
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
-            handleMouseOut(event, d, tooltip, metrics, "classic")
+            handleMouseOut(tooltip)
         );
         
     nodes.on("click", (event, d) => {

@@ -102,11 +102,11 @@ export function addNodes(
     // Add event handlers
     nodes.selectAll("circle, rect")
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, metrics, "spawn")
+            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.spawn)
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
-        .on("mouseout", (event, d) =>
-            handleMouseOut(event, d, tooltip, metrics, "spawn")
+        .on("mouseout", () =>
+            handleMouseOut(tooltip)
         )
         .on("click", (event, d) => {
             handleNodeClick(event, d, contentGroup);

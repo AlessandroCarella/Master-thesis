@@ -5,7 +5,7 @@ import { createLinearPathLayout } from "../TreeSpawnDecisionTreeHelpers/subtrees
 import { TREES_SETTINGS, calculateSeparation } from "./settings.js";
 
 export function calculateMetrics(root, treeKind) {
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         return calculateBlocksMetrics(root);
     } else {
         return calculateStandardMetrics(root);
@@ -91,7 +91,7 @@ function calculateBlocksMetrics(allPaths) {
 }
 
 export function createTreeLayout(metrics, root, treeKind) {
-    if (treeKind === "spawn") {
+    if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         // Get instance path from spawnTreeState or trace it
         const state = getTreeState(treeKind);
         let instancePath = state.instancePath;
@@ -103,15 +103,14 @@ export function createTreeLayout(metrics, root, treeKind) {
         return function(rootNode) {
             return createLinearPathLayout(rootNode, metrics, instancePath);
         };
-    } else {
-        // Standard D3 tree layout for classic trees
-        const horizontalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitWidth;
-        const verticalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitHeight;
+    } 
+    // Standard D3 tree layout for classic trees
+    const horizontalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitWidth;
+    const verticalSpacing = root.descendants().length * TREES_SETTINGS.tree.minSplitHeight;
 
-        return d3.tree()
-            .size([horizontalSpacing, verticalSpacing])
-            .separation((a, b) => calculateSeparation());
-    }
+    return d3.tree()
+        .size([horizontalSpacing, verticalSpacing])
+        .separation((a, b) => calculateSeparation());
 }
 
 export function calculateInitialTransform(treeData) {
@@ -159,7 +158,7 @@ export function getStrokeWidth(weighted_n_samples, totalSamples, linkStrokeWidth
 
 // Blocks-specific metrics functions
 export function calculateTreeMetrics(allPaths, treeKind) {
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         return calculateBlocksMetrics(allPaths);
     } else {
         console.warn("calculateTreeMetrics is blocks-specific, use calculateMetrics for other trees");
@@ -168,7 +167,7 @@ export function calculateTreeMetrics(allPaths, treeKind) {
 }
 
 export function depthAlignedLayout(allPaths, instancePath, metrics, treeKind) {
-    if (treeKind !== "blocks") {
+    if (treeKind !== TREES_SETTINGS.treeKindID.blocks) {
         console.warn("depthAlignedLayout is blocks-specific");
         return null;
     }
@@ -246,7 +245,7 @@ function arraysEqual(a, b) {
 function getNodeLabel(nodeId, instance) {
     // Import from blocks node helpers
     const getNodeLabelLines = function(nodeId, instance) {
-        const state = getTreeState("blocks");
+        const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
         const node = state.hierarchyRoot;
         
         // Simple implementation - can be enhanced

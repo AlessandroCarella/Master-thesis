@@ -14,7 +14,7 @@ import { getNodeById } from "../TreesCommon/dataProcessing.js";
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 export function getNodeLabelLines(nodeId, instance) {
-    const node = getNodeById(nodeId, "blocks");
+    const node = getNodeById(nodeId, TREES_SETTINGS.treeKindID.blocks);
     if (!node) return [`Node ${nodeId}`];
 
     if (node.is_leaf) {
@@ -34,7 +34,7 @@ export function getNodeLabel(nodeId, instance) {
 
 // Helper function to get node color using global color management
 function getBlocksNodeColor(nodeId) {
-    const nodeData = getNodeById(nodeId, "blocks");
+    const nodeData = getNodeById(nodeId, TREES_SETTINGS.treeKindID.blocks);
     if (!nodeData) return colorScheme.ui.nodeStroke;
     
     // Get the global color map
@@ -70,13 +70,13 @@ export function renderNodes(container, nodePositions, instancePath, tooltip) {
         .attr("ry", TREES_SETTINGS.node.borderRadius)
         .attr("fill", (d) => getBlocksNodeColor(d.id))
         .on("mouseover", (event, d) => {
-            handleMouseOver(event, getNodeById(d.id, "blocks"), tooltip, null, "blocks");
+            handleMouseOver(event, getNodeById(d.id, TREES_SETTINGS.treeKindID.blocks), tooltip, TREES_SETTINGS.treeKindID.blocks);
         })
         .on("mousemove", (event) => {
             handleMouseMove(event, tooltip);
         })
         .on("mouseout", (event, d) => {
-            handleMouseOut(event, d, tooltip, "blocks");
+            handleMouseOut(tooltip);
         })
         .on("click", (event, d) => {
             handleNodeClick(
@@ -225,14 +225,14 @@ export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
 export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
     if (!blocksTreeVis || !blocksTreeVis.container) return;
 
-    const node = getNodeById(nodeId, "blocks");
+    const node = getNodeById(nodeId, TREES_SETTINGS.treeKindID.blocks);
     if (!node) return;
 
     // Get all descendant node IDs using the blocks tree hierarchy
     const descendants = [];
     
     function collectDescendants(currentNodeId) {
-        const currentNode = getNodeById(currentNodeId, "blocks");
+        const currentNode = getNodeById(currentNodeId, TREES_SETTINGS.treeKindID.blocks);
         if (!currentNode) return;
         
         descendants.push(currentNodeId);

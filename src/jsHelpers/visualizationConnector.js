@@ -31,6 +31,7 @@ import {
     getPathToNodeInTreeSpawn,
     addInstancePathHighlightToTreeSpawn
 } from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js"
+import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 
 let scatterPlotVisualization = null;
 let treeVisualization = null;
@@ -203,7 +204,7 @@ export function highlightInstancePathInTree(instance) {
     const hierarchyRoot = treeData.data;
 
     // Find the path for this instance
-    const pathNodeIds = findInstancePath(hierarchyRoot, instance, "classic");
+    const pathNodeIds = findInstancePath(hierarchyRoot, instance, TREES_SETTINGS.treeKindID.classic);
     
     // Highlight the path in the visualization
     highlightInstancePath(contentGroup, pathNodeIds);

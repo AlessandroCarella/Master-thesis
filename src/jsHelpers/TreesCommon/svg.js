@@ -3,7 +3,7 @@ import { TREES_SETTINGS } from "./settings.js";
 
 export function clearExistingSVG(containerSelector, treeKind = "general") {
     d3.select(`${containerSelector} svg`).remove();
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         // Also clear the container content for blocks tree
         const container = document.querySelector(containerSelector);
         if (container) {
@@ -13,7 +13,7 @@ export function clearExistingSVG(containerSelector, treeKind = "general") {
 }
 
 export function createSVGContainer(containerOrSelector, treeKind = "general", effectiveWidth = null, effectiveHeight = null) {
-    if (treeKind === "blocks") {
+    if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
         const container = d3.select(containerOrSelector);
         const svg = container
             .append("svg")

@@ -1,8 +1,10 @@
+import { TREES_SETTINGS } from "./settings.js";
+
 function createNodeTooltipContent(nodeData, treeKind) {
     const content = [];
 
     // Get actual node data based on tree type
-    const node = treeKind === "blocks" ? nodeData : nodeData.data;
+    const node = treeKind === TREES_SETTINGS.treeKindID.blocks ? nodeData : nodeData.data;
     
     if (!node) {
         content.push("<strong>Error:</strong> No node data available");
@@ -60,7 +62,7 @@ function createNodeTooltipContent(nodeData, treeKind) {
     }
 
     // Add tree-specific information
-    if (treeKind === "spawn") {
+    if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
         // Add subtree information for spawn trees
         if (nodeData.hasHiddenChildren) {
             content.push(`<strong>Subtree:</strong> Right-click to expand`);
@@ -72,7 +74,7 @@ function createNodeTooltipContent(nodeData, treeKind) {
     return content;
 }
 
-export function handleMouseOver(event, nodeData, tooltip, metrics, treeKind) {
+export function handleMouseOver(event, nodeData, tooltip, treeKind) {
     // Extract tooltip content creation
     const content = createNodeTooltipContent(nodeData, treeKind);
 
@@ -90,25 +92,13 @@ export function handleMouseMove(event, tooltip, treeKind) {
         .style("top", event.pageY - 10 + "px");
 }
 
-export function handleMouseOut(event, nodeData, tooltip, metrics, treeKind) {
+export function handleMouseOut(tooltip) {
     tooltip.style("visibility", "hidden");
-    
-    // Reset hover styling based on tree type
-    if (treeKind === "classic") {
-        d3.select(event.currentTarget)
-            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-            .style("opacity", 1); // colorScheme.opacity.hover would need to be imported
-    } else if (treeKind === "spawn") {
-        d3.select(event.currentTarget)
-            .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
-            .style("opacity", 1);
-    }
-    // Blocks tree doesn't have specific hover reset styling
 }
 
 // Get node text lines for path nodes (spawn tree specific)
 export function getNodeTextLines(nodeData, instanceData, treeKind) {
-    if (treeKind !== "spawn") {
+    if (treeKind !== TREES_SETTINGS.treeKindID.spawn) {
         console.warn("getNodeTextLines is spawn-specific");
         return ["Node"];
     }
@@ -140,7 +130,7 @@ export function getNodeTextLines(nodeData, instanceData, treeKind) {
 
 // Get node label lines for blocks tree rectangles
 export function getNodeLabelLines(nodeId, instance, treeKind) {
-    if (treeKind !== "blocks") {
+    if (treeKind !== TREES_SETTINGS.treeKindID.blocks) {
         console.warn("getNodeLabelLines is blocks-specific");
         return [`Node ${nodeId}`];
     }
