@@ -3,12 +3,15 @@ from sklearn.datasets import (
     load_wine, 
     load_breast_cancer, 
     load_diabetes, 
-    fetch_california_housing
+    fetch_california_housing,
+    fetch_openml
 )
 import numpy as np
 import os
 import joblib
 import logging
+import pickle
+from sklearn.preprocessing import LabelEncoder
 
 # Available datasets with kind information
 DATASETS = {
@@ -16,9 +19,16 @@ DATASETS = {
     'wine': 'tabular',
     'breast_cancer': 'tabular',
     'diabetes': 'tabular',
+    'adult': 'tabular',
+    'german': 'tabular',
     'california_housing_3': 'tabular',
     'california_housing_11': 'tabular',
 }
+
+class MockDataset:
+    def __init__(self, data, target):
+        self.data = data
+        self.target = target
 
 def get_available_datasets():
     """Return list of available datasets"""
@@ -89,6 +99,28 @@ def get_dataset_information_california_housing_11():
         "name": "california_housing_11",
         "n_samples": dataset.data.shape[0],
         "feature_names": list(dataset.feature_names),
+        "target_names": target_names,
+    }
+
+def get_dataset_information_adult():
+    """Get detailed information about the adult dataset"""
+    dataset = fetch_openml(name='adult', version=2, as_frame=True)
+    target_names = ['<=50K', '>50K']
+    return {
+        "name": "adult",
+        "n_samples": dataset.data.shape[0],
+        "feature_names": list(dataset.data.columns),
+        "target_names": target_names,
+    }
+
+def get_dataset_information_german():
+    """Get detailed information about the German credit dataset"""
+    dataset = fetch_openml(name='credit-g', version=1, as_frame=True)
+    target_names = ['bad', 'good']
+    return {
+        "name": "german",
+        "n_samples": dataset.data.shape[0],
+        "feature_names": list(dataset.data.columns),
         "target_names": target_names,
     }
 
@@ -172,6 +204,97 @@ def load_dataset_california_housing_11():
     
     return dataset, feature_names, target_names
 
+def load_dataset_adult():
+    """Load and preprocess the adult dataset"""
+    # Try to load from OpenML
+    dataset = fetch_openml(name='adult', version=2, as_frame=True)
+    
+    # Handle categorical and numerical columns separately
+    X = dataset.data.copy()
+    
+    # Identify categorical and numerical columns
+    categorical_cols = X.select_dtypes(include=['category', 'object']).columns
+    numerical_cols = X.select_dtypes(include=[np.number]).columns
+    
+    # Handle numerical columns: replace inf/-inf with NaN, then fill with 0
+    X[numerical_cols] = X[numerical_cols].replace([np.inf, -np.inf], np.nan).fillna(0)
+    
+    # Handle categorical columns: fill NaN with most frequent value or a placeholder
+    for col in categorical_cols:
+        if X[col].isna().any():
+            # Option 1: Fill with most frequent value
+            most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
+            X[col] = X[col].fillna(most_frequent)
+            
+            # Option 2: Alternatively, you could fill with a placeholder like 'Unknown'
+            # X[col] = X[col].fillna('Unknown')
+    
+    # Encode categorical variables using LabelEncoder
+    label_encoders = {}
+    for col in categorical_cols:
+        le = LabelEncoder()
+        X[col] = le.fit_transform(X[col].astype(str))
+        label_encoders[col] = le
+    
+    # Convert to numpy array
+    X = X.values
+    y = dataset.target.values
+    
+    # Encode target
+    le_target = LabelEncoder()
+    y_encoded = le_target.fit_transform(y)
+    
+    # Use the module-level MockDataset class
+    mock_dataset = MockDataset(X, y_encoded)
+    feature_names = list(dataset.data.columns)
+    target_names = list(le_target.classes_)
+    
+    return mock_dataset, feature_names, target_names
+
+def load_dataset_german():
+    """Load and preprocess the German credit dataset"""
+    # Try to load from OpenML
+    dataset = fetch_openml(name='credit-g', version=1, as_frame=True)
+    
+    # Handle categorical and numerical columns separately
+    X = dataset.data.copy()
+    
+    # Identify categorical and numerical columns
+    categorical_cols = X.select_dtypes(include=['category', 'object']).columns
+    numerical_cols = X.select_dtypes(include=[np.number]).columns
+    
+    # Handle numerical columns: replace inf/-inf with NaN, then fill with 0
+    X[numerical_cols] = X[numerical_cols].replace([np.inf, -np.inf], np.nan).fillna(0)
+    
+    # Handle categorical columns: fill NaN with most frequent value or a placeholder
+    for col in categorical_cols:
+        if X[col].isna().any():
+            # Fill with most frequent value
+            most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
+            X[col] = X[col].fillna(most_frequent)
+    
+    # Encode categorical variables using LabelEncoder
+    label_encoders = {}
+    for col in categorical_cols:
+        le = LabelEncoder()
+        X[col] = le.fit_transform(X[col].astype(str))
+        label_encoders[col] = le
+    
+    # Convert to numpy array
+    X = X.values
+    y = dataset.target.values
+    
+    # Encode target
+    le_target = LabelEncoder()
+    y_encoded = le_target.fit_transform(y)
+    
+    # Use the module-level MockDataset class
+    mock_dataset = MockDataset(X, y_encoded)
+    feature_names = list(dataset.data.columns)
+    target_names = list(le_target.classes_)
+    
+    return mock_dataset, feature_names, target_names
+
 # Cache loading for datasets (for actual data)
 def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
     """Load dataset from cache if available, else compute and cache it"""
@@ -181,10 +304,14 @@ def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
     if os.path.exists(cache_file):
         dataset = joblib.load(cache_file)
         logging.info(f"Loaded {dataset_name} from cache.")
-    else:
-        dataset = load_function()
-        joblib.dump(dataset, cache_file)
-        logging.info(f"Cached {dataset_name} to file.")
+        return dataset
+    
+    # Load dataset fresh (either no cache exists or cache was corrupted)
+    dataset = load_function()
+    
+    # Cache the new dataset
+    joblib.dump(dataset, cache_file)
+    logging.info(f"Cached {dataset_name} to file.")
     
     return dataset
 
@@ -197,6 +324,8 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
         'wine': get_dataset_information_wine,
         'breast_cancer': get_dataset_information_breast_cancer,
         'diabetes': get_dataset_information_diabetes,
+        'adult': get_dataset_information_adult,
+        'german': get_dataset_information_german,
         'california_housing_3': get_dataset_information_california_housing_3,
         'california_housing_11': get_dataset_information_california_housing_11,
     }
@@ -211,6 +340,8 @@ def load_dataset(dataset_name: str):
         'wine': load_dataset_wine,
         'breast_cancer': load_dataset_breast_cancer,
         'diabetes': load_dataset_diabetes,
+        'adult': load_dataset_adult,
+        'german': load_dataset_german,
         'california_housing_3': load_dataset_california_housing_3,
         'california_housing_11': load_dataset_california_housing_11,
     }

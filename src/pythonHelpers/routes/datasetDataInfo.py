@@ -1,10 +1,10 @@
 # routes/dataset.py
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-import logging
+import numpy as np
 import pandas as pd
 
-from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset, DATASETS
+from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset
 from pythonHelpers.routes.state import global_state
 
 router = APIRouter(prefix="/api")
@@ -35,6 +35,11 @@ def process_tabular_dataset(ds, feature_names):
     df = pd.DataFrame(ds.data, columns=feature_names)
     if hasattr(ds, "target"):
         df["target"] = ds.target
+
+    # Clean the dataframe to make it JSON serializable
+    # Replace NaN and infinite values with None
+    df = df.replace([np.inf, -np.inf], None)
+
     return JSONResponse(content={"dataset": df.to_dict(orient="records")})
 
 @router.get("/get-selected-dataset")
