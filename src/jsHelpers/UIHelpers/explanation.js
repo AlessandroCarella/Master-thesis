@@ -70,7 +70,7 @@ export const updateVisualizationUI = () => {
           <h2>Surrogate Model</h2>
           <div></div> <!-- Empty div to maintain consistent layout -->
         </div>
-        <div id="tree-plot"></div>
+        <div id="classic-tree-plot"></div>
       </div>
     </div>
 

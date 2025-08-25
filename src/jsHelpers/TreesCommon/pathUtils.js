@@ -1,4 +1,4 @@
-import { getTreeState } from "./utils";
+import { getTreeState } from "./state";
 
 // Find path from root to a specific node in any tree
 export function getPathToNode(targetNodeId, treeKind) {

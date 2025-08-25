@@ -1,4 +1,4 @@
-import { getTreeState } from "./utils.js";
+import { getTreeState } from "./state.js";
 import { blocksTreeState } from "./state.js";
 import { traceInstancePath } from "./dataProcessing.js";
 import { createLinearPathLayout } from "../TreeSpawnDecisionTreeHelpers/subtrees_spawnTree.js";

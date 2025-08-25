@@ -1,4 +1,4 @@
-import { getTreeState } from "./utils.js";
+import { getTreeState } from "./state.js";
 
 export function createHierarchy(treeKind) {
     const state = getTreeState(treeKind);

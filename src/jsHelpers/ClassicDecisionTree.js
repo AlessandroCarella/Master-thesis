@@ -11,10 +11,10 @@ import {
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
+    initializeZoom
 } from "./TreesCommon/svg.js";
 import { addLinks } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
 import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
-import { initializeZoom } from "./TreesCommon/zoom.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { classicTreeState } from "./TreesCommon/state.js";
 

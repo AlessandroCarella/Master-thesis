@@ -159,40 +159,14 @@ function handleNodeClick(event, spawnNodeData, container) {
         spawnTreeVis
     );
     
-    // Additionally, highlight the TreeSpawn path to the clicked node
-    highlightTreeSpawnClickedNodePath(spawnNodeData.data.node_id);
-}
-
-// Highlight TreeSpawn path to a clicked node (based on instance path)
-function highlightTreeSpawnClickedNodePath(clickedNodeId) {
-    const treeSpawnVis = getTreeSpawnVisualization();
-    if (!treeSpawnVis || !treeSpawnVis.container) {
-        return;
+    // Additional TreeSpawn-specific highlighting based on node type
+    if (spawnNodeData.data.is_leaf) {
+        // For leaf nodes: highlight path to root
+        highlightTreeSpawnPathToRoot(spawnNodeData.data.node_id);
+    } else {
+        // For split nodes: highlight all descendants
+        highlightTreeSpawnDescendants(spawnTreeVis, spawnNodeData.data.node_id);
     }
-
-    // Reset existing highlights first
-    resetTreeSpawnHighlights(treeSpawnVis);
-
-    // Get the instance path from spawnTreeState
-    const instancePath = spawnTreeState.instancePath || [];
-    
-    // Find the index of the clicked node in the instance path
-    const clickedIndex = instancePath.indexOf(clickedNodeId);
-    
-    if (clickedIndex === -1) {
-        // If clicked node is not in instance path, try to find path to it
-        const pathToNode = findPathFromRootToNode(clickedNodeId);
-        if (pathToNode && pathToNode.length > 0) {
-            highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToNode);
-        }
-        return;
-    }
-    
-    // Get path from root to clicked node (inclusive)
-    const pathToClickedNode = instancePath.slice(0, clickedIndex + 1);
-    
-    // Highlight this path
-    highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToClickedNode);
 }
 
 // Find path from root to any node in the tree
@@ -388,6 +362,38 @@ export function highlightTreeSpawnPath(visualization, pathNodeIds) {
             })
             .style("stroke", colorScheme.ui.highlight); // Red color for path links
     }
+}
+
+// Highlight TreeSpawn path to root for leaf nodes
+export function highlightTreeSpawnPathToRoot(leafNodeId) {
+    const treeSpawnVis = getTreeSpawnVisualization();
+    if (!treeSpawnVis || !treeSpawnVis.container) {
+        return;
+    }
+
+    // Reset existing highlights first
+    resetTreeSpawnHighlights(treeSpawnVis);
+
+    // Get the instance path from spawnTreeState
+    const instancePath = spawnTreeState.instancePath || [];
+    
+    // Find the index of the clicked node in the instance path
+    const clickedIndex = instancePath.indexOf(leafNodeId);
+    
+    if (clickedIndex === -1) {
+        // If clicked node is not in instance path, try to find path to it
+        const pathToNode = findPathFromRootToNode(leafNodeId);
+        if (pathToNode && pathToNode.length > 0) {
+            highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToNode);
+        }
+        return;
+    }
+    
+    // Get path from root to clicked node (inclusive)
+    const pathToClickedNode = instancePath.slice(0, clickedIndex + 1);
+    
+    // Highlight this path
+    highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToClickedNode);
 }
 
 export function highlightTreeSpawnDescendants(visualization, nodeId) {

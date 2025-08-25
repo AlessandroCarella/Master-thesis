@@ -11,10 +11,10 @@ import {
     createContentGroup,
     createTooltip,
     addBackgroundLayer,
+    initializeZoom
 } from "./TreesCommon/svg.js";
 import { addLinks } from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js";
 import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
-import { initializeZoom } from "./TreesCommon/zoom.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { spawnTreeState } from "./TreesCommon/state.js";
 
@@ -42,7 +42,7 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     const contentGroup = createContentGroup(svg, SETTINGS);
     const tooltip = createTooltip();
 
-    const treeLayout = createTreeLayout(metrics, SETTINGS, root);
+    const treeLayout = createTreeLayout(metrics, SETTINGS, root, "spawn");
     const treeData = treeLayout(root);
 
     addBackgroundLayer(contentGroup, SETTINGS, metrics);

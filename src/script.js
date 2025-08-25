@@ -220,7 +220,7 @@ window.explainInstance = async () => {
 
         // Also make sure all visualization containers are visible
         const scatterPlot = document.getElementById("scatter-plot");
-        const treePlot = document.getElementById("tree-plot");
+        const treePlot = document.getElementById("classic-tree-plot");
         const blocksTreeContainer = document.getElementById("blocks-tree-plot");
         const treeSpawnContainer = document.getElementById("treespawn-tree-plot");
         

@@ -9,10 +9,10 @@ import {
     createSVGContainer,
     createTooltip,
     ensureVisualizationVisibility,
+    initializeZoom
 }from "./TreesCommon/svg.js";
 import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
 import { renderNodes, renderLabels } from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
-import { initializeZoom } from "./TreesCommon/zoom.js";
 import { blocksTreeState } from "./TreesCommon/state.js";
 
 export function createBlocksTreeVisualization(rawTreeData, instance) {

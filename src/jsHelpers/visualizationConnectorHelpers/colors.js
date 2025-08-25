@@ -6,12 +6,12 @@ export const colorScheme = {
     classColors: [],
     // UI element colors
     ui: {
-        highlight: "#ff4444",
+        highlight: "#FF0000",
         default: "#cccccc",
         nodeStroke: "#666666",
         linkStroke: "#999999",
         background: "#ffffff",
-        instancePathHighlight: "#d40f15",
+        instancePathHighlight: "#0000FF",
         strokeMultiplierInstancePath: 2
     },
     // Opacity settings

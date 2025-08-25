@@ -53,7 +53,7 @@
 }
 
 #scatter-plot,
-#tree-plot {
+#classic-tree-plot {
     flex: 1;
     margin-top: 0;
     width: 100%;
@@ -61,7 +61,7 @@
 }
 
 #scatter-plot svg,
-#tree-plot svg {
+#classic-tree-plot svg {
     border: 2px solid var(--border-color); /* Add a visible border */
     border-radius: var(--radius-md); /* Optional rounded corners */
 }

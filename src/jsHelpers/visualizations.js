@@ -37,7 +37,7 @@ export function initializeVisualizations(data) {
 
 function clearVisualizations() {
     d3.select("#scatter-plot").selectAll("*").remove();
-    d3.select("#tree-plot").selectAll("*").remove();
+    d3.select("#classic-tree-plot").selectAll("*").remove();
     d3.select("#blocks-tree-plot").selectAll("*").remove();
     d3.select("#treespawn-tree-plot").selectAll("*").remove();
     // Also remove any tooltips that might be lingering
@@ -49,7 +49,7 @@ function createVisualizations(data) {
     createTreeVisualization(
         data.decisionTreeVisualizationData,
         data.instance,
-        "#tree-plot"
+        "#classic-tree-plot"
     );
 
     // Create scatter plot visualization
