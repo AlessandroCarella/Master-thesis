@@ -1,6 +1,5 @@
 import { TREES_SETTINGS } from "./settings.js";
 
-
 export function clearExistingSVG(containerSelector, treeKind = "general") {
     d3.select(`${containerSelector} svg`).remove();
     if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
@@ -89,10 +88,19 @@ export function ensureVisualizationVisibility() {
     }
 }
 
-export function initializeZoom(svg, contentGroup) {
+export function initializeZoom(svg, contentGroup, initialScale = null) {
+    // Calculate dynamic scale extent based on initial scale if provided
+    let scaleExtent = TREES_SETTINGS.zoom.scaleExtent;
+    
+    if (initialScale !== null && initialScale < scaleExtent[0]) {
+        // If initial scale is smaller than minimum, adjust the minimum
+        // Keep some buffer (0.8x) to allow zooming out a bit further than initial
+        scaleExtent = [initialScale * scaleExtent[0], scaleExtent[1]];
+    }
+    
     const zoom = d3
         .zoom()
-        .scaleExtent(TREES_SETTINGS.zoom.scaleExtent)
+        .scaleExtent(scaleExtent)
         .on("zoom", (event) => {
             contentGroup.attr("transform", event.transform);
         });

@@ -48,10 +48,11 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
 
     const initialTransform = calculateInitialTransform(treeData);
+    
+    // Pass the initial scale to initializeZoom to fix zoom constraints
     const zoom = initializeZoom(
         svg,
         contentGroup,
-        metrics,
         initialTransform.k
     );
 
