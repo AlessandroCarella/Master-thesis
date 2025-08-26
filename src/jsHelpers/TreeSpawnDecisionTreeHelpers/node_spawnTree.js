@@ -120,8 +120,8 @@ export function addNodes(
     return nodes;
 }
 
-// Handle node clicks - integration with global highlighting system
-function handleNodeClick(event, spawnNodeData) {
+// Handle node clicks - follows the same pattern as classic and blocks trees
+function handleNodeClick(event, spawnNodeData, contentGroup) {
     event.stopPropagation();
 
     // Get all tree visualizations
@@ -130,13 +130,13 @@ function handleNodeClick(event, spawnNodeData) {
     const treeVis = getTreeVisualization();
     const scatterPlotVis = getScatterPlotVisualization();
     
-    // Create mock metrics for compatibility
+    // Create mock metrics for compatibility (same as blocks tree pattern)
     const mockMetrics = {
         nodeBorderStrokeWidth: 2,
         linkStrokeWidth: 2
     };
 
-    // Find corresponding node in classic tree hierarchy
+    // Find corresponding node in classic tree hierarchy (same as blocks tree pattern)
     const hierarchicalNode = findClassicTreeHierarchyNode(spawnNodeData.data.node_id);
     
     if (!hierarchicalNode) {
@@ -144,98 +144,20 @@ function handleNodeClick(event, spawnNodeData) {
         return;
     }
 
-    const classicalTreeContainer = treeVis ? treeVis.contentGroup : null;
-
-    // Use existing tree node click handler
+    // Use the central tree node click handler (same pattern as other trees)
     handleTreeNodeClick(
         event,
         hierarchicalNode,
-        classicalTreeContainer,
+        contentGroup,
         treeVis,
         scatterPlotVis,
         mockMetrics,
         blocksTreeVis,
         spawnTreeVis
     );
-    
-    // Additional TreeSpawn-specific highlighting based on node type
-    if (spawnNodeData.data.is_leaf) {
-        // For leaf nodes: highlight path to root
-        highlightTreeSpawnPathToRoot(spawnNodeData.data.node_id);
-    } else {
-        // For split nodes: highlight all descendants
-        highlightTreeSpawnDescendants(spawnTreeVis, spawnNodeData.data.node_id);
-    }
 }
 
-// Find path from root to any node in the tree
-function findPathFromRootToNode(targetNodeId) {
-    if (!spawnTreeState.hierarchyRoot) return [];
-    
-    function findPath(node, targetId, currentPath) {
-        currentPath.push(node.node_id);
-        
-        if (node.node_id === targetId) {
-            return currentPath.slice(); // Return copy of path
-        }
-        
-        if (node.children) {
-            for (const child of node.children) {
-                const result = findPath(child, targetId, currentPath);
-                if (result) return result;
-            }
-        }
-        
-        currentPath.pop(); // Backtrack
-        return null;
-    }
-    
-    return findPath(spawnTreeState.hierarchyRoot, targetNodeId, []) || [];
-}
-
-// Highlight TreeSpawn path with red links
-function highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathNodeIds) {
-    if (!treeSpawnVis || !treeSpawnVis.container || !pathNodeIds || pathNodeIds.length === 0) {
-        return;
-    }
-
-    const container = treeSpawnVis.container;
-
-    // Highlight nodes in the path
-    let highlightedNodeCount = 0;
-    pathNodeIds.forEach(nodeId => {
-        const nodes = container
-            .selectAll(".node")
-            .filter((d) => d.data.node_id === nodeId);
-        
-        if (!nodes.empty()) {
-            nodes.selectAll("circle, rect")
-                .style("stroke", colorScheme.ui.highlight); // Red color for highlighted nodes
-            highlightedNodeCount++;
-        }
-    });
-
-    // Highlight links in the path with red color
-    let highlightedLinkCount = 0;
-    for (let i = 0; i < pathNodeIds.length - 1; i++) {
-        const sourceId = pathNodeIds[i];
-        const targetId = pathNodeIds[i + 1];
-
-        const links = container
-            .selectAll(".link")
-            .filter((d) => {
-                return (d.source.data.node_id === sourceId && d.target.data.node_id === targetId) ||
-                       (d.source.data.node_id === targetId && d.target.data.node_id === sourceId);
-            });
-        
-        if (!links.empty()) {
-            links.style("stroke", colorScheme.ui.highlight); // Red color for path links
-            highlightedLinkCount++;
-        }
-    }
-}
-
-// Helper function to find hierarchy node by ID in the classic tree
+// Helper function to find hierarchy node by ID in the classic tree (same as blocks tree pattern)
 function findClassicTreeHierarchyNode(nodeId) {
     const treeVis = getTreeVisualization();
     if (!treeVis || !treeVis.treeData) return null;
@@ -268,7 +190,7 @@ function getNodeTextLines(d, instanceData) {
     return lines;
 }
 
-// Helper functions for highlighting
+// Helper functions for highlighting (used by the central highlighting system)
 export function highlightTreeSpawnNode(visualization, nodeId) {
     // Get the TreeSpawn visualization if not provided
     const treeSpawnVis = visualization || getTreeSpawnVisualization();
@@ -321,38 +243,6 @@ export function highlightTreeSpawnPath(visualization, pathNodeIds) {
             })
             .style("stroke", colorScheme.ui.highlight); // Red color for path links
     }
-}
-
-// Highlight TreeSpawn path to root for leaf nodes
-function highlightTreeSpawnPathToRoot(leafNodeId) {
-    const treeSpawnVis = getTreeSpawnVisualization();
-    if (!treeSpawnVis || !treeSpawnVis.container) {
-        return;
-    }
-
-    // Reset existing highlights first
-    resetTreeSpawnHighlights(treeSpawnVis);
-
-    // Get the instance path from spawnTreeState
-    const instancePath = spawnTreeState.instancePath || [];
-    
-    // Find the index of the clicked node in the instance path
-    const clickedIndex = instancePath.indexOf(leafNodeId);
-    
-    if (clickedIndex === -1) {
-        // If clicked node is not in instance path, try to find path to it
-        const pathToNode = findPathFromRootToNode(leafNodeId);
-        if (pathToNode && pathToNode.length > 0) {
-            highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToNode);
-        }
-        return;
-    }
-    
-    // Get path from root to clicked node (inclusive)
-    const pathToClickedNode = instancePath.slice(0, clickedIndex + 1);
-    
-    // Highlight this path
-    highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathToClickedNode);
 }
 
 export function highlightTreeSpawnDescendants(visualization, nodeId) {
@@ -457,14 +347,14 @@ export function highlightTreeSpawnPathFromScatterPlot(path) {
         // Extract node IDs from path
         const pathNodeIds = path.map(node => node.data.node_id);
         
-        // Use the red link highlighting function
-        highlightTreeSpawnPathWithRedLinks(treeSpawnVis, pathNodeIds);
+        // Use the standard highlighting function
+        highlightTreeSpawnPath(treeSpawnVis, pathNodeIds);
     } catch (error) {
         console.error("Error highlighting TreeSpawn path:", error);
     }
 }
 
-// Helper function to reset TreeSpawn highlights (needed by the highlighting functions above)
+// Helper function to reset TreeSpawn highlights (used by the central highlighting system)
 function resetTreeSpawnHighlights(treeSpawnVis) {
     if (!treeSpawnVis || !treeSpawnVis.container) return;
 
