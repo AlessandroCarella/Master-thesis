@@ -1,5 +1,4 @@
 import { TREES_SETTINGS, calculateSeparation } from "../TreesCommon/settings.js";
-import { calculatePathNodeSpacing } from "../TreesCommon/metrics.js";
 
 // Helper function to create a D3 hierarchy from a node and its descendants
 function createSubtreeHierarchy(node) {
