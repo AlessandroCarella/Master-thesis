@@ -3,27 +3,63 @@ import { resetVisualizationState } from "../visualizationConnector.js";
 
 export const resetUIDatasetSelection = (appState) => {
     // Hide classifier section
-    document.getElementById("classifierSection").style.display = "none";
+    const classifierSection = document.getElementById("classifierSection");
+    if (classifierSection) {
+        classifierSection.style.display = "none";
+    }
 
     // Hide and reset parameter section
     const parameterSection = document.getElementById("parameterSection");
-    parameterSection.style.display = "none";
-    document.getElementById("parameterForm").innerHTML = "";
+    if (parameterSection) {
+        parameterSection.style.display = "none";
+    }
+    const parameterForm = document.getElementById("parameterForm");
+    if (parameterForm) {
+        parameterForm.innerHTML = "";
+    }
 
     // Hide and reset feature inputs
     const featureContainer = document.getElementById("featureButtonContainer");
-    featureContainer.style.display = "none";
-    document.getElementById("featureCarousel").innerHTML = "";
+    if (featureContainer) {
+        featureContainer.style.display = "none";
+    }
+    const featureCarousel = document.getElementById("featureCarousel");
+    if (featureCarousel) {
+        featureCarousel.innerHTML = "";
+    }
 
     // Clear surrogate parameters container
-    document.getElementById("surrogateContainer").innerHTML = "";
+    const surrogateContainer = document.getElementById("surrogateContainer");
+    if (surrogateContainer) {
+        surrogateContainer.innerHTML = "";
+    }
 
     // Hide visualization container and reset visualizations
-    document.querySelector(".svg-container").style.display = "none";
-    document.getElementById("scatter-plot").innerHTML = "";
-    document.getElementById("blocks-tree-plot").innerHTML = "";
-    document.getElementById("classic-tree-plot").innerHTML = "";
-    document.getElementById("treespawn-tree-plot").innerHTML = "";
+    const svgContainer = document.querySelector(".svg-container");
+    if (svgContainer) {
+        svgContainer.style.display = "none";
+    }
+    
+    // Clear visualization containers with null checks
+    const scatterPlot = document.getElementById("scatter-plot");
+    if (scatterPlot) {
+        scatterPlot.innerHTML = "";
+    }
+    
+    const blocksTreePlot = document.getElementById("blocks-tree-plot");
+    if (blocksTreePlot) {
+        blocksTreePlot.innerHTML = "";
+    }
+    
+    const classicTreePlot = document.getElementById("classic-tree-plot");
+    if (classicTreePlot) {
+        classicTreePlot.innerHTML = "";
+    }
+    
+    const treespawnTreePlot = document.getElementById("treespawn-tree-plot");
+    if (treespawnTreePlot) {
+        treespawnTreePlot.innerHTML = "";
+    }
 
     // Reset state values
     appState.selectedClassifier = null;
@@ -40,18 +76,46 @@ export const resetUIDatasetSelection = (appState) => {
 export const resetUISelectClassifier = (appState) => {
     // Hide and reset feature inputs
     const featureContainer = document.getElementById("featureButtonContainer");
-    featureContainer.style.display = "none";
-    document.getElementById("featureCarousel").innerHTML = "";
+    if (featureContainer) {
+        featureContainer.style.display = "none";
+    }
+    const featureCarousel = document.getElementById("featureCarousel");
+    if (featureCarousel) {
+        featureCarousel.innerHTML = "";
+    }
 
     // Clear surrogate parameters container
-    document.getElementById("surrogateContainer").innerHTML = "";
+    const surrogateContainer = document.getElementById("surrogateContainer");
+    if (surrogateContainer) {
+        surrogateContainer.innerHTML = "";
+    }
 
     // Hide visualization container and reset visualizations
-    document.querySelector(".svg-container").style.display = "none";
-    document.getElementById("scatter-plot").innerHTML = "";
-    document.getElementById("blocks-tree-plot").innerHTML = "";
-    document.getElementById("classic-tree-plot").innerHTML = "";
-    document.getElementById("treespawn-tree-plot").innerHTML = "";
+    const svgContainer = document.querySelector(".svg-container");
+    if (svgContainer) {
+        svgContainer.style.display = "none";
+    }
+    
+    // Clear visualization containers with null checks
+    const scatterPlot = document.getElementById("scatter-plot");
+    if (scatterPlot) {
+        scatterPlot.innerHTML = "";
+    }
+    
+    const blocksTreePlot = document.getElementById("blocks-tree-plot");
+    if (blocksTreePlot) {
+        blocksTreePlot.innerHTML = "";
+    }
+    
+    const classicTreePlot = document.getElementById("classic-tree-plot");
+    if (classicTreePlot) {
+        classicTreePlot.innerHTML = "";
+    }
+    
+    const treespawnTreePlot = document.getElementById("treespawn-tree-plot");
+    if (treespawnTreePlot) {
+        treespawnTreePlot.innerHTML = "";
+    }
 
     // Reset feature descriptor in the state
     appState.featureDescriptor = null;
@@ -62,12 +126,36 @@ export const resetUISelectClassifier = (appState) => {
 
 export const resetUIstartTraining = () => {
     // Clear surrogate parameters container and visualization container
-    document.getElementById("surrogateContainer").innerHTML = "";
-    document.querySelector(".svg-container").style.display = "none";
-    document.getElementById("scatter-plot").innerHTML = "";
-    document.getElementById("blocks-tree-plot").innerHTML = "";
-    document.getElementById("classic-tree-plot").innerHTML = "";
-    document.getElementById("treespawn-tree-plot").innerHTML = "";
+    const surrogateContainer = document.getElementById("surrogateContainer");
+    if (surrogateContainer) {
+        surrogateContainer.innerHTML = "";
+    }
+    
+    const svgContainer = document.querySelector(".svg-container");
+    if (svgContainer) {
+        svgContainer.style.display = "none";
+    }
+    
+    // Clear visualization containers with null checks
+    const scatterPlot = document.getElementById("scatter-plot");
+    if (scatterPlot) {
+        scatterPlot.innerHTML = "";
+    }
+    
+    const blocksTreePlot = document.getElementById("blocks-tree-plot");
+    if (blocksTreePlot) {
+        blocksTreePlot.innerHTML = "";
+    }
+    
+    const classicTreePlot = document.getElementById("classic-tree-plot");
+    if (classicTreePlot) {
+        classicTreePlot.innerHTML = "";
+    }
+    
+    const treespawnTreePlot = document.getElementById("treespawn-tree-plot");
+    if (treespawnTreePlot) {
+        treespawnTreePlot.innerHTML = "";
+    }
     
     // Reset visualization state tracking
     resetVisualizationState();
