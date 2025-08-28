@@ -1,12 +1,16 @@
 import { blocksTreeState } from "../TreesCommon/state.js"
 import { 
-    handleTreeNodeClick,
+    coordinateHighlightingAcrossAllTrees,
     colorScheme,
     getBlocksTreeVisualization,
     getTreeVisualization,
     getScatterPlotVisualization,
     getTreeSpawnVisualization,
     getNodeColor,
+    isBlocksTreeCreated,
+    isClassicTreeCreated,
+    isScatterPlotCreated,
+    isTreeSpawnCreated,
 } from "../visualizationConnector.js";
 import { getGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
@@ -79,13 +83,7 @@ export function renderNodes(container, nodePositions, instancePath, tooltip) {
             handleMouseOut(tooltip);
         })
         .on("click", (event, d) => {
-            handleNodeClick(
-                event,
-                d,
-                container,
-                getTreeVisualization(),
-                getScatterPlotVisualization()
-            );
+            handleNodeClick(event, d);
         });
 
     return nodeElements;
@@ -121,75 +119,23 @@ export function renderLabels(container, nodePositions) {
         });
 }
 
-// FIXED: Helper function to find hierarchy node by ID in the CLASSIC TREE
-function findClassicTreeHierarchyNode(nodeId) {
-    const treeVis = getTreeVisualization();
-    if (!treeVis || !treeVis.treeData) return null;
-
-    // Search in the classic tree hierarchy
-    const descendants = treeVis.treeData.descendants();
-    return descendants.find(node => node.data.node_id === nodeId);
-}
-
-// Helper function to find hierarchy node by ID in the BLOCKS TREE (for internal blocks tree operations)
-function findBlocksTreeHierarchyNode(nodeId) {
-    const root = blocksTreeState.hierarchyRoot;
-    if (!root) return null;
-
-    function search(node) {
-        if (node.data.node_id === nodeId) return node;
-        if (node.children) {
-            for (const child of node.children) {
-                const found = search(child);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-
-    return search(root);
-}
-
-// Handle node clicks in the blocks tree - FIXED VERSION
-function handleNodeClick(event, blocksNodeData, container, treeVis, scatterPlotVis) {
+// Simple, independent blocks tree node click handler
+function handleNodeClick(event, blocksNodeData) {
     event.stopPropagation();
 
-    // Get the other tree visualizations
-    const blocksTreeVis = getBlocksTreeVisualization();
-    const spawnTreeVis = getTreeSpawnVisualization();
+    const nodeId = blocksNodeData.id;
     
-    // Create a mock metrics object for the highlighting system
-    const mockMetrics = {
-        nodeBorderStrokeWidth: 2,
-        linkStrokeWidth: 2
-    };
+    // Get node data to determine if it's a leaf
+    const nodeData = getNodeById(nodeId, TREES_SETTINGS.treeKindID.blocks);
+    const isLeaf = nodeData ? nodeData.is_leaf : false;
 
-    // FIXED: Find the corresponding node in the CLASSIC tree hierarchy
-    const hierarchicalNode = findClassicTreeHierarchyNode(blocksNodeData.id);
-    
-    if (!hierarchicalNode) {
-        console.warn(`Could not find classic tree node with ID: ${blocksNodeData.id}`);
-        return;
-    }
-
-    const classicalTreeContainer = treeVis ? treeVis.contentGroup : null;
-
-    // Use the existing tree node click handler with blocks tree adaptation
-    handleTreeNodeClick(
-        event,
-        hierarchicalNode,
-        classicalTreeContainer,
-        treeVis,
-        scatterPlotVis,
-        mockMetrics,
-        blocksTreeVis,
-        spawnTreeVis
-    );
+    // Use the central highlighting coordination function
+    coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'blocks');
 }
 
-// Highlight a specific node in blocks tree
+// Highlight a specific node in blocks tree with existence checks
 export function highlightBlocksTreeNode(blocksTreeVis, nodeId) {
-    if (!blocksTreeVis || !blocksTreeVis.container) return;
+    if (!isBlocksTreeCreated() || !blocksTreeVis || !blocksTreeVis.container) return;
 
     blocksTreeVis.container
         .selectAll(".node")
@@ -197,9 +143,9 @@ export function highlightBlocksTreeNode(blocksTreeVis, nodeId) {
         .style("stroke", colorScheme.ui.highlight)
 }
 
-// Highlight a path in blocks tree
+// Highlight a path in blocks tree with existence checks
 export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
-    if (!blocksTreeVis || !blocksTreeVis.container || !pathNodeIds) return;
+    if (!isBlocksTreeCreated() || !blocksTreeVis || !blocksTreeVis.container || !pathNodeIds) return;
 
     // Highlight nodes in the path
     pathNodeIds.forEach(nodeId => {
@@ -221,9 +167,9 @@ export function highlightBlocksTreePath(blocksTreeVis, pathNodeIds) {
     }
 }
 
-// Highlight descendants of a node (for split nodes)
+// Highlight descendants of a node (for split nodes) with existence checks
 export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
-    if (!blocksTreeVis || !blocksTreeVis.container) return;
+    if (!isBlocksTreeCreated() || !blocksTreeVis || !blocksTreeVis.container) return;
 
     const node = getNodeById(nodeId, TREES_SETTINGS.treeKindID.blocks);
     if (!node) return;
@@ -275,8 +221,29 @@ export function highlightBlocksTreeDescendants(blocksTreeVis, nodeId) {
     }
 }
 
+// Helper function to find hierarchy node by ID in the BLOCKS TREE (for internal blocks tree operations)
+function findBlocksTreeHierarchyNode(nodeId) {
+    const root = blocksTreeState.hierarchyRoot;
+    if (!root) return null;
+
+    function search(node) {
+        if (node.data.node_id === nodeId) return node;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = search(child);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    return search(root);
+}
+
 // Function to find tree path for scatter plot integration (similar to classical tree)
 export function findBlocksTreePath(features) {
+    if (!isBlocksTreeCreated()) return [];
+    
     const root = blocksTreeState.hierarchyRoot;
     if (!root) return [];
 
@@ -311,8 +278,10 @@ export function findBlocksTreePath(features) {
     return path;
 }
 
-// Function to highlight tree path in blocks tree (for scatter plot integration)
+// Function to highlight tree path in blocks tree (for scatter plot integration) with existence checks
 export function highlightBlocksTreePathFromScatterPlot(path) {
+    if (!isBlocksTreeCreated()) return;
+    
     const blocksTreeVis = getBlocksTreeVisualization();
     if (!blocksTreeVis) return;
 
@@ -341,9 +310,9 @@ export function highlightBlocksTreePathFromScatterPlot(path) {
     }
 }
 
-// Reset highlights for blocks tree
+// Reset highlights for blocks tree with existence checks
 export function resetBlocksTreeHighlights(blocksTreeVis) {
-    if (!blocksTreeVis || !blocksTreeVis.container) return;
+    if (!isBlocksTreeCreated() || !blocksTreeVis || !blocksTreeVis.container) return;
 
     // Reset node highlights  
     blocksTreeVis.container

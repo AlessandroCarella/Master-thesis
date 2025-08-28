@@ -1,10 +1,6 @@
 import {
     colorScheme,
-    getBlocksTreeVisualization,
     getNodeColor,
-    getScatterPlotVisualization,
-    getTreeSpawnVisualization,
-    getTreeVisualization,
     handleTreeNodeClick,
 } from "../visualizationConnector.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
@@ -39,19 +35,11 @@ export function addNodes(
         );
         
     nodes.on("click", (event, d) => {
-        // Get the other tree visualizations
-        const blocksTreeVis = getBlocksTreeVisualization();
-        const spawnTreeVis = getTreeSpawnVisualization();
-
         handleTreeNodeClick(
             event,
             d,
             contentGroup,
-            getTreeVisualization(),
-            getScatterPlotVisualization(),
             metrics,
-            blocksTreeVis,
-            spawnTreeVis
         );
     });
 

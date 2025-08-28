@@ -1,4 +1,4 @@
-function createSection(title, id) {
+export function createSection(title, id) {
     const section = document.createElement("div");
     section.className = "feature-section";
     section.id = id;
@@ -16,7 +16,7 @@ function createSection(title, id) {
     return section;
 }
 
-function createNumericInput(container, featureName, details) {
+export function createNumericInput(container, featureName, details) {
     const box = document.createElement("div");
     box.className = "feature-box numeric-feature";
 
@@ -59,7 +59,7 @@ function addNumericValidation(input, details) {
     });
 }
 
-function createCategoricalInput(container, featureName, details) {
+export function createCategoricalInput(container, featureName, details) {
     const box = document.createElement("div");
     box.className = "feature-box categorical-feature";
 
@@ -76,7 +76,7 @@ function createCategoricalInput(container, featureName, details) {
     container.querySelector(".feature-section-content").appendChild(box);
 }
 
-function createOrdinalInput(container, featureName, details) {
+export function createOrdinalInput(container, featureName, details) {
     const box = document.createElement("div");
     box.className = "feature-box ordinal-feature";
 
@@ -95,7 +95,7 @@ function createOrdinalInput(container, featureName, details) {
     container.querySelector(".feature-section-content").appendChild(box);
 }
 
-function createSelectElement(featureName, values) {
+export function createSelectElement(featureName, values) {
     const select = document.createElement("select");
     select.id = `feature-${featureName}`;
 
@@ -116,7 +116,7 @@ function createSelectElement(featureName, values) {
     return select;
 }
 
-function createSurrogateInput(container, paramName, details) {
+export function createSurrogateInput(container, paramName, details) {
     const box = document.createElement("div");
     box.className = "feature-box numeric-feature";
 
@@ -169,11 +169,72 @@ function createSurrogateInput(container, paramName, details) {
     container.querySelector(".feature-section-content").appendChild(box);
 }
 
-export {
-    createSection,
-    createNumericInput,
-    createCategoricalInput,
-    createOrdinalInput,
-    createSelectElement,
-    createSurrogateInput,
-};
+export function createVisualizationToggle(container, paramName, details) {
+    const box = document.createElement("div");
+    box.className = "feature-box visualization-toggle";
+
+    // Create checkbox input
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = `viz-${paramName}`;
+    checkbox.checked = details.default;
+    checkbox.className = "visualization-checkbox";
+
+    // Add validation to ensure at least one is selected
+    checkbox.addEventListener("change", validateVisualizationSelection);
+
+    box.innerHTML = `
+        <label for="viz-${paramName}" class="visualization-label">
+            <div class="visualization-label-content">
+                ${details.label}
+                <span class="feature-type">Visualization</span>
+            </div>
+        </label>
+    `;
+
+    // Insert checkbox before label text
+    const label = box.querySelector("label");
+    label.insertBefore(checkbox, label.firstChild);
+
+    container.querySelector(".feature-section-content").appendChild(box);
+}
+
+function validateVisualizationSelection() {
+    const checkedBoxes = document.querySelectorAll('.visualization-checkbox:checked');
+    
+    // If no checkboxes are selected, prevent unchecking the last one
+    if (checkedBoxes.length === 0) {
+        // Re-check this checkbox
+        this.checked = true;
+        
+        // Show warning message
+        showVisualizationWarning();
+        return;
+    }
+    
+    // Clear any existing warning
+    clearVisualizationWarning();
+}
+
+function showVisualizationWarning() {
+    // Remove any existing warning
+    clearVisualizationWarning();
+    
+    const visualizationSection = document.getElementById("visualization-toggles");
+    if (visualizationSection) {
+        const warning = document.createElement("div");
+        warning.className = "visualization-warning";
+        warning.textContent = "At least one visualization must be selected.";
+        visualizationSection.appendChild(warning);
+        
+        // Remove warning after 3 seconds
+        setTimeout(clearVisualizationWarning, 3000);
+    }
+}
+
+function clearVisualizationWarning() {
+    const warning = document.querySelector(".visualization-warning");
+    if (warning) {
+        warning.remove();
+    }
+}

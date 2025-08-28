@@ -64,7 +64,7 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
         metrics, 
         svg,
         container: contentGroup,
-        rawTreeData: rawTreeData,
+        rawTreeData: rawTreeData,  // Store raw tree data for scatter plot highlighting
         instancePath: spawnTreeState.instancePath
     };
 
@@ -76,15 +76,4 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     }
 
     return visualization;
-}
-
-// Function to refresh the visualization after expand/collapse operations
-export function refreshVisualization() {
-    if (!spawnTreeState.treeData || !spawnTreeState.instanceData) {
-        console.error("No visualization spawnTreeState stored for refresh");
-        return;
-    }
-    
-    // Recreate the visualization with current spawnTreeState
-    createTreeSpawnVisualization(spawnTreeState.treeData, spawnTreeState.instanceData, "#treespawn-tree-plot");
 }

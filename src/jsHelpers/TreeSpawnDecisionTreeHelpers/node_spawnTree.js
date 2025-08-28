@@ -5,7 +5,7 @@ import {
     getScatterPlotVisualization,
     getTreeSpawnVisualization,
     getTreeVisualization,
-    handleTreeNodeClick,
+    coordinateHighlightingAcrossAllTrees,
 } from "../visualizationConnector.js";
 import { spawnTreeState } from "../TreesCommon/state.js";
 import { createContextMenu } from "./contextMenu_spawnTree.js"
@@ -109,7 +109,7 @@ export function addNodes(
             handleMouseOut(tooltip)
         )
         .on("click", (event, d) => {
-            handleNodeClick(event, d, contentGroup);
+            handleNodeClick(event, d);
         })
         .on("contextmenu", (event, d) => {
             if (d.hasHiddenChildren || d.isExpanded) {
@@ -120,50 +120,15 @@ export function addNodes(
     return nodes;
 }
 
-// Handle node clicks - follows the same pattern as classic and blocks trees
-function handleNodeClick(event, spawnNodeData, contentGroup) {
+// Simple, independent TreeSpawn node click handler
+function handleNodeClick(event, spawnNodeData) {
     event.stopPropagation();
 
-    // Get all tree visualizations
-    const blocksTreeVis = getBlocksTreeVisualization();
-    const spawnTreeVis = getTreeSpawnVisualization();
-    const treeVis = getTreeVisualization();
-    const scatterPlotVis = getScatterPlotVisualization();
-    
-    // Create mock metrics for compatibility (same as blocks tree pattern)
-    const mockMetrics = {
-        nodeBorderStrokeWidth: 2,
-        linkStrokeWidth: 2
-    };
+    const nodeId = spawnNodeData.data.node_id;
+    const isLeaf = spawnNodeData.data.is_leaf;
 
-    // Find corresponding node in classic tree hierarchy (same as blocks tree pattern)
-    const hierarchicalNode = findClassicTreeHierarchyNode(spawnNodeData.data.node_id);
-    
-    if (!hierarchicalNode) {
-        console.warn(`Could not find classic tree node with ID: ${spawnNodeData.data.node_id}`);
-        return;
-    }
-
-    // Use the central tree node click handler (same pattern as other trees)
-    handleTreeNodeClick(
-        event,
-        hierarchicalNode,
-        contentGroup,
-        treeVis,
-        scatterPlotVis,
-        mockMetrics,
-        blocksTreeVis,
-        spawnTreeVis
-    );
-}
-
-// Helper function to find hierarchy node by ID in the classic tree (same as blocks tree pattern)
-function findClassicTreeHierarchyNode(nodeId) {
-    const treeVis = getTreeVisualization();
-    if (!treeVis || !treeVis.treeData) return null;
-
-    const descendants = treeVis.treeData.descendants();
-    return descendants.find(node => node.data.node_id === nodeId);
+    // Use the central highlighting coordination function
+    coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'spawn');
 }
 
 // Function to prepare text lines for a node
@@ -355,7 +320,7 @@ export function highlightTreeSpawnPathFromScatterPlot(path) {
 }
 
 // Helper function to reset TreeSpawn highlights (used by the central highlighting system)
-function resetTreeSpawnHighlights(treeSpawnVis) {
+export function resetTreeSpawnHighlights(treeSpawnVis) {
     if (!treeSpawnVis || !treeSpawnVis.container) return;
 
     // Reset node highlights

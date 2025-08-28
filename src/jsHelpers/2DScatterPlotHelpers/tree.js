@@ -1,4 +1,4 @@
-import { colorScheme } from "../visualizationConnector.js";
+import { colorScheme, isBlocksTreeCreated, isTreeSpawnCreated } from "../visualizationConnector.js";
 import { 
     findBlocksTreePath, 
     highlightBlocksTreePathFromScatterPlot,
@@ -130,6 +130,12 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     d3.select(node)
         .style("fill", colorScheme.ui.highlight)
 
+    // Highlight paths in all available trees
+    highlightPathsInAllTrees(originalFeatures, treeVisualization);
+}
+
+// Centralized function to highlight paths in all available trees
+function highlightPathsInAllTrees(originalFeatures, treeVisualization) {
     // Find and highlight the corresponding path in the classical decision tree
     if (treeVisualization && treeVisualization.treeData) {
         const path = findTreePath(originalFeatures, treeVisualization);
@@ -137,8 +143,7 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
     }
 
     // Find and highlight the corresponding path in the blocks decision tree
-    const blocksTreeVis = getBlocksTreeVisualization();
-    if (blocksTreeVis) {
+    if (isBlocksTreeCreated()) {
         try {
             const blocksPath = findBlocksTreePath(originalFeatures);
             if (blocksPath && blocksPath.length > 0) {
@@ -149,9 +154,8 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
         }
     }
 
-    // Find and highlight the corresponding path in the TreeSpawn decision tree
-    const treeSpawnVis = getTreeSpawnVisualization();
-    if (treeSpawnVis) {
+    // Find and highlight the corresponding path in the TreeSpawn decision tree  
+    if (isTreeSpawnCreated()) {
         try {
             const treeSpawnPath = findTreeSpawnPath(originalFeatures);
             if (treeSpawnPath && treeSpawnPath.length > 0) {
@@ -165,18 +169,24 @@ export function togglePointColor(node, d, data, colorMap, treeVisualization) {
 
 // Function to reset all tree highlights (classical, blocks, and TreeSpawn)
 export function resetAllTreeHighlights(treeVisualization) {
-    // Reset classical tree highlights
-    resetTreeHighlights(treeVisualization);
+    // Reset classical tree highlights if available
+    if (isClassicTreeCreated() && treeVisualization) {
+        resetTreeHighlights(treeVisualization);
+    }
     
-    // Reset blocks tree highlights
-    const blocksTreeVis = getBlocksTreeVisualization();
-    if (blocksTreeVis) {
-        resetBlocksTreeHighlights(blocksTreeVis);
+    // Reset blocks tree highlights if available
+    if (isBlocksTreeCreated()) {
+        const blocksTreeVis = getBlocksTreeVisualization();
+        if (blocksTreeVis) {
+            resetBlocksTreeHighlights(blocksTreeVis);
+        }
     }
 
-    // Reset TreeSpawn tree highlights
-    const treeSpawnVis = getTreeSpawnVisualization();
-    if (treeSpawnVis) {
-        resetTreeSpawnHighlights(treeSpawnVis);
+    // Reset TreeSpawn tree highlights if available
+    if (isTreeSpawnCreated()) {
+        const treeSpawnVis = getTreeSpawnVisualization();
+        if (treeSpawnVis) {
+            resetTreeSpawnHighlights(treeSpawnVis);
+        }
     }
 }

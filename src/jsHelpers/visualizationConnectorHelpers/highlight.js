@@ -16,9 +16,15 @@ import {
     resetTreeSpawnHighlights,
     getPathToNodeInTreeSpawn
  } from "../TreeSpawnDecisionTreeHelpers/link_spawnTree.js"
+import {
+    isScatterPlotCreated,
+    isClassicTreeCreated,
+    isBlocksTreeCreated,
+    isTreeSpawnCreated,
+} from "../visualizationConnector.js";
 
 // Determine if a point belongs to a leaf node's decision path
-export function pointBelongsToLeaf(point, originalData, leafNode) {
+function pointBelongsToLeaf(point, originalData, leafNode) {
     let currentNode = leafNode;
     while (currentNode.parent) {
         const parentData = currentNode.parent.data;
@@ -35,10 +41,193 @@ export function pointBelongsToLeaf(point, originalData, leafNode) {
     return true;
 }
 
-// Reset all highlights across visualizations
+// Determine if a point belongs to a node's decision region using raw tree data
+function pointBelongsToNodeId(originalData, nodeId, rawTreeData) {
+    // Build path from root to target node
+    const pathToNode = buildPathToNode(nodeId, rawTreeData);
+    
+    if (pathToNode.length === 0) {
+        console.warn("No path found to node:", nodeId);
+        return false;
+    }
+
+    // Check if point satisfies all conditions in the path
+    for (let i = 0; i < pathToNode.length - 1; i++) {
+        const currentNode = pathToNode[i];
+        const nextNode = pathToNode[i + 1];
+        
+        if (!currentNode.feature_name) continue;
+
+        const featureValue = originalData[currentNode.feature_name];
+        const threshold = currentNode.threshold;
+        
+        // Determine if we went left or right
+        const wentLeft = nextNode.node_id === currentNode.left_child;
+
+        if (wentLeft && featureValue > threshold) {
+            return false;
+        }
+        if (!wentLeft && featureValue <= threshold) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Build path from root to target node using raw tree data
+function buildPathToNode(targetNodeId, rawTreeData) {
+    if (!rawTreeData || !Array.isArray(rawTreeData)) {
+        console.warn("Invalid raw tree data for path building");
+        return [];
+    }
+    
+    // Create lookup map
+    const nodeMap = {};
+    rawTreeData.forEach(node => {
+        nodeMap[node.node_id] = node;
+    });
+    
+    // Find target node
+    const targetNode = nodeMap[targetNodeId];
+    if (!targetNode) {
+        console.warn("Target node not found in node map:", targetNodeId);
+        return [];
+    }
+    
+    // Build path from root to target
+    const path = [];
+    const visited = new Set();
+    
+    function findPath(currentNodeId, targetId, currentPath) {
+        if (visited.has(currentNodeId)) {
+            return false;
+        }
+        visited.add(currentNodeId);
+        
+        const node = nodeMap[currentNodeId];
+        if (!node) {
+            return false;
+        }
+        
+        const newPath = [...currentPath, node];
+        
+        if (currentNodeId === targetId) {
+            path.splice(0, path.length, ...newPath);
+            return true;
+        }
+        
+        // Try left child
+        if (node.left_child !== null && findPath(node.left_child, targetId, newPath)) {
+            return true;
+        }
+        
+        // Try right child  
+        if (node.right_child !== null && findPath(node.right_child, targetId, newPath)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Start from root (node_id = 0)
+    findPath(0, targetNodeId, []);
+    
+    return path;
+}
+
+// Get all descendant node IDs using raw tree data
+function getDescendantNodeIds(nodeId, rawTreeData) {
+    if (!rawTreeData || !Array.isArray(rawTreeData)) return [];
+    
+    const nodeMap = {};
+    rawTreeData.forEach(node => {
+        nodeMap[node.node_id] = node;
+    });
+    
+    const descendants = [];
+    
+    function collectDescendants(currentNodeId) {
+        const node = nodeMap[currentNodeId];
+        if (!node) return;
+        
+        descendants.push(currentNodeId);
+        
+        if (node.left_child !== null) {
+            collectDescendants(node.left_child);
+        }
+        if (node.right_child !== null) {
+            collectDescendants(node.right_child);
+        }
+    }
+    
+    collectDescendants(nodeId);
+    return descendants;
+}
+
+// Highlight points for a specific node using raw tree data (for when classic tree isn't available)
+export function highlightPointsForNodeId(nodeId, rawTreeData, scatterPlotVis) {
+    if (!isScatterPlotCreated() || !scatterPlotVis || !scatterPlotVis.points || !rawTreeData) {
+        console.warn("Missing requirements for scatter plot highlighting:", {
+            scatterPlotCreated: isScatterPlotCreated(),
+            hasVisualization: !!scatterPlotVis,
+            hasPoints: !!scatterPlotVis?.points,
+            hasRawTreeData: !!rawTreeData
+        });
+        return;
+    }
+
+    // Find the target node in raw tree data
+    const targetNode = rawTreeData.find(node => node.node_id === nodeId);
+    if (!targetNode) {
+        console.warn("Target node not found in raw tree data:", nodeId);
+        return;
+    }
+
+    if (targetNode.is_leaf) {
+        // For leaf nodes, highlight points that belong to this leaf
+        scatterPlotVis.points
+            .style("fill", (d, i) => {
+                const originalData = scatterPlotVis.data.originalData[i];
+                const belongs = pointBelongsToNodeId(originalData, nodeId, rawTreeData);
+                return belongs
+                    ? colorScheme.ui.highlight
+                    : getGlobalColorMap()[scatterPlotVis.data.targets[i]];
+            });
+    } else {
+        // For split nodes, highlight points that belong to any descendant leaf
+        const descendantIds = getDescendantNodeIds(nodeId, rawTreeData);
+        const leafDescendantIds = descendantIds.filter(id => {
+            const node = rawTreeData.find(n => n.node_id === id);
+            return node && node.is_leaf;
+        });
+
+        scatterPlotVis.points
+            .style("fill", (d, i) => {
+                const originalData = scatterPlotVis.data.originalData[i];
+                
+                // Check if point belongs to any descendant leaf
+                for (const leafId of leafDescendantIds) {
+                    if (pointBelongsToNodeId(originalData, leafId, rawTreeData)) {
+                        return colorScheme.ui.highlight;
+                    }
+                }
+                
+                return getGlobalColorMap()[scatterPlotVis.data.targets[i]];
+            });
+    }
+}
+
+// Highlight points for all descendants of a node using raw tree data
+export function highlightPointsForNodeIdDescendants(nodeId, rawTreeData, scatterPlotVis) {
+    // This is the same as highlightPointsForNodeId for non-leaf nodes
+    highlightPointsForNodeId(nodeId, rawTreeData, scatterPlotVis);
+}
+
+// Reset all highlights across visualizations with existence checks
 export function resetHighlights(treeVis, scatterPlotVis) {
-    // Reset decision tree highlights
-    if (treeVis && treeVis.contentGroup) {
+    // Reset decision tree highlights only if classic tree exists
+    if (isClassicTreeCreated() && treeVis && treeVis.contentGroup) {
         treeVis.contentGroup
             .selectAll(".link")
             .style("stroke", colorScheme.ui.linkStroke)
@@ -57,8 +246,8 @@ export function resetHighlights(treeVis, scatterPlotVis) {
             );
     }
 
-    // Reset Scatter plot highlights
-    if (scatterPlotVis && scatterPlotVis.points) {
+    // Reset Scatter plot highlights only if scatter plot exists
+    if (isScatterPlotCreated() && scatterPlotVis && scatterPlotVis.points) {
         scatterPlotVis.points
             .style("fill", (d, i) => getGlobalColorMap()[scatterPlotVis.data.targets[i]])
             .style("opacity", (d, i) =>
@@ -68,22 +257,26 @@ export function resetHighlights(treeVis, scatterPlotVis) {
             );
     }
 
-    // Reset blocks tree highlights
-    const blocksTreeVis = window.blocksTreeVisualization;
-    if (blocksTreeVis) {
-        resetBlocksTreeHighlights(blocksTreeVis);
+    // Reset blocks tree highlights only if blocks tree exists
+    if (isBlocksTreeCreated()) {
+        const blocksTreeVis = window.blocksTreeVisualization;
+        if (blocksTreeVis) {
+            resetBlocksTreeHighlights(blocksTreeVis);
+        }
     }
 
-    // Reset TreeSpawn tree highlights
-    const treeSpawnVis = window.treeSpawnVisualization;
-    if (treeSpawnVis) {
-        resetTreeSpawnHighlights(treeSpawnVis);
+    // Reset TreeSpawn tree highlights only if TreeSpawn tree exists
+    if (isTreeSpawnCreated()) {
+        const treeSpawnVis = window.treeSpawnVisualization;
+        if (treeSpawnVis) {
+            resetTreeSpawnHighlights(treeSpawnVis);
+        }
     }
 }
 
-// Highlight points in scatter plot for selected leaf node
+// Highlight points in scatter plot for selected leaf node with existence checks
 export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
-    if (!scatterPlotVis || !scatterPlotVis.points) return;
+    if (!isScatterPlotCreated() || !scatterPlotVis || !scatterPlotVis.points) return;
 
     scatterPlotVis.points
         .style("fill", (d, i) => {
@@ -93,35 +286,39 @@ export function highlightPointsForLeaf(leafNode, scatterPlotVis) {
                 : getGlobalColorMap()[scatterPlotVis.data.targets[i]];
         });
         
-    // Also highlight the corresponding node in blocks tree
-    const blocksTreeVis = window.blocksTreeVisualization;
-    if (blocksTreeVis && leafNode.data && leafNode.data.node_id) {
-        highlightBlocksTreeNode(blocksTreeVis, leafNode.data.node_id);
-        
-        // Get path to root for blocks tree
-        const pathToRoot = getPathToNodeInBlocks(leafNode.data.node_id);
-        if (pathToRoot.length > 0) {
-            highlightBlocksTreePath(blocksTreeVis, pathToRoot);
+    // Also highlight the corresponding node in blocks tree (if it exists)
+    if (isBlocksTreeCreated()) {
+        const blocksTreeVis = window.blocksTreeVisualization;
+        if (blocksTreeVis && leafNode.data && leafNode.data.node_id) {
+            highlightBlocksTreeNode(blocksTreeVis, leafNode.data.node_id);
+            
+            // Get path to root for blocks tree
+            const pathToRoot = getPathToNodeInBlocks(leafNode.data.node_id);
+            if (pathToRoot.length > 0) {
+                highlightBlocksTreePath(blocksTreeVis, pathToRoot);
+            }
         }
     }
 
-    // Also highlight the corresponding node in TreeSpawn tree
-    const treeSpawnVis = window.treeSpawnVisualization;
-    if (treeSpawnVis && leafNode.data && leafNode.data.node_id) {
-        highlightTreeSpawnNode(treeSpawnVis, leafNode.data.node_id);
-        
-        // Get path to root for TreeSpawn tree
-        const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVis, leafNode.data.node_id);
-        if (treeSpawnPath.length > 0) {
-            highlightTreeSpawnPath(treeSpawnVis, treeSpawnPath);
+    // Also highlight the corresponding node in TreeSpawn tree (if it exists)
+    if (isTreeSpawnCreated()) {
+        const treeSpawnVis = window.treeSpawnVisualization;
+        if (treeSpawnVis && leafNode.data && leafNode.data.node_id) {
+            highlightTreeSpawnNode(treeSpawnVis, leafNode.data.node_id);
+            
+            // Get path to root for TreeSpawn tree
+            const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVis, leafNode.data.node_id);
+            if (treeSpawnPath.length > 0) {
+                highlightTreeSpawnPath(treeSpawnVis, treeSpawnPath);
+            }
         }
     }
 }
 
-// Highlights a single node
+// Highlights a single node with existence checks
 export function highlightNode(contentGroup, node, metrics) {
-    // Highlight in classical tree
-    if (contentGroup) {
+    // Highlight in classical tree only if it exists
+    if (isClassicTreeCreated() && contentGroup) {
         contentGroup
             .selectAll(".node")
             .filter((n) => n === node)
@@ -131,22 +328,26 @@ export function highlightNode(contentGroup, node, metrics) {
             .style("opacity", colorScheme.opacity.default);
     }
         
-    // Also highlight in blocks tree
-    const blocksTreeVis = window.blocksTreeVisualization;
-    if (blocksTreeVis && node.data && node.data.node_id) {
-        highlightBlocksTreeNode(blocksTreeVis, node.data.node_id);
+    // Also highlight in blocks tree (if it exists)
+    if (isBlocksTreeCreated()) {
+        const blocksTreeVis = window.blocksTreeVisualization;
+        if (blocksTreeVis && node.data && node.data.node_id) {
+            highlightBlocksTreeNode(blocksTreeVis, node.data.node_id);
+        }
     }
 
-    // Also highlight in TreeSpawn tree
-    const treeSpawnVis = window.treeSpawnVisualization;
-    if (treeSpawnVis && node.data && node.data.node_id) {
-        highlightTreeSpawnNode(treeSpawnVis, node.data.node_id);
+    // Also highlight in TreeSpawn tree (if it exists)
+    if (isTreeSpawnCreated()) {
+        const treeSpawnVis = window.treeSpawnVisualization;
+        if (treeSpawnVis && node.data && node.data.node_id) {
+            highlightTreeSpawnNode(treeSpawnVis, node.data.node_id);
+        }
     }
 }
 
-// Highlights the link between two nodes
-export function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
-    if (!contentGroup) return;
+// Highlights the link between two nodes with existence checks
+function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
+    if (!isClassicTreeCreated() || !contentGroup) return;
     
     contentGroup
         .selectAll(".link")
@@ -162,37 +363,49 @@ export function highlightPath(contentGroup, sourceNode, targetNode, metrics) {
         });
 }
 
-// For leaf nodes: highlights all the paths from the leaf to the root
+// For leaf nodes: highlights all the paths from the leaf to the root with existence checks
 export function highlightPathToRoot(contentGroup, leafNode, metrics) {
     if (!leafNode) return;
     
     let currentNode = leafNode;
     const pathNodeIds = [];
     
-    // Highlight classical tree path
-    while (currentNode) {
-        pathNodeIds.unshift(currentNode.data.node_id);
-        if (currentNode.parent) {
-            highlightNode(contentGroup, currentNode.parent, metrics);
-            highlightPath(contentGroup, currentNode.parent, currentNode, metrics);
+    // Highlight classical tree path only if it exists
+    if (isClassicTreeCreated() && contentGroup) {
+        while (currentNode) {
+            pathNodeIds.unshift(currentNode.data.node_id);
+            if (currentNode.parent) {
+                highlightNode(contentGroup, currentNode.parent, metrics);
+                highlightPath(contentGroup, currentNode.parent, currentNode, metrics);
+            }
+            currentNode = currentNode.parent;
         }
-        currentNode = currentNode.parent;
+    } else {
+        // Still collect path node IDs for other trees even if classic tree doesn't exist
+        while (currentNode) {
+            pathNodeIds.unshift(currentNode.data.node_id);
+            currentNode = currentNode.parent;
+        }
     }
     
-    // Highlight the path in blocks tree
-    const blocksTreeVis = window.blocksTreeVisualization;
-    if (blocksTreeVis && pathNodeIds.length > 0) {
-        highlightBlocksTreePath(blocksTreeVis, pathNodeIds);
+    // Highlight the path in blocks tree (if it exists)
+    if (isBlocksTreeCreated() && pathNodeIds.length > 0) {
+        const blocksTreeVis = window.blocksTreeVisualization;
+        if (blocksTreeVis) {
+            highlightBlocksTreePath(blocksTreeVis, pathNodeIds);
+        }
     }
 
-    // Highlight the path in TreeSpawn tree
-    const treeSpawnVis = window.treeSpawnVisualization;
-    if (treeSpawnVis && pathNodeIds.length > 0) {
-        highlightTreeSpawnPath(treeSpawnVis, pathNodeIds);
+    // Highlight the path in TreeSpawn tree (if it exists)
+    if (isTreeSpawnCreated() && pathNodeIds.length > 0) {
+        const treeSpawnVis = window.treeSpawnVisualization;
+        if (treeSpawnVis) {
+            highlightTreeSpawnPath(treeSpawnVis, pathNodeIds);
+        }
     }
 }
 
-// Recursively highlights a node and all its descendants, including their connecting paths.
+// Recursively highlights a node and all its descendants, including their connecting paths with existence checks
 export function highlightDescendants(
     contentGroup,
     node,
@@ -204,33 +417,37 @@ export function highlightDescendants(
     highlightNode(contentGroup, node, metrics);
 
     // If this is a leaf and scatterPlotVis is provided, highlight corresponding scatter plot points
-    if (node.data.is_leaf && scatterPlotVis) {
+    if (node.data.is_leaf && isScatterPlotCreated() && scatterPlotVis) {
         highlightPointsForLeaf(node, scatterPlotVis);
     }
 
-    // Process children if available
-    if (node.children) {
+    // Process children if available and classic tree exists
+    if (isClassicTreeCreated() && node.children) {
         node.children.forEach((child) => {
             highlightPath(contentGroup, node, child, metrics);
             highlightDescendants(contentGroup, child, metrics, scatterPlotVis);
         });
     }
     
-    // Highlight descendants in blocks tree
-    const blocksTreeVis = window.blocksTreeVisualization;
-    if (blocksTreeVis && node.data && node.data.node_id) {
-        highlightBlocksTreeDescendants(blocksTreeVis, node.data.node_id);
+    // Highlight descendants in blocks tree (if it exists)
+    if (isBlocksTreeCreated()) {
+        const blocksTreeVis = window.blocksTreeVisualization;
+        if (blocksTreeVis && node.data && node.data.node_id) {
+            highlightBlocksTreeDescendants(blocksTreeVis, node.data.node_id);
+        }
     }
 
-    // Highlight descendants in TreeSpawn tree
-    const treeSpawnVis = window.treeSpawnVisualization;
-    if (treeSpawnVis && node.data && node.data.node_id) {
-        highlightTreeSpawnDescendants(treeSpawnVis, node.data.node_id);
+    // Highlight descendants in TreeSpawn tree (if it exists)
+    if (isTreeSpawnCreated()) {
+        const treeSpawnVis = window.treeSpawnVisualization;
+        if (treeSpawnVis && node.data && node.data.node_id) {
+            highlightTreeSpawnDescendants(treeSpawnVis, node.data.node_id);
+        }
     }
 }
 
 // Collect all leaf nodes under a given node (including the node itself if it's a leaf)
-export function collectLeafNodes(node) {
+function collectLeafNodes(node) {
     if (!node) return [];
 
     if (node.data.is_leaf) {
@@ -247,9 +464,9 @@ export function collectLeafNodes(node) {
     return leaves;
 }
 
-// Highlight points in scatter plot for all leaf nodes under a split node
+// Highlight points in scatter plot for all leaf nodes under a split node with existence checks
 export function highlightPointsForDescendants(node, scatterPlotVis) {
-    if (!scatterPlotVis || !scatterPlotVis.points) return;
+    if (!isScatterPlotCreated() || !scatterPlotVis || !scatterPlotVis.points) return;
 
     // Collect all leaf nodes under this node
     const leafNodes = collectLeafNodes(node);
@@ -271,8 +488,10 @@ export function highlightPointsForDescendants(node, scatterPlotVis) {
         });
 }
 
-// Helper function to get path to node in blocks tree
+// Helper function to get path to node in blocks tree with existence checks
 function getPathToNodeInBlocks(nodeId) {
+    if (!isBlocksTreeCreated()) return [];
+    
     const blocksTreeVis = window.blocksTreeVisualization;
     if (!blocksTreeVis) return [];
     

@@ -1,4 +1,5 @@
 import { setGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
+import { resetVisualizationState } from "../visualizationConnector.js";
 
 export const resetUIDatasetSelection = (appState) => {
     // Hide classifier section
@@ -20,7 +21,9 @@ export const resetUIDatasetSelection = (appState) => {
     // Hide visualization container and reset visualizations
     document.querySelector(".svg-container").style.display = "none";
     document.getElementById("scatter-plot").innerHTML = "";
+    document.getElementById("blocks-tree-plot").innerHTML = "";
     document.getElementById("classic-tree-plot").innerHTML = "";
+    document.getElementById("treespawn-tree-plot").innerHTML = "";
 
     // Reset state values
     appState.selectedClassifier = null;
@@ -29,6 +32,9 @@ export const resetUIDatasetSelection = (appState) => {
 
     // Reset the global color map
     setGlobalColorMap(null);
+    
+    // Reset visualization state tracking
+    resetVisualizationState();
 };
 
 export const resetUISelectClassifier = (appState) => {
@@ -43,10 +49,15 @@ export const resetUISelectClassifier = (appState) => {
     // Hide visualization container and reset visualizations
     document.querySelector(".svg-container").style.display = "none";
     document.getElementById("scatter-plot").innerHTML = "";
+    document.getElementById("blocks-tree-plot").innerHTML = "";
     document.getElementById("classic-tree-plot").innerHTML = "";
+    document.getElementById("treespawn-tree-plot").innerHTML = "";
 
     // Reset feature descriptor in the state
     appState.featureDescriptor = null;
+    
+    // Reset visualization state tracking
+    resetVisualizationState();
 };
 
 export const resetUIstartTraining = () => {
@@ -54,5 +65,10 @@ export const resetUIstartTraining = () => {
     document.getElementById("surrogateContainer").innerHTML = "";
     document.querySelector(".svg-container").style.display = "none";
     document.getElementById("scatter-plot").innerHTML = "";
+    document.getElementById("blocks-tree-plot").innerHTML = "";
     document.getElementById("classic-tree-plot").innerHTML = "";
+    document.getElementById("treespawn-tree-plot").innerHTML = "";
+    
+    // Reset visualization state tracking
+    resetVisualizationState();
 };

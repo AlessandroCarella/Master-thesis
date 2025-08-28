@@ -1,4 +1,4 @@
-import { createSection, createSurrogateInput } from "./inputs.js";
+import { createSection, createSurrogateInput, createVisualizationToggle } from "./inputs.js";
 
 export function populateDatasetGrid(data) {
     const container = document.getElementById("datasetGrid");
@@ -95,6 +95,25 @@ export function populateSurrogateForm(container) {
         },
     };
 
+    const visualizationToggles = {
+        scatterPlot: {
+            label: "2D Scatter Plot",
+            default: true,
+        },
+        blocksTree: {
+            label: "Blocks Decision Tree",
+            default: true,
+        },
+        classicTree: {
+            label: "Classic Decision Tree",
+            default: false,
+        },
+        treeSpawn: {
+            label: "TreeSpawn Decision Tree",
+            default: false,
+        },
+    };
+
     const section = createSection(
         "Surrogate Model Parameters",
         "surrogate-parameters"
@@ -103,5 +122,22 @@ export function populateSurrogateForm(container) {
 
     Object.entries(surrogateParameters).forEach(([param, details]) => {
         createSurrogateInput(section, param, details);
+    });
+
+    // Add visualization toggles section
+    const visualizationSection = createSection(
+        "Visualization Selection",
+        "visualization-toggles"
+    );
+    container.appendChild(visualizationSection);
+
+    // Add instruction text
+    const instructionText = document.createElement("p");
+    instructionText.className = "visualization-instruction";
+    instructionText.textContent = "Select which visualizations to display (at least one must be selected):";
+    visualizationSection.querySelector(".feature-section-content").appendChild(instructionText);
+
+    Object.entries(visualizationToggles).forEach(([param, details]) => {
+        createVisualizationToggle(visualizationSection, param, details);
     });
 }

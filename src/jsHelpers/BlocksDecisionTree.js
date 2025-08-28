@@ -76,7 +76,8 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
         instancePath,
         linkElements,
         nodeElements,
-        allPaths
+        allPaths,
+        rawTreeData: rawTreeData,  // Store raw tree data for scatter plot highlighting
     };
 
     // Set the blocks tree visualization for interaction

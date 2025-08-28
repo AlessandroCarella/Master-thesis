@@ -7,6 +7,7 @@ import {
     populateParameterForm,
     populateSurrogateForm,
     getSurrogateParameters,
+    getVisualizationSettings,
     createFeatureInputs,
     getFeatureValues,
     resetFeatures,
@@ -17,6 +18,7 @@ import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter, loadingState } from "./jsHelpers/stateManagement.js";
 import {
     setExplainedInstance,
+    resetVisualizationState,
 } from "./jsHelpers/visualizationConnector.js";
 
 // Import helper functions
@@ -185,6 +187,15 @@ window.explainInstance = async () => {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
 
+    // Validate that at least one visualization is selected
+    const vizSettings = getVisualizationSettings();
+    const hasSelectedViz = Object.values(vizSettings).some(selected => selected);
+    
+    if (!hasSelectedViz) {
+        alert("Please select at least one visualization to display.");
+        return;
+    }
+
     loadingState.setLoading(true);
 
     try {
@@ -218,28 +229,28 @@ window.explainInstance = async () => {
             svgContainer.style.opacity = "1";
         }
 
-        // Also make sure all visualization containers are visible
+        // Make visualization containers visible based on settings
         const scatterPlot = document.getElementById("scatter-plot");
         const treePlot = document.getElementById("classic-tree-plot");
         const blocksTreeContainer = document.getElementById("blocks-tree-plot");
         const treeSpawnContainer = document.getElementById("treespawn-tree-plot");
         
-        if (scatterPlot) {
+        if (scatterPlot && vizSettings.scatterPlot) {
             scatterPlot.style.display = "block";
             scatterPlot.style.visibility = "visible";
         }
         
-        if (treePlot) {
-            treePlot.style.display = "block";
-            treePlot.style.visibility = "visible";
-        }
-
-        if (blocksTreeContainer) {
+        if (blocksTreeContainer && vizSettings.blocksTree) {
             blocksTreeContainer.style.display = "block";
             blocksTreeContainer.style.visibility = "visible";
         }
 
-        if (treeSpawnContainer) {
+        if (treePlot && vizSettings.classicTree) {
+            treePlot.style.display = "block";
+            treePlot.style.visibility = "visible";
+        }
+
+        if (treeSpawnContainer && vizSettings.treeSpawn) {
             treeSpawnContainer.style.display = "block";
             treeSpawnContainer.style.visibility = "visible";
         }
@@ -272,6 +283,7 @@ window.getFeatureValues = getFeatureValues;
 window.resetFeatures = resetFeatures;
 window.appState = appState;
 window.getSurrogateParameters = getSurrogateParameters;
+window.getVisualizationSettings = getVisualizationSettings;
 window.showExplanationLoading = showExplanationLoading;
 window.updateVisualizationUI = updateVisualizationUI;
 window.buildExplanationRequestData = buildExplanationRequestData;

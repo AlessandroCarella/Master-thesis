@@ -13,6 +13,7 @@ import {
     getFeatureValues,
     resetFeatures,
     getSurrogateParameters,
+    getVisualizationSettings,
 } from "./UIHelpers/featureManagement.js";
 
 let state = null;
@@ -71,4 +72,5 @@ export {
     getFeatureValues,
     resetFeatures,
     getSurrogateParameters,
+    getVisualizationSettings,
 };

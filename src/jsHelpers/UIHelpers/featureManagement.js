@@ -132,3 +132,12 @@ export function getSurrogateParameters() {
         includeOriginalDataset: document.getElementById("surrogate-includeOriginalDataset").value === "Yes"
     };
 }
+
+export function getVisualizationSettings() {
+    return {
+        scatterPlot: document.getElementById("viz-scatterPlot")?.checked || false,
+        blocksTree: document.getElementById("viz-blocksTree")?.checked || false,
+        classicTree: document.getElementById("viz-classicTree")?.checked || false,
+        treeSpawn: document.getElementById("viz-treeSpawn")?.checked || false,
+    };
+}

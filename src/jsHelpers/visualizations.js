@@ -6,14 +6,15 @@ import {
     showExplanationLoading,
     updateVisualizationUI,
 } from "./UIHelpers/explanation.js";
-import { getSurrogateParameters } from "./ui.js";
+import { getSurrogateParameters, getVisualizationSettings } from "./UIHelpers/featureManagement.js";
 import { fetchVisualizationUpdate } from "./API.js";
 import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { 
     highlightInstancePathInTree, 
     highlightInstancePathInBlocksTree,
     highlightInstancePathInTreeSpawn,
-    getExplainedInstance
+    getExplainedInstance,
+    resetVisualizationState
 } from "./visualizationConnector.js";
 
 export function initializeVisualizations(data) {
@@ -29,47 +30,69 @@ export function initializeVisualizations(data) {
     // Highlight instance paths after all visualizations are created
     const instance = getExplainedInstance();
     if (instance) {
-        highlightInstancePathInTree(instance);
-        highlightInstancePathInBlocksTree(instance);
-        highlightInstancePathInTreeSpawn(instance);
+        const vizSettings = getVisualizationSettings();
+        
+        if (vizSettings.classicTree) {
+            highlightInstancePathInTree(instance);
+        }
+        if (vizSettings.blocksTree) {
+            highlightInstancePathInBlocksTree(instance);
+        }
+        if (vizSettings.treeSpawn) {
+            highlightInstancePathInTreeSpawn(instance);
+        }
     }
 }
 
 function clearVisualizations() {
+    // Clear DOM elements
     d3.select("#scatter-plot").selectAll("*").remove();
     d3.select("#classic-tree-plot").selectAll("*").remove();
     d3.select("#blocks-tree-plot").selectAll("*").remove();
     d3.select("#treespawn-tree-plot").selectAll("*").remove();
     // Also remove any tooltips that might be lingering
     d3.selectAll(".decision-tree-tooltip").remove();
+    
+    // Reset the visualization state tracking
+    resetVisualizationState();
 }
 
-function createVisualizations(data) {    
-    // Create classic tree visualization
-    createTreeVisualization(
-        data.decisionTreeVisualizationData,
-        data.instance,
-        "#classic-tree-plot"
-    );
+function createVisualizations(data) {
+    const vizSettings = getVisualizationSettings();
+    
+    // Create blocks tree visualization if enabled
+    if (vizSettings.blocksTree) {
+        createBlocksTreeVisualization(
+            data.decisionTreeVisualizationData,
+            data.instance
+        );
+    }
 
-    // Create scatter plot visualization
-    createScatterPlot(
-        data.scatterPlotVisualizationData,
-        window.treeVisualization,
-        "#scatter-plot"
-    );
+    // Create classic tree visualization if enabled
+    if (vizSettings.classicTree) {
+        createTreeVisualization(
+            data.decisionTreeVisualizationData,
+            data.instance,
+            "#classic-tree-plot"
+        );
+    }
 
-    // Create blocks tree visualization
-    createBlocksTreeVisualization(
-        data.decisionTreeVisualizationData,
-        data.instance
-    );
+    // Create scatter plot visualization if enabled
+    if (vizSettings.scatterPlot) {
+        createScatterPlot(
+            data.scatterPlotVisualizationData,
+            window.treeVisualization,
+            "#scatter-plot"
+        );
+    }
 
-    // Create TreeSpawn tree visualization (without automatic instance path highlighting)
-    createTreeSpawnVisualization(
-        data.decisionTreeVisualizationData,
-        data.instance
-    );
+    // Create TreeSpawn tree visualization if enabled
+    if (vizSettings.treeSpawn) {
+        createTreeSpawnVisualization(
+            data.decisionTreeVisualizationData,
+            data.instance
+        );
+    }
 }
 
 export function setupScatterPlotMethodListeners() {
@@ -131,8 +154,16 @@ function updateVisualizations(data) {
     createVisualizations(updatedData);
     
     if (instance) {
-        highlightInstancePathInTree(instance);
-        highlightInstancePathInBlocksTree(instance);
-        highlightInstancePathInTreeSpawn(instance);
+        const vizSettings = getVisualizationSettings();
+        
+        if (vizSettings.classicTree) {
+            highlightInstancePathInTree(instance);
+        }
+        if (vizSettings.blocksTree) {
+            highlightInstancePathInBlocksTree(instance);
+        }
+        if (vizSettings.treeSpawn) {
+            highlightInstancePathInTreeSpawn(instance);
+        }
     }
 }
