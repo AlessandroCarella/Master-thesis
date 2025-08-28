@@ -221,29 +221,25 @@ def load_dataset_adult():
     # Handle categorical columns: fill NaN with most frequent value or a placeholder
     for col in categorical_cols:
         if X[col].isna().any():
-            # Option 1: Fill with most frequent value
+            # Fill with most frequent value
             most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
             X[col] = X[col].fillna(most_frequent)
+        # Convert to string to ensure consistency
+        X[col] = X[col].astype(str)
     
-    # Encode categorical variables using LabelEncoder
-    label_encoders = {}
-    for col in categorical_cols:
-        le = LabelEncoder()
-        X[col] = le.fit_transform(X[col].astype(str))
-        label_encoders[col] = le
+    # Get target names and convert string labels to integer indices
+    target_names = list(dataset.target.unique())
     
-    # Convert to numpy array
-    X = X.values
-    y = dataset.target.values
+    # Create a label encoder to convert strings to integers
+    label_encoder = LabelEncoder()
+    y = label_encoder.fit_transform(dataset.target.values)
     
-    # Encode target
-    le_target = LabelEncoder()
-    y_encoded = le_target.fit_transform(y)
-    
-    # Use the module-level MockDataset class
-    mock_dataset = MockDataset(X, y_encoded)
+    # Make sure target_names match the label encoder's classes
+    target_names = list(label_encoder.classes_)
+        
     feature_names = list(dataset.data.columns)
-    target_names = list(le_target.classes_)
+    
+    mock_dataset = MockDataset(X, y)
     
     return mock_dataset, feature_names, target_names
 
@@ -268,26 +264,22 @@ def load_dataset_german():
             # Fill with most frequent value
             most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
             X[col] = X[col].fillna(most_frequent)
+        # Convert to string to ensure consistency
+        X[col] = X[col].astype(str)
     
-    # Encode categorical variables using LabelEncoder
-    label_encoders = {}
-    for col in categorical_cols:
-        le = LabelEncoder()
-        X[col] = le.fit_transform(X[col].astype(str))
-        label_encoders[col] = le
+    # Get target names and convert string labels to integer indices
+    target_names = list(dataset.target.unique())
     
-    # Convert to numpy array
-    X = X.values
-    y = dataset.target.values
+    # Create a label encoder to convert strings to integers
+    label_encoder = LabelEncoder()
+    y = label_encoder.fit_transform(dataset.target.values)
     
-    # Encode target
-    le_target = LabelEncoder()
-    y_encoded = le_target.fit_transform(y)
-    
-    # Use the module-level MockDataset class
-    mock_dataset = MockDataset(X, y_encoded)
+    # Make sure target_names match the label encoder's classes
+    target_names = list(label_encoder.classes_)
+        
     feature_names = list(dataset.data.columns)
-    target_names = list(le_target.classes_)
+    
+    mock_dataset = MockDataset(X, y)
     
     return mock_dataset, feature_names, target_names
 
@@ -330,6 +322,8 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
         
 def load_dataset(dataset_name: str):
     """Load a dataset and return features, target, and metadata"""    
+    print(f"DEBUG: Loading dataset: {dataset_name}")
+    
     # Map of dataset names to their specific loading functions
     loading_functions = {
         'iris': load_dataset_iris,
@@ -341,5 +335,14 @@ def load_dataset(dataset_name: str):
         'california_housing_3': load_dataset_california_housing_3,
         'california_housing_11': load_dataset_california_housing_11,
     }
+    
+    result = load_cached_dataset(dataset_name, loading_functions[dataset_name])
+    print(f"DEBUG: Result type: {type(result)}")
+    print(f"DEBUG: Result length: {len(result) if hasattr(result, '__len__') else 'N/A'}")
+    
+    if isinstance(result, tuple):
+        print(f"DEBUG: Tuple contents types: {[type(x) for x in result]}")
+    
+    return result
         
     return load_cached_dataset(dataset_name, loading_functions[dataset_name])
