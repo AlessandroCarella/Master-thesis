@@ -322,8 +322,6 @@ def get_dataset_information(dataset_name: str, cache_dir='cache'):
         
 def load_dataset(dataset_name: str):
     """Load a dataset and return features, target, and metadata"""    
-    print(f"DEBUG: Loading dataset: {dataset_name}")
-    
     # Map of dataset names to their specific loading functions
     loading_functions = {
         'iris': load_dataset_iris,
@@ -337,12 +335,5 @@ def load_dataset(dataset_name: str):
     }
     
     result = load_cached_dataset(dataset_name, loading_functions[dataset_name])
-    print(f"DEBUG: Result type: {type(result)}")
-    print(f"DEBUG: Result length: {len(result) if hasattr(result, '__len__') else 'N/A'}")
-    
-    if isinstance(result, tuple):
-        print(f"DEBUG: Tuple contents types: {[type(x) for x in result]}")
     
     return result
-        
-    return load_cached_dataset(dataset_name, loading_functions[dataset_name])

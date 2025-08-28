@@ -135,23 +135,78 @@ def train_model_generalized(dataset, target_name: str, classifier=None):
     return sklearn_classifier_bbox.sklearnBBox(model), X_train, X_test, y_train, y_test
 
 
-def load_cached_classifier(dataset, target_name: str, dataset_name:str, classifier:any, classifier_name:str, cache_dir='cache'):
+def prepare_dataset_and_train_classifier(dataset_name: str, target_name: str, classifier: any, classifier_name: str):
     """
-    Load a cached trained classifier if available; otherwise, train it and cache the result.
+    Prepare dataset and train classifier when no cached version is available.
+    
+    This internal method handles the complete pipeline of dataset preparation and model training:
+    - Loads the raw dataset and extracts features and targets
+    - Prepares the data dictionary mapping feature names to data columns
+    - Creates a LORE-compatible TabularDataset and cleans it
+    - Trains the classifier using the generalized training function
+    
+    Parameters:
+        dataset_name (str): The name of the dataset to load.
+        target_name (str): The name of the target column.
+        classifier (any): A scikit-learn classifier instance.
+        classifier_name (str): The name/identifier of the classifier.
+    
+    Returns:
+        tuple: A tuple containing (classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names)
+            where dataset is the prepared TabularDataset and feature_names are the original feature names.
+    """
+    from pythonHelpers.datasets import load_dataset
+    # Load dataset and corresponding metadata (feature names and target names)
+    raw_dataset, feature_names, target_names = load_dataset(dataset_name)
+    
+    # Extract feature matrix X and target vector y
+    X = raw_dataset.data
+    y = raw_dataset.target
+
+    if not isinstance(X, np.ndarray):
+        X = X.to_numpy()
+
+    # Prepare a dictionary for LORE where each feature name maps to its data column
+    data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
+    
+    # Map target indices to target names and add as target column
+    data_dict[target_name] = [target_names[i] for i in y]
+    
+    from lore_sa.dataset import TabularDataset
+    # Create a LORE-compatible TabularDataset from the dictionary and clean the data
+    dataset = TabularDataset.from_dict(data_dict, target_name)
+    dataset.df.dropna(inplace=True)
+    
+    # Train the model using the LORE generalized training function
+    classifier_bbox, X_train, X_test, y_train, y_test = train_model_generalized(dataset, target_name, classifier)
+    
+    return classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names
+
+
+def load_cached_classifier(dataset_name: str, target_name: str, classifier: any, classifier_name: str, cache_dir='cache'):
+    """
+    Load a cached trained classifier if available; otherwise, prepare dataset and train it, then cache the result.
+    
+    This function first checks for a cached classifier to avoid expensive preprocessing operations.
+    Only when no cache is found does it perform the full dataset preparation and training pipeline.
     
     The cache file name is constructed uniquely based on:
-      - The dataset name (from dataset.descriptor['name'] if available)
-      - The target variable name
+      - The dataset name
+      - The target variable name  
       - The classifier's parameters (via joblib.hash)
       
     Parameters:
-        dataset: The dataset object containing the dataframe and descriptor.
+        dataset_name (str): The name of the dataset to load.
         target_name (str): The name of the target column.
-        classifier (optional): A scikit-learn classifier. If None, defaults to RandomForestClassifier(n_estimators=100, random_state=42).
+        classifier (any): A scikit-learn classifier instance.
+        classifier_name (str): The name/identifier of the classifier.
         cache_dir (str, optional): Directory where the cached classifier will be stored. Defaults to 'cache'.
     
     Returns:
-        object: A black-box classifier object wrapped using sklearn_classifier_bbox.
+        tuple: A tuple containing (classifier_bbox, dataset, feature_names) where:
+            - classifier_bbox: A black-box classifier object wrapped using sklearn_classifier_bbox
+            - dataset: The prepared TabularDataset used for training
+            - feature_names: List of original feature names from the dataset
     """
     # Ensure cache directory exists
     os.makedirs(cache_dir, exist_ok=True)
@@ -166,20 +221,26 @@ def load_cached_classifier(dataset, target_name: str, dataset_name:str, classifi
     )
     
     if os.path.exists(cache_file):
-        classifier_bbox, X_train, X_test, y_train, y_test = joblib.load(cache_file)
+        # Load from cache - this skips all expensive preprocessing
+        cached_data = joblib.load(cache_file)
+        classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names = cached_data
         logging.info(f"Loaded classifier for {dataset_name} from cache.")
     else:
-        classifier_bbox, X_train, X_test, y_train, y_test = train_model_generalized(dataset, target_name, classifier)
-        joblib.dump((classifier_bbox, X_train, X_test, y_train, y_test), cache_file)
+        # No cache found - perform full dataset preparation and training
+        classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names = prepare_dataset_and_train_classifier(
+            dataset_name, target_name, classifier, classifier_name
+        )
+        # Cache all results including dataset and feature names for future fast loading
+        joblib.dump((classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names), cache_file)
         logging.info(f"Cached classifier for {dataset_name} to file.")
         
+    # Set global state as before
     global_state.X_train = X_train
     global_state.y_train = y_train
     global_state.X_test = X_test
     global_state.y_test = y_test
 
-    return classifier_bbox
-
+    return classifier_bbox, dataset, feature_names
 
 def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbourhood_size=100):
     """

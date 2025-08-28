@@ -1,9 +1,4 @@
-from lore_sa.dataset import TabularDataset
 from typing import Dict, Any
-import numpy as np
-
-from pythonHelpers.datasets import load_dataset
-from pythonHelpers.lore import load_cached_classifier
 
 """
 Module for training machine learning classifiers using the LORE framework.
@@ -89,10 +84,11 @@ def create_classifier(classifier_name: str, parameters: Dict[str, Any]):
 
 def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: Dict[str, Any]):
     """
-    Train a machine learning model using the LORE framework.
+    Train a machine learning model using the LORE framework with optimized caching.
 
-    This function loads a dataset, prepares it for LORE by converting it into a suitable format,
-    creates the specified classifier, and then trains the model using LORE's generalized training function.
+    This function creates the specified classifier and leverages cached results when available
+    to avoid expensive dataset preparation operations. The heavy lifting of dataset loading,
+    preparation, and model training is only performed when no cached classifier exists.
 
     Args:
         dataset_name (str): The name of the dataset to load.
@@ -101,47 +97,31 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
 
     Returns:
         A tuple containing:
-            - The trained model as returned by train_model_generalized.
+            - The trained model (classifier_bbox) as returned by load_cached_classifier.
             - The prepared LORE dataset (an instance of TabularDataset).
+            - The original feature names from the dataset.
 
     Process:
-        1. Load the dataset using the provided dataset name.
-        2. Extract features and target values from the dataset.
-        3. Prepare a data dictionary that maps feature names to their corresponding data columns.
-        4. Map the target indices to their names and add as a 'target' column.
-        5. Create a LORE TabularDataset from the data dictionary and drop any missing values.
-        6. Instantiate the classifier using create_classifier.
-        7. Train the model using LORE's train_model_generalized function.
+        1. Create the classifier instance using the provided classifier name and parameters.
+        2. Call load_cached_classifier which handles caching logic and dataset preparation.
+        3. Return the trained model, prepared dataset, and feature names.
+        
+    Performance Notes:
+        - When a cached classifier exists, this function avoids expensive operations like
+          dataset loading, data dictionary creation, and TabularDataset preparation.
+        - Only when no cache is available does it perform the full preparation pipeline.
     """
-    # Load dataset and corresponding metadata (feature names and target names)
-    dataset, feature_names, target_names = load_dataset(dataset_name)
-    
-    # Extract feature matrix X and target vector y
-    X = dataset.data
-    y = dataset.target
-
-    if not isinstance(X, np.ndarray):
-        X = X.to_numpy()
-
-    # Prepare a dictionary for LORE where each feature name maps to its data column
-    data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
-    
-    # Define the name of the target column and map target indices to target names
+    # Define the target column name (consistent with LORE framework)
     target_name = 'target'
-    data_dict[target_name] = [target_names[i] for i in y]
-    
-    # Create a LORE-compatible TabularDataset from the dictionary and clean the data by dropping missing values
-    dataset = TabularDataset.from_dict(data_dict, target_name)
-    dataset.df.dropna(inplace=True)
     
     # Create the classifier instance with the provided parameters
     classifier = create_classifier(classifier_name, parameters)
-    
-    # Train the model using the LORE generalized training function
-    trained_model = load_cached_classifier(
-        dataset=dataset,
-        target_name=target_name,
+
+    from pythonHelpers.lore import load_cached_classifier
+    # Load cached classifier or train new one with optimized caching
+    trained_model, dataset, feature_names = load_cached_classifier(
         dataset_name=dataset_name,
+        target_name=target_name,
         classifier=classifier,
         classifier_name=classifier_name
     )
