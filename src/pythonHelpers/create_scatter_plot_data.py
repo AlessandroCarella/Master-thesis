@@ -280,23 +280,80 @@ def format_pc_label(pc_loadings, feature_names, pc_index):
         [f"{name} ({value:+.2f})" for name, value in zip(feature_names, pc_loadings)]
     )
 
-def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, X_original, y_original, method='umap', step=0.1, random_state=42):
+def map_encoded_to_original_data(encoded_data, encoded_feature_names, original_feature_names):
+    """
+    Map encoded data back to original feature names for frontend display.
+    
+    Parameters:
+    -----------
+    encoded_data : array-like
+        Encoded feature data
+    encoded_feature_names : list
+        List of encoded feature names
+    original_feature_names : list
+        List of original feature names
+        
+    Returns:
+    --------
+    list
+        List of dictionaries with original feature names as keys
+    """
+    # Create mapping from encoded to original names
+    # This assumes that encoded features can be mapped back to original features
+    # For one-hot encoded categorical variables, this might require special handling
+    
+    original_series_list = []
+    
+    for row in encoded_data:
+        # Create a dictionary with original feature names
+        # This is a simplified mapping - you might need more complex logic
+        # depending on how your encoding works (e.g., one-hot encoding)
+        
+        mapped_row = {}
+        
+        # For now, we'll try to create a basic mapping
+        # You might need to adjust this based on your specific encoding scheme
+        for i, encoded_name in enumerate(encoded_feature_names):
+            if i < len(original_feature_names):
+                # Simple mapping - use original name if available
+                original_name = original_feature_names[min(i, len(original_feature_names) - 1)]
+                mapped_row[original_name] = row[i]
+            else:
+                # For one-hot encoded features, you might want different logic here
+                mapped_row[encoded_name] = row[i]
+        
+        # Fill in any missing original features with 0 or appropriate default
+        for orig_name in original_feature_names:
+            if orig_name not in mapped_row:
+                mapped_row[orig_name] = 0.0
+                
+        original_series_list.append(mapped_row)
+    
+    return original_series_list
+
+def create_scatter_plot_data(encoded_feature_names, original_feature_names, X, y, pretrained_tree, class_names, X_original=None, y_original=None, method='umap', step=0.1, random_state=42):
     """
     Generate visualization data and decision boundaries for a pre-trained decision tree
     using either PCA or t-SNE dimensionality reduction.
     
     Parameters:
     -----------
-    feature_names : list
-        List of feature names
+    encoded_feature_names : list
+        List of encoded feature names (used for internal processing)
+    original_feature_names : list
+        List of original feature names (used for output mapping)
     X : array-like
-        Input features
+        Input features (encoded)
     y : array-like
         Target labels
     pretrained_tree : DecisionTreeClassifier
-        Pre-trained decision tree classifier on original (non-PCA) data
+        Pre-trained decision tree classifier on encoded data
     class_names : list
         List of class names
+    X_original : array-like, optional
+        Original dataset features (encoded)
+    y_original : array-like, optional
+        Original dataset labels
     method : str, default='umap'
         Dimensionality reduction method ('pca', 'tsne', 'umap', or 'mds')
     step : float, default=0.1
@@ -307,7 +364,7 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
     Returns:
     --------
     dict
-        Visualization data including transformed coordinates, original data, and decision boundaries
+        Visualization data including transformed coordinates, mapped original data, and decision boundaries
     """
     # Concatenate X_original and y_original to X and y when provided
     originalPointsNeighPointsBoolArray = []
@@ -321,11 +378,11 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
     else:
         originalPointsNeighPointsBoolArray = [False] * len (X)
      
-    # Transform data
+    # Transform data using encoded features (this is necessary for proper processing)
     X_transformed, model, scaler = preprocess_data(X, method=method, random_state=random_state)
     
-    # Filter transformed points and original data
-    filtered_transformed_data, filtered_original_data, filtered_labels = filter_points_by_class_kmeans(
+    # Filter transformed points and original data (using encoded data for filtering)
+    filtered_transformed_data, filtered_encoded_data, filtered_labels = filter_points_by_class_kmeans(
         X_transformed, X, y, threshold=2000, threshold_multiplier=5, random_state=random_state
     )
     
@@ -359,16 +416,17 @@ def create_scatter_plot_data(feature_names, X, y, pretrained_tree, class_names, 
             "yRange": [float(y_min), float(y_max)],
         }
     
-    # Convert original data to lists of pd.Series
-    original_series_list = [
-        pd.Series(row, index=feature_names).to_dict()
-        for row in filtered_original_data
-    ]
+    # Map encoded data back to original feature names for frontend display
+    original_series_list = map_encoded_to_original_data(
+        filtered_encoded_data, 
+        encoded_feature_names, 
+        original_feature_names
+    )
     
     # Prepare visualization data
     visualization_data = {
         "transformedData": filtered_transformed_data.tolist(),
-        "originalData": original_series_list,
+        "originalData": original_series_list,  # Now mapped to original feature names
         "targets": filtered_labels.tolist(),
         "decisionBoundary": decision_boundary,
         "method": method,

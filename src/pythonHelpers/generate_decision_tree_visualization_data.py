@@ -56,7 +56,7 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
     tree_classifier : DecisionTreeClassifier
         A trained sklearn DecisionTreeClassifier
     feature_names : List[str]
-        A list of feature names
+        A list of encoded feature names (used for tree extraction)
     target_names : List[str]
         A list of target class labels
 
@@ -123,28 +123,91 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
 
     return nodes
 
-
-def generate_decision_tree_visualization_data(nodes):
+def map_encoded_to_original_feature_names(encoded_feature_name, encoded_feature_names, original_feature_names):
     """
-    Prepare the tree structure for visualization
+    Map an encoded feature name back to the corresponding original feature name.
+    
+    Parameters:
+    -----------
+    encoded_feature_name : str
+        The encoded feature name to map
+    encoded_feature_names : List[str]
+        List of all encoded feature names
+    original_feature_names : List[str]
+        List of all original feature names
+        
+    Returns:
+    --------
+    str
+        The corresponding original feature name, or the encoded name if no mapping exists
+    """
+    try:
+        # Find the index of the encoded feature name
+        encoded_index = encoded_feature_names.index(encoded_feature_name)
+        
+        # For simple mappings where encoded features correspond directly to original features
+        if encoded_index < len(original_feature_names):
+            return original_feature_names[encoded_index]
+        
+        # For one-hot encoded features or other complex encodings, 
+        # you might need more sophisticated mapping logic here
+        # For now, we'll try to extract the original feature name from the encoded name
+        
+        # Check if the encoded name contains a pattern that indicates the original feature
+        for orig_name in original_feature_names:
+            if orig_name in encoded_feature_name or encoded_feature_name.startswith(orig_name):
+                return orig_name
+        
+        # If no mapping found, return the encoded name
+        return encoded_feature_name
+        
+    except ValueError:
+        # If encoded_feature_name not found in the list, return it as-is
+        return encoded_feature_name
+
+def generate_decision_tree_visualization_data(nodes, encoded_feature_names=None, original_feature_names=None):
+    """
+    Prepare the tree structure for visualization with proper feature name mapping.
     
     Parameters:
     -----------
     nodes : List[TreeNode]
         List of TreeNode objects to process
+    encoded_feature_names : List[str], optional
+        List of encoded feature names used in the tree
+    original_feature_names : List[str], optional
+        List of original feature names for mapping back to frontend
     
     Returns:
     --------
     List[Dict]
-        List of node dictionaries suitable for visualization
+        List of node dictionaries suitable for visualization with mapped feature names
     """
     # Convert TreeNodes to dictionaries
     nodes_dict = []
     for i, node in enumerate(nodes):
         node_dict = asdict(node)
+        
         # Convert numpy arrays to lists for JSON serialization
         if isinstance(node_dict['value'], np.ndarray):
             node_dict['value'] = node_dict['value'].tolist()
+        
+        # Map encoded feature names back to original feature names for display
+        if (not node.is_leaf and 
+            node.feature_name is not None and 
+            encoded_feature_names is not None and 
+            original_feature_names is not None):
+            
+            original_feature_name = map_encoded_to_original_feature_names(
+                node.feature_name, 
+                encoded_feature_names, 
+                original_feature_names
+            )
+            node_dict['feature_name'] = original_feature_name
+            
+            # Optionally, keep the encoded name for reference
+            node_dict['encoded_feature_name'] = node.feature_name
+        
         nodes_dict.append(node_dict)
     
     return nodes_dict

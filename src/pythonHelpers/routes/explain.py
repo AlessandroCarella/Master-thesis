@@ -37,10 +37,11 @@ def process_instance(request: InstanceRequest):
     """Process tabular data input."""
     return [request.instance[feature] for feature in global_state.feature_names]
     
-def generate_scatter_plot(request, feature_names, X, y, surrogate, class_names, X_original=None, y_original=None):
+def generate_scatter_plot(request, encoded_feature_names, original_feature_names, X, y, surrogate, class_names, X_original=None, y_original=None):
     """Generate scatter plot visualization data using the provided parameters."""
     return create_scatter_plot_data(
-        feature_names=feature_names,
+        encoded_feature_names=encoded_feature_names,
+        original_feature_names=original_feature_names,
         X=X,
         y=y,
         pretrained_tree=surrogate,
@@ -51,14 +52,18 @@ def generate_scatter_plot(request, feature_names, X, y, surrogate, class_names, 
         y_original=y_original
     )
 
-def generate_decision_tree_data(surrogate, feature_names, target_names):
+def generate_decision_tree_data(surrogate, encoded_feature_names, original_feature_names, target_names):
     """Extract and generate decision tree visualization data."""
     tree_structure = extract_tree_structure(
         tree_classifier=surrogate,
-        feature_names=feature_names,
+        feature_names=encoded_feature_names,
         target_names=target_names
     )
-    return generate_decision_tree_visualization_data(tree_structure)
+    return generate_decision_tree_visualization_data(
+        tree_structure, 
+        encoded_feature_names, 
+        original_feature_names
+    )
 
 # ---------------- Endpoint Functions ---------------- #
 
@@ -67,28 +72,32 @@ async def update_visualization(request: VisualizationRequest):
     """
     Update visualization technique without regenerating the neighborhood.
     """ 
-    # Generate decision tree visualization data using ENCODED feature names
+    # Generate decision tree visualization data using ENCODED feature names for processing
+    # but map back to original feature names for output
     tree_data = generate_decision_tree_data(
         surrogate=global_state.dt_surrogate,
-        feature_names=global_state.encoded_feature_names,  # Use encoded feature names
+        encoded_feature_names=global_state.encoded_feature_names,
+        original_feature_names=global_state.feature_names,  # Original feature names
         target_names=global_state.target_names
     )
 
     if not request.includeOriginalDataset:    
-        # Generate scatter plot visualization data using ORIGINAL feature names
+        # Generate scatter plot visualization data
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            encoded_feature_names=global_state.encoded_feature_names,
+            original_feature_names=global_state.feature_names,  # Original feature names
             X=global_state.neighborhood,  # Encoded data
             y=global_state.neighb_train_y,
             surrogate=global_state.dt_surrogate,
             class_names=global_state.target_names
         )
     else:
-        # Generate scatter plot visualization data using ORIGINAL feature names
+        # Generate scatter plot visualization data
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            encoded_feature_names=global_state.encoded_feature_names,
+            original_feature_names=global_state.feature_names,  # Original feature names
             X=global_state.neighborhood,  # Encoded data
             y=global_state.neighb_train_y,
             surrogate=global_state.dt_surrogate,
@@ -137,10 +146,12 @@ async def explain_instance(request: InstanceRequest):
     # Update global state with the decision tree surrogate
     global_state.dt_surrogate = dt_surr
     
-    # Generate decision tree visualization data using ENCODED feature names
+    # Generate decision tree visualization data using ENCODED feature names for processing
+    # but map back to original feature names for output
     tree_data = generate_decision_tree_data(
         surrogate=dt_surr,
-        feature_names=encoded_feature_names,  # Use encoded feature names instead of original
+        encoded_feature_names=encoded_feature_names,  # Use encoded feature names for tree processing
+        original_feature_names=global_state.feature_names,  # Original feature names for mapping
         target_names=global_state.target_names
     )
     
@@ -148,11 +159,12 @@ async def explain_instance(request: InstanceRequest):
         # Update global state with the target names
         global_state.target_names = list(np.unique(neighb_train_y))
 
-        # Generate scatter plot visualization data - use ORIGINAL feature names for scatter plot
+        # Generate scatter plot visualization data
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
-            X=neighborhood,  # Endoded data
+            encoded_feature_names=encoded_feature_names,  # Encoded feature names for processing
+            original_feature_names=global_state.feature_names,  # Original feature names for output
+            X=neighborhood,  # Encoded data
             y=neighb_train_y,
             surrogate=dt_surr,
             class_names=global_state.target_names
@@ -161,7 +173,8 @@ async def explain_instance(request: InstanceRequest):
         # Generate scatter plot visualization data
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            encoded_feature_names=encoded_feature_names,  # Encoded feature names for processing
+            original_feature_names=global_state.feature_names,  # Original feature names for output
             X=neighborhood,  # Encoded data
             y=neighb_train_y,
             surrogate=dt_surr,
