@@ -1,5 +1,5 @@
 import { getState } from "../ui.js";
-import { createNumericInput } from "./inputs.js";
+import { createNumericInput, createCategoricalInput, createOrdinalInput } from "./inputs.js";
 
 export function renderFeatureSections(descriptor, sections) {
     if (descriptor.numeric && Object.keys(descriptor.numeric).length > 0) {

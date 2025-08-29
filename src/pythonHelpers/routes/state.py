@@ -11,6 +11,7 @@ class GlobalState:
         self.dataset_name = None
         self.feature_names = None
         self.target_names = None
+        self.encoded_feature_names = None
 
         self.neighborhood = None
         self.neighb_train_X = None

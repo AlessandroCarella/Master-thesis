@@ -208,79 +208,66 @@ def load_dataset_adult():
     # Try to load from OpenML
     dataset = fetch_openml(name='adult', version=2, as_frame=True)
     
-    # Handle categorical and numerical columns separately
     X = dataset.data.copy()
     
-    # Identify categorical and numerical columns
-    categorical_cols = X.select_dtypes(include=['category', 'object']).columns
+    # OpenML already provides correct dtypes! Just clean the data without changing types
+    
+    # Handle numerical columns: replace inf/-inf with NaN, then fill with median
     numerical_cols = X.select_dtypes(include=[np.number]).columns
+    X[numerical_cols] = X[numerical_cols].replace([np.inf, -np.inf], np.nan)
+    for col in numerical_cols:
+        if X[col].isna().any():
+            X[col] = X[col].fillna(X[col].median())
     
-    # Handle numerical columns: replace inf/-inf with NaN, then fill with 0
-    X[numerical_cols] = X[numerical_cols].replace([np.inf, -np.inf], np.nan).fillna(0)
-    
-    # Handle categorical columns: fill NaN with most frequent value or a placeholder
+    # Handle categorical columns: just fill NaN values, keep as category dtype
+    categorical_cols = X.select_dtypes(include=['category']).columns
     for col in categorical_cols:
         if X[col].isna().any():
-            # Fill with most frequent value
             most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
             X[col] = X[col].fillna(most_frequent)
-        # Convert to string to ensure consistency
-        X[col] = X[col].astype(str)
+        # Keep as category dtype - don't convert to string!
     
-    # Get target names and convert string labels to integer indices
+    # Handle target
     target_names = list(dataset.target.unique())
-    
-    # Create a label encoder to convert strings to integers
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(dataset.target.values)
-    
-    # Make sure target_names match the label encoder's classes
     target_names = list(label_encoder.classes_)
-        
     feature_names = list(dataset.data.columns)
     
     mock_dataset = MockDataset(X, y)
-    
     return mock_dataset, feature_names, target_names
 
 def load_dataset_german():
     """Load and preprocess the German credit dataset"""
-    # Try to load from OpenML
     dataset = fetch_openml(name='credit-g', version=1, as_frame=True)
     
-    # Handle categorical and numerical columns separately
     X = dataset.data.copy()
     
-    # Identify categorical and numerical columns
-    categorical_cols = X.select_dtypes(include=['category', 'object']).columns
+    # OpenML already provides correct dtypes! Just clean the data without changing types
+    
+    # Handle numerical columns: replace inf/-inf with NaN, then fill with median
     numerical_cols = X.select_dtypes(include=[np.number]).columns
+    X[numerical_cols] = X[numerical_cols].replace([np.inf, -np.inf], np.nan)
+    for col in numerical_cols:
+        if X[col].isna().any():
+            X[col] = X[col].fillna(X[col].median())
     
-    # Handle numerical columns: replace inf/-inf with NaN, then fill with 0
-    X[numerical_cols] = X[numerical_cols].replace([np.inf, -np.inf], np.nan).fillna(0)
-    
-    # Handle categorical columns: fill NaN with most frequent value or a placeholder
+    # Handle categorical columns: just fill NaN values, keep as category dtype
+    categorical_cols = X.select_dtypes(include=['category']).columns
     for col in categorical_cols:
         if X[col].isna().any():
-            # Fill with most frequent value
             most_frequent = X[col].mode().iloc[0] if not X[col].mode().empty else 'Unknown'
             X[col] = X[col].fillna(most_frequent)
-        # Convert to string to ensure consistency
-        X[col] = X[col].astype(str)
+        # Keep as category dtype - don't convert to string!
     
-    # Get target names and convert string labels to integer indices
+    # Handle target
     target_names = list(dataset.target.unique())
-    
-    # Create a label encoder to convert strings to integers
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(dataset.target.values)
-    
-    # Make sure target_names match the label encoder's classes
     target_names = list(label_encoder.classes_)
-        
     feature_names = list(dataset.data.columns)
     
     mock_dataset = MockDataset(X, y)
-    
     return mock_dataset, feature_names, target_names
 
 # Cache loading for datasets (for actual data)

@@ -151,8 +151,8 @@ export function createSurrogateInput(container, paramName, details) {
         input.value = details.default;
 
         const stats = `Min: ${details.min}
-                      Max: ${details.max}
-                      Default: ${details.default}`;
+Max: ${details.max}
+Default: ${details.default}`;
 
         box.innerHTML = `
             <div class="feature-label" title="${stats}">

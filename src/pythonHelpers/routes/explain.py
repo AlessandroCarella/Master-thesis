@@ -67,29 +67,29 @@ async def update_visualization(request: VisualizationRequest):
     """
     Update visualization technique without regenerating the neighborhood.
     """ 
-    # Generate decision tree visualization data
+    # Generate decision tree visualization data using ENCODED feature names
     tree_data = generate_decision_tree_data(
         surrogate=global_state.dt_surrogate,
-        feature_names=global_state.feature_names,
+        feature_names=global_state.encoded_feature_names,  # Use encoded feature names
         target_names=global_state.target_names
     )
 
     if not request.includeOriginalDataset:    
-        # Generate scatter plot visualization data
+        # Generate scatter plot visualization data using ORIGINAL feature names
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.feature_names,
-            X=global_state.neighb_train_X,
+            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            X=global_state.neighborhood,  # Encoded data
             y=global_state.neighb_train_y,
             surrogate=global_state.dt_surrogate,
             class_names=global_state.target_names
         )
     else:
-        # Generate scatter plot visualization data
+        # Generate scatter plot visualization data using ORIGINAL feature names
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.feature_names,
-            X=global_state.neighb_train_X,
+            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            X=global_state.neighborhood,  # Encoded data
             y=global_state.neighb_train_y,
             surrogate=global_state.dt_surrogate,
             class_names=global_state.target_names,
@@ -113,32 +113,34 @@ async def explain_instance(request: InstanceRequest):
     # Process instance data
     instance_values = process_instance(request)
             
-    # Create neighborhood using lore
-    neighbourhood, neighb_train_X, neighb_train_y, neighb_train_yz = create_neighbourhood_with_lore(
+    # Create neighborhood using lore - now returns encoded feature names too
+    neighborhood, neighb_train_X, neighb_train_y, neighb_train_yz, encoded_feature_names = create_neighbourhood_with_lore(
         instance=instance_values,
         bbox=global_state.bbox,
         dataset=global_state.dataset,
         neighbourhood_size=request.neighbourhood_size,
     )
-    # Update global state with neighborhood data
-    global_state.neighborhood = neighbourhood
+    
+    # Update global state with neighborhood data and encoded feature names
+    global_state.neighborhood = neighborhood
     global_state.neighb_train_X = neighb_train_X
     global_state.neighb_train_y = neighb_train_y
     global_state.neighb_train_yz = neighb_train_yz
+    global_state.encoded_feature_names = encoded_feature_names  # Store encoded feature names
 
     # Create decision tree surrogate
     dt_surr = get_lore_decision_tree_surrogate(
-        neighbour=neighbourhood,
+        neighbour=neighborhood,
         neighb_train_yz=neighb_train_yz
     )
     
     # Update global state with the decision tree surrogate
     global_state.dt_surrogate = dt_surr
     
-    # Generate decision tree visualization data
+    # Generate decision tree visualization data using ENCODED feature names
     tree_data = generate_decision_tree_data(
         surrogate=dt_surr,
-        feature_names=global_state.feature_names,
+        feature_names=encoded_feature_names,  # Use encoded feature names instead of original
         target_names=global_state.target_names
     )
     
@@ -146,11 +148,11 @@ async def explain_instance(request: InstanceRequest):
         # Update global state with the target names
         global_state.target_names = list(np.unique(neighb_train_y))
 
-        # Generate scatter plot visualization data
+        # Generate scatter plot visualization data - use ORIGINAL feature names for scatter plot
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.feature_names,
-            X=neighb_train_X,
+            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            X=neighborhood,  # Endoded data
             y=neighb_train_y,
             surrogate=dt_surr,
             class_names=global_state.target_names
@@ -159,8 +161,8 @@ async def explain_instance(request: InstanceRequest):
         # Generate scatter plot visualization data
         scatter_data = generate_scatter_plot(
             request,
-            feature_names=global_state.feature_names,
-            X=neighb_train_X,
+            feature_names=global_state.encoded_feature_names,  # Original feature names for scatter plot
+            X=neighborhood,  # Encoded data
             y=neighb_train_y,
             surrogate=dt_surr,
             class_names=global_state.target_names,

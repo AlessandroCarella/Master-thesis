@@ -83,8 +83,9 @@ def split_dataset(dataset, numeric_indices, categorical_indices, target_name: st
     """
     from sklearn.model_selection import train_test_split
     
-    # Select features by combining numeric and categorical indices
-    X = dataset.df.iloc[:, numeric_indices + categorical_indices]
+    # Select features while maintaining original column order
+    all_feature_indices = sorted(numeric_indices + categorical_indices)
+    X = dataset.df.iloc[:, all_feature_indices]
     # Select the target variable
     y = dataset.df[target_name]
     # Split the data into train and test sets with stratification based on the target variable
@@ -163,11 +164,24 @@ def prepare_dataset_and_train_classifier(dataset_name: str, target_name: str, cl
     X = raw_dataset.data
     y = raw_dataset.target
 
-    if not isinstance(X, np.ndarray):
-        X = X.to_numpy()
-
     # Prepare a dictionary for LORE where each feature name maps to its data column
-    data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
+    # Handle pandas DataFrame vs numpy array differently to preserve dtypes
+    if isinstance(X, pd.DataFrame):
+        # For pandas DataFrame: preserve dtypes by keeping Series objects
+        data_dict = {}
+        for name in feature_names:
+            series = X[name]
+            if pd.api.types.is_numeric_dtype(series):
+                # Keep numeric data as numpy array
+                data_dict[name] = series.values
+            else:
+                # Keep categorical data as strings/objects
+                data_dict[name] = series.astype(str).values
+    else:
+        # For numpy arrays (sklearn datasets like iris, wine, etc.)
+        if not isinstance(X, np.ndarray):
+            X = X.to_numpy()
+        data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
     
     # Map target indices to target names and add as target column
     data_dict[target_name] = [target_names[i] for i in y]
@@ -242,6 +256,26 @@ def load_cached_classifier(dataset_name: str, target_name: str, classifier: any,
 
     return classifier_bbox, dataset, feature_names
 
+
+def create_encoded_feature_names(dataset):
+    """
+    Manually create encoded feature names when automatic methods fail.
+    """
+    encoded_feature_names = []
+    
+    # Add numeric feature names (these stay the same)
+    for feature_name, info in dataset.descriptor['numeric'].items():
+        encoded_feature_names.append(feature_name)
+    
+    # Add categorical feature names (these get one-hot encoded)
+    for feature_name, info in dataset.descriptor['categorical'].items():
+        unique_values = info['distinct_values']
+        for value in unique_values:
+            encoded_feature_names.append(f"{feature_name}_{value}")
+    
+    return encoded_feature_names
+
+
 def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbourhood_size=100):
     """
     Generate a neighbourhood of instances around a given instance using LORE (Local Rule-based Explanation).
@@ -303,12 +337,16 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbour
     # Generate the neighbourhood in the encoded space
     neighbourhood = gen.generate(z, neighbourhood_size, dataset.descriptor, tabular_enc)
     
+    # Remove duplicates from encoded neighbourhood
     neighbourhood = remove_duplicates(neighbourhood)
-    neighbourhood = ensure_instance_in_neighbourhood(instance, neighbourhood)
-
-    # Decode the generated neighbourhood back to the original feature space
+    
+    # Decode the neighbourhood back to the original feature space
     neighb_train_X = tabular_enc.decode(neighbourhood)
+    # Ensure instance is in the decoded neighbourhood (do this only once, in decoded space)
     neighb_train_X = ensure_instance_in_neighbourhood(instance, neighb_train_X)
+    
+    # Re-encode the final neighbourhood to keep everything synchronized
+    neighbourhood = tabular_enc.encode(neighb_train_X)
     
     # Get predictions from the black-box model on the decoded neighbourhood instances
     neighb_train_y = bbox.predict(neighb_train_X)
@@ -316,8 +354,10 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbour
     # Encode the target predictions
     neighb_train_yz = tabular_enc.encode_target_class(neighb_train_y.reshape(-1, 1)).squeeze()
     
-    return neighbourhood, neighb_train_X, neighb_train_y, neighb_train_yz
-
+    # Get encoded feature names
+    encoded_feature_names = create_encoded_feature_names(dataset)
+    
+    return neighbourhood, neighb_train_X, neighb_train_y, neighb_train_yz, encoded_feature_names
 
 def get_lore_decision_tree_surrogate(neighbour, neighb_train_yz):
     """
