@@ -6,7 +6,7 @@ export const colorScheme = {
     classColors: [],
     // UI element colors
     ui: {
-        highlight: "#FF0000",
+        highlight: "rebeccapurple",
         default: "#cccccc",
         nodeStroke: "#666666",
         linkStroke: "#999999",
