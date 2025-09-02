@@ -2,7 +2,6 @@ import {
     setTreeSpawnVisualization,
     highlightInstancePathInTreeSpawn,
 } from "./visualizationConnector.js";
-import { createHierarchy, findInstancePath } from "./TreesCommon/dataProcessing.js";
 import { calculateMetrics, createTreeLayout, calculateInitialTransform } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -17,6 +16,7 @@ import { addNodes } from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { spawnTreeState } from "./TreesCommon/state.js";
 import { TREES_SETTINGS } from "./TreesCommon/settings.js";
+import { createHierarchy, findInstancePath } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
 
 export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     // Store data in global spawnTreeState
@@ -64,7 +64,7 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
         metrics, 
         svg,
         container: contentGroup,
-        rawTreeData: rawTreeData,  // Store raw tree data for scatter plot highlighting
+        rawTreeData: rawTreeData,
         instancePath: spawnTreeState.instancePath
     };
 

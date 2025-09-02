@@ -1,6 +1,45 @@
 import { TREES_SETTINGS } from "./settings.js";
 
-function createNodeTooltipContent(nodeData, treeKind) {
+function getFeatureDisplayName(encodedFeatureName, featureMappingInfo) {
+    const { datasetDescriptor } = featureMappingInfo;
+    
+    // Check categorical features
+    for (const [originalFeatureName, info] of Object.entries(datasetDescriptor.categorical || {})) {
+        if (encodedFeatureName.startsWith(originalFeatureName + '_')) {
+            return originalFeatureName;
+        }
+    }
+    
+    // Check numeric features
+    for (const [originalFeatureName, info] of Object.entries(datasetDescriptor.numeric || {})) {
+        if (encodedFeatureName === originalFeatureName) {
+            return originalFeatureName;
+        }
+    }
+    
+    return encodedFeatureName;
+}
+
+function getCategoricalValueFromThreshold(encodedFeatureName, threshold, featureMappingInfo) {
+    const { datasetDescriptor } = featureMappingInfo;
+    
+    for (const [originalFeatureName, info] of Object.entries(datasetDescriptor.categorical || {})) {
+        if (encodedFeatureName.startsWith(originalFeatureName + '_')) {
+            const categoryValue = encodedFeatureName.replace(originalFeatureName + '_', '');
+            // For one-hot encoded features, threshold is typically 0.5
+            // The split means: "Is this category active?" (> 0.5 = Yes, <= 0.5 = No)
+            return {
+                featureName: originalFeatureName,
+                categoryValue: categoryValue,
+                condition: threshold <= 0.5 ? `!= "${categoryValue}"` : `= "${categoryValue}"`
+            };
+        }
+    }
+    
+    return null;
+}
+
+function createNodeTooltipContent(nodeData, treeKind, featureMappingInfo) {
     const content = [];
 
     // Get actual node data based on tree type
@@ -16,13 +55,19 @@ function createNodeTooltipContent(nodeData, treeKind) {
         // Leaf node information
         content.push(`<strong>Class:</strong> ${node.class_label}`);
     } else {
-        // Split node information
-        content.push(
-            `<strong>Split:</strong> ${
-                node.feature_name
-            } ≤ ${node.threshold.toFixed(2)}`
-        );
-        content.push("<strong>Nodes disposition:</strong> Left True/Right False")
+        // Split node information with proper decoding
+        const displayFeatureName = getFeatureDisplayName(node.feature_name, featureMappingInfo);
+        const categoricalInfo = getCategoricalValueFromThreshold(node.feature_name, node.threshold, featureMappingInfo);
+        
+        if (categoricalInfo) {
+            // Categorical feature split
+            content.push(`<strong>Split:</strong> ${categoricalInfo.featureName} ${categoricalInfo.condition}`);
+        } else {
+            // Numeric feature split
+            content.push(`<strong>Split:</strong> ${displayFeatureName} ≤ ${node.threshold.toFixed(2)}`);
+        }
+        
+        content.push("<strong>Nodes disposition:</strong> Left True/Right False");
         content.push(`<strong>Feature Index:</strong> ${node.feature_index}`);
         content.push(`<strong>Impurity:</strong> ${node.impurity.toFixed(4)}`);
     }
@@ -32,21 +77,14 @@ function createNodeTooltipContent(nodeData, treeKind) {
 
     // Add weighted samples if available
     if (node.weighted_n_samples) {
-        const weightDiff = Math.abs(
-            node.weighted_n_samples - node.n_samples
-        );
-        // Only show if there's a meaningful difference
+        const weightDiff = Math.abs(node.weighted_n_samples - node.n_samples);
         if (weightDiff > 0.01) {
-            content.push(
-                `<strong>Weighted Samples:</strong> ${node.weighted_n_samples.toFixed(
-                    2
-                )}`
-            );
+            content.push(`<strong>Weighted Samples:</strong> ${node.weighted_n_samples.toFixed(2)}`);
         }
     }
 
     if (!node.is_leaf) {
-        // Add class distribution if available (summarized)
+        // Add class distribution if available
         if (node.value && node.value.length > 0 && node.value[0].length > 0) {
             const valueArray = node.value[0];
             if (valueArray.length > 1) {
@@ -54,16 +92,13 @@ function createNodeTooltipContent(nodeData, treeKind) {
                 const distribution = valueArray
                     .map((val) => ((val / total) * 100).toFixed(1) + "%")
                     .join(", ");
-                content.push(
-                    `<strong>Class Distribution:</strong> [${distribution}]`
-                );
+                content.push(`<strong>Class Distribution:</strong> [${distribution}]`);
             }
         }
     }
 
     // Add tree-specific information
     if (treeKind === TREES_SETTINGS.treeKindID.spawn) {
-        // Add subtree information for spawn trees
         if (nodeData.hasHiddenChildren) {
             content.push(`<strong>Subtree:</strong> Right-click to expand`);
         } else if (nodeData.isExpanded) {
@@ -74,9 +109,8 @@ function createNodeTooltipContent(nodeData, treeKind) {
     return content;
 }
 
-export function handleMouseOver(event, nodeData, tooltip, treeKind) {
-    // Extract tooltip content creation
-    const content = createNodeTooltipContent(nodeData, treeKind);
+export function handleMouseOver(event, nodeData, tooltip, treeKind, featureMappingInfo) {
+    const content = createNodeTooltipContent(nodeData, treeKind, featureMappingInfo);
 
     tooltip
         .html(content.join("<br>"))
@@ -86,7 +120,7 @@ export function handleMouseOver(event, nodeData, tooltip, treeKind) {
         .style("top", event.pageY - 10 + "px");
 }
 
-export function handleMouseMove(event, tooltip, treeKind) {
+export function handleMouseMove(event, tooltip) {
     tooltip
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
@@ -97,7 +131,7 @@ export function handleMouseOut(tooltip) {
 }
 
 // Get node text lines for path nodes (spawn tree specific)
-export function getNodeTextLines(nodeData, instanceData, treeKind) {
+export function getNodeTextLines(nodeData, treeKind, featureMappingInfo) {
     if (treeKind !== TREES_SETTINGS.treeKindID.spawn) {
         console.warn("getNodeTextLines is spawn-specific");
         return ["Node"];
@@ -107,35 +141,18 @@ export function getNodeTextLines(nodeData, instanceData, treeKind) {
     const node = nodeData.data;
     
     if (!node.is_leaf) {
-        // Decision node - show split condition and instance value
-        const featureName = node.feature_name || 'Unknown';
-        const threshold = node.threshold !== undefined ? node.threshold.toFixed(2) : 'N/A';
+        const displayFeatureName = getFeatureDisplayName(node.feature_name, featureMappingInfo);
+        const categoricalInfo = getCategoricalValueFromThreshold(node.feature_name, node.threshold, featureMappingInfo);
         
-        // Get instance value (would need to import getInstanceValue)
-        const instanceValue = instanceData && instanceData[featureName];
-        
-        lines.push(`${featureName} ≤ ${threshold}`);
-        
-        if (instanceValue !== null && instanceValue !== undefined) {
-            const formattedValue = typeof instanceValue === 'number' ? instanceValue.toFixed(2) : instanceValue;
-            lines.push(`Instance: ${formattedValue}`);
+        if (categoricalInfo) {
+            lines.push(`${categoricalInfo.featureName} ${categoricalInfo.condition}`);
+        } else {
+            const threshold = node.threshold.toFixed(2);
+            lines.push(`${displayFeatureName} ≤ ${threshold}`);
         }
     } else {
-        // Leaf node - show class label
         lines.push(`${node.class_label}`);
     }
     
     return lines;
-}
-
-// Get node label lines for blocks tree rectangles
-export function getNodeLabelLines(nodeId, instance, treeKind) {
-    if (treeKind !== TREES_SETTINGS.treeKindID.blocks) {
-        console.warn("getNodeLabelLines is blocks-specific");
-        return [`Node ${nodeId}`];
-    }
-    
-    // This would need to be implemented with proper node lookup
-    // For now, returning a simple implementation
-    return [`Node ${nodeId}`];
 }

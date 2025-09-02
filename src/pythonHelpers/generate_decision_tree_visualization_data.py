@@ -47,167 +47,134 @@ class TreeNode:
     # or the predicted value (for regression)
     value: np.ndarray
 
-def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_names: List[str], target_names: List[str]) -> List[TreeNode]: 
-    """
-    Extract complete node information from a trained DecisionTreeClassifier
+# ---------------- Node Information Extraction ---------------- #
 
-    Parameters:
-    -----------
-    tree_classifier : DecisionTreeClassifier
-        A trained sklearn DecisionTreeClassifier
-    feature_names : List[str]
-        A list of encoded feature names (used for tree extraction)
-    target_names : List[str]
-        A list of target class labels
+def validate_feature_index(feature_index: int, feature_names: List[str]) -> None:
+    """Validate that feature index is within valid range."""
+    if feature_index >= len(feature_names):
+        raise ValueError(f"Feature index {feature_index} out of range for feature_names of length {len(feature_names)}")
 
-    Returns:
-    --------
-    List[TreeNode]
-        List of TreeNode objects containing the complete tree structure
-    """
-    tree = tree_classifier.tree_
+def validate_class_index(class_label_index: int, target_names: List[str]) -> None:
+    """Validate that class label index is within valid range."""
+    if class_label_index >= len(target_names):
+        raise ValueError(f"Class label index {class_label_index} out of range for target_names of length {len(target_names)}")
+
+def extract_leaf_node_info(tree, node_id: int, target_names: List[str]) -> tuple:
+    """Extract information specific to leaf nodes."""
+    class_label_index = int(tree.value[node_id].argmax())
+    validate_class_index(class_label_index, target_names)
+    class_label = target_names[class_label_index]
+    return class_label
+
+def extract_internal_node_info(tree, node_id: int, feature_names: List[str]) -> tuple:
+    """Extract information specific to internal (non-leaf) nodes."""
+    feature_index = int(tree.feature[node_id])
+    validate_feature_index(feature_index, feature_names)
     
+    feature_name = feature_names[feature_index]
+    threshold = float(tree.threshold[node_id])
+    left_child = int(tree.children_left[node_id])
+    right_child = int(tree.children_right[node_id])
+    
+    return feature_name, feature_index, threshold, left_child, right_child
+
+def extract_common_node_info(tree, node_id: int) -> tuple:
+    """Extract information common to all node types."""
+    impurity = tree.impurity[node_id]
+    n_samples = int(tree.n_node_samples[node_id])
+    weighted_n_samples = float(tree.weighted_n_node_samples[node_id])
+    value = tree.value[node_id].copy()
+    
+    return impurity, n_samples, weighted_n_samples, value
+
+def create_leaf_node(node_id: int, tree, target_names: List[str]) -> TreeNode:
+    """Create a TreeNode object for a leaf node."""
+    class_label = extract_leaf_node_info(tree, node_id, target_names)
+    impurity, n_samples, weighted_n_samples, value = extract_common_node_info(tree, node_id)
+    
+    return TreeNode(
+        node_id=node_id,
+        feature_name=None,
+        feature_index=None,
+        threshold=None,
+        left_child=None,
+        right_child=None,
+        is_leaf=True,
+        class_label=class_label,
+        impurity=impurity,
+        n_samples=n_samples,
+        weighted_n_samples=weighted_n_samples,
+        value=value
+    )
+
+def create_internal_node(node_id: int, tree, feature_names: List[str]) -> TreeNode:
+    """Create a TreeNode object for an internal node."""
+    feature_name, feature_index, threshold, left_child, right_child = extract_internal_node_info(tree, node_id, feature_names)
+    impurity, n_samples, weighted_n_samples, value = extract_common_node_info(tree, node_id)
+    
+    return TreeNode(
+        node_id=node_id,
+        feature_name=feature_name,
+        feature_index=feature_index,
+        threshold=threshold,
+        left_child=left_child,
+        right_child=right_child,
+        is_leaf=False,
+        class_label=None,
+        impurity=impurity,
+        n_samples=n_samples,
+        weighted_n_samples=weighted_n_samples,
+        value=value
+    )
+
+def is_leaf_node(tree, node_id: int) -> bool:
+    """Check if a node is a leaf node."""
+    return tree.children_left[node_id] == -1
+
+def extract_single_node(tree, node_id: int, feature_names: List[str], target_names: List[str]) -> TreeNode:
+    """Extract information for a single tree node."""
+    if is_leaf_node(tree, node_id):
+        return create_leaf_node(node_id, tree, target_names)
+    else:
+        return create_internal_node(node_id, tree, feature_names)
+
+# ---------------- Tree Structure Extraction ---------------- #
+
+def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_names: List[str], target_names: List[str]) -> List[TreeNode]: 
+    """Extract complete node information from a trained DecisionTreeClassifier"""
+    tree = tree_classifier.tree_
     nodes = []
 
     for node_id in range(tree.node_count):
-        # Check if node is leaf
-        is_leaf = tree.children_left[node_id] == -1
-
-        # Get node information
-        if is_leaf:
-            # Get the class label based on the majority class in the leaf
-            class_label_index = int(tree.value[node_id].argmax())
-            if class_label_index >= len(target_names):
-                raise ValueError(f"Class label index {class_label_index} out of range for target_names of length {len(target_names)}")
-            class_label = target_names[class_label_index]
-            
-            node = TreeNode(
-                node_id=node_id,
-                feature_name=None,
-                feature_index=None,
-                threshold=None,
-                left_child=None,
-                right_child=None,
-                is_leaf=True,
-                class_label=class_label,
-                impurity=tree.impurity[node_id],
-                n_samples=int(tree.n_node_samples[node_id]),
-                weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
-                value=tree.value[node_id].copy()
-            )
-        else:
-            feature_index = int(tree.feature[node_id])
-            if feature_index >= len(feature_names):
-                raise ValueError(f"Feature index {feature_index} out of range for feature_names of length {len(feature_names)}")
-            feature_name = feature_names[feature_index]
-            threshold = float(tree.threshold[node_id])
-            left_child = int(tree.children_left[node_id])
-            right_child = int(tree.children_right[node_id])
-
-            node = TreeNode(
-                node_id=node_id,
-                feature_name=feature_name,
-                feature_index=feature_index,
-                threshold=threshold,
-                left_child=left_child,
-                right_child=right_child,
-                is_leaf=False,
-                class_label=None,
-                impurity=tree.impurity[node_id],
-                n_samples=int(tree.n_node_samples[node_id]),
-                weighted_n_samples=float(tree.weighted_n_node_samples[node_id]),
-                value=tree.value[node_id].copy()
-            )
-
+        node = extract_single_node(tree, node_id, feature_names, target_names)
         nodes.append(node)
 
     return nodes
 
-def map_encoded_to_original_feature_names(encoded_feature_name, encoded_feature_names, original_feature_names):
-    """
-    Map an encoded feature name back to the corresponding original feature name.
-    
-    Parameters:
-    -----------
-    encoded_feature_name : str
-        The encoded feature name to map
-    encoded_feature_names : List[str]
-        List of all encoded feature names
-    original_feature_names : List[str]
-        List of all original feature names
-        
-    Returns:
-    --------
-    str
-        The corresponding original feature name, or the encoded name if no mapping exists
-    """
-    try:
-        # Find the index of the encoded feature name
-        encoded_index = encoded_feature_names.index(encoded_feature_name)
-        
-        # For simple mappings where encoded features correspond directly to original features
-        if encoded_index < len(original_feature_names):
-            return original_feature_names[encoded_index]
-        
-        # For one-hot encoded features or other complex encodings, 
-        # you might need more sophisticated mapping logic here
-        # For now, we'll try to extract the original feature name from the encoded name
-        
-        # Check if the encoded name contains a pattern that indicates the original feature
-        for orig_name in original_feature_names:
-            if orig_name in encoded_feature_name or encoded_feature_name.startswith(orig_name):
-                return orig_name
-        
-        # If no mapping found, return the encoded name
-        return encoded_feature_name
-        
-    except ValueError:
-        # If encoded_feature_name not found in the list, return it as-is
-        return encoded_feature_name
+# ---------------- Node Dictionary Processing ---------------- #
 
-def generate_decision_tree_visualization_data(nodes, encoded_feature_names=None, original_feature_names=None):
-    """
-    Prepare the tree structure for visualization with proper feature name mapping.
+def convert_numpy_arrays_to_lists(node_dict: dict) -> None:
+    """Convert numpy arrays in node dictionary to lists for JSON serialization."""
+    if isinstance(node_dict['value'], np.ndarray):
+        node_dict['value'] = node_dict['value'].tolist()
+
+def process_single_node_for_visualization(node: TreeNode) -> dict:
+    """Process a single TreeNode for visualization."""
+    node_dict = asdict(node)
     
-    Parameters:
-    -----------
-    nodes : List[TreeNode]
-        List of TreeNode objects to process
-    encoded_feature_names : List[str], optional
-        List of encoded feature names used in the tree
-    original_feature_names : List[str], optional
-        List of original feature names for mapping back to frontend
+    # Convert numpy arrays to lists for JSON serialization
+    convert_numpy_arrays_to_lists(node_dict)
     
-    Returns:
-    --------
-    List[Dict]
-        List of node dictionaries suitable for visualization with mapped feature names
-    """
-    # Convert TreeNodes to dictionaries
+    return node_dict
+
+# ---------------- Main Visualization Functions ---------------- #
+
+def generate_decision_tree_visualization_data_raw(nodes):
+    """Prepare tree structure for visualization. Frontend handles feature mapping using dataset descriptor."""
     nodes_dict = []
-    for i, node in enumerate(nodes):
-        node_dict = asdict(node)
-        
-        # Convert numpy arrays to lists for JSON serialization
-        if isinstance(node_dict['value'], np.ndarray):
-            node_dict['value'] = node_dict['value'].tolist()
-        
-        # Map encoded feature names back to original feature names for display
-        if (not node.is_leaf and 
-            node.feature_name is not None and 
-            encoded_feature_names is not None and 
-            original_feature_names is not None):
-            
-            original_feature_name = map_encoded_to_original_feature_names(
-                node.feature_name, 
-                encoded_feature_names, 
-                original_feature_names
-            )
-            node_dict['feature_name'] = original_feature_name
-            
-            # Optionally, keep the encoded name for reference
-            node_dict['encoded_feature_name'] = node.feature_name
-        
+    
+    for node in nodes:
+        node_dict = process_single_node_for_visualization(node)
         nodes_dict.append(node_dict)
     
     return nodes_dict

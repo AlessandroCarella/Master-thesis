@@ -6,6 +6,8 @@ import joblib
 
 from pythonHelpers.routes.state import global_state
 
+# ---------------- Dataset Descriptor Processing ---------------- #
+
 def get_feature_indices(dataset):
     """
     Extract indices for numeric and categorical features from the dataset descriptor.
@@ -18,12 +20,27 @@ def get_feature_indices(dataset):
             - numeric_indices: Indices of numeric features.
             - categorical_indices: Indices of categorical features.
     """
-    # Extract indices for numeric features
     numeric_indices = [v['index'] for v in dataset.descriptor['numeric'].values()]
-    # Extract indices for categorical features
     categorical_indices = [v['index'] for v in dataset.descriptor['categorical'].values()]
     return numeric_indices, categorical_indices
 
+def get_ordered_feature_names_from_dataset(dataset):
+    """Get feature names in correct order based on dataset descriptor indices."""
+    feature_names = []
+    
+    # Collect numeric features with their indices
+    for feature_name, info in dataset.descriptor['numeric'].items():
+        feature_names.append((info['index'], feature_name))
+        
+    # Collect categorical features with their indices
+    for feature_name, info in dataset.descriptor['categorical'].items():
+        feature_names.append((info['index'], feature_name))
+    
+    # Sort by index and return feature names
+    feature_names.sort(key=lambda x: x[0])
+    return [name for _, name in feature_names]
+
+# ---------------- Preprocessing Pipeline ---------------- #
 
 def create_preprocessor(numeric_indices, categorical_indices):
     """
@@ -45,10 +62,9 @@ def create_preprocessor(numeric_indices, categorical_indices):
     return ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), numeric_indices),    # Scale numeric features
-            ('cat', OrdinalEncoder(), categorical_indices)   # Encode categorical features
+            ('cat', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), categorical_indices) # Encode categorical features
         ]
     )
-
 
 def filter_rare_classes(dataset, target_name: str):
     """
@@ -66,7 +82,6 @@ def filter_rare_classes(dataset, target_name: str):
     valid_classes = valid_classes[valid_classes > 1].index
     # Filter the dataframe to include only valid classes
     dataset.df = dataset.df[dataset.df[target_name].isin(valid_classes)]
-
 
 def split_dataset(dataset, numeric_indices, categorical_indices, target_name: str):
     """
@@ -91,6 +106,21 @@ def split_dataset(dataset, numeric_indices, categorical_indices, target_name: st
     # Split the data into train and test sets with stratification based on the target variable
     return train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
+# ---------------- Model Training ---------------- #
+
+def create_default_classifier():
+    """Create default RandomForestClassifier for training."""
+    from sklearn.ensemble import RandomForestClassifier
+    return RandomForestClassifier(n_estimators=100, random_state=42)
+
+def create_training_pipeline(dataset, classifier):
+    """Create and configure the complete training pipeline."""
+    from sklearn.pipeline import make_pipeline
+    
+    numeric_indices, categorical_indices = get_feature_indices(dataset)
+    preprocessor = create_preprocessor(numeric_indices, categorical_indices)
+    
+    return make_pipeline(preprocessor, classifier), numeric_indices, categorical_indices
 
 def train_model_generalized(dataset, target_name: str, classifier=None):
     """
@@ -108,33 +138,76 @@ def train_model_generalized(dataset, target_name: str, classifier=None):
     Returns:
         object: A black-box classifier object wrapped using sklearn_classifier_bbox.
     """
-    from sklearn.pipeline import make_pipeline
     from lore_sa.bbox import sklearn_classifier_bbox
     
     # Use default classifier if none provided
     if classifier is None:
-        from sklearn.ensemble import RandomForestClassifier
-        classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+        classifier = create_default_classifier()
     
-    # Retrieve indices for numeric and categorical features
-    numeric_indices, categorical_indices = get_feature_indices(dataset)
+    # Create training pipeline and get indices
+    model, numeric_indices, categorical_indices = create_training_pipeline(dataset, classifier)
     
-    # Create the preprocessor with appropriate transformers
-    preprocessor = create_preprocessor(numeric_indices, categorical_indices)
-    
-    # Filter out rare classes from the dataset
+    # Prepare dataset
     filter_rare_classes(dataset, target_name)
-    
-    # Split the dataset into training and testing subsets
     X_train, X_test, y_train, y_test = split_dataset(dataset, numeric_indices, categorical_indices, target_name)
 
-    # Create a pipeline that applies preprocessing and then the classifier
-    model = make_pipeline(preprocessor, classifier)
+    # Train model
     model.fit(X_train, y_train)
     
-    # Return the black-box wrapper for the trained model
+    # Return black-box wrapper
     return sklearn_classifier_bbox.sklearnBBox(model), X_train, X_test, y_train, y_test
 
+# ---------------- Dataset Preparation ---------------- #
+
+def extract_features_and_targets(dataset_name: str):
+    """Extract feature matrix and target vector from dataset."""
+    from pythonHelpers.datasets import load_dataset
+    
+    raw_dataset, feature_names, target_names = load_dataset(dataset_name)
+    return raw_dataset.data, raw_dataset.target, feature_names, target_names
+
+def prepare_data_dictionary_from_dataframe(X_df, feature_names):
+    """Prepare data dictionary from pandas DataFrame preserving dtypes."""
+    data_dict = {}
+    for name in feature_names:
+        series = X_df[name]
+        if pd.api.types.is_numeric_dtype(series):
+            # Keep numeric data as numpy array
+            data_dict[name] = series.values
+        else:
+            # Keep categorical data as strings/objects
+            data_dict[name] = series.astype(str).values
+    return data_dict
+
+def prepare_data_dictionary_from_array(X_array, feature_names):
+    """Prepare data dictionary from numpy array."""
+    if not isinstance(X_array, np.ndarray):
+        X_array = X_array.to_numpy()
+    return {name: X_array[:, i] for i, name in enumerate(feature_names)}
+
+def create_data_dictionary(X, feature_names, target_names, y, target_name):
+    """
+    Create a data dictionary for LORE TabularDataset from features and targets.
+    
+    Handles both pandas DataFrame and numpy array inputs appropriately.
+    """
+    # Handle pandas DataFrame vs numpy array differently to preserve dtypes
+    if isinstance(X, pd.DataFrame):
+        data_dict = prepare_data_dictionary_from_dataframe(X, feature_names)
+    else:
+        data_dict = prepare_data_dictionary_from_array(X, feature_names)
+    
+    # Map target indices to target names and add as target column
+    data_dict[target_name] = [target_names[i] for i in y]
+    return data_dict
+
+def create_tabular_dataset(data_dict, target_name):
+    """Create and clean LORE-compatible TabularDataset."""
+    from lore_sa.dataset import TabularDataset
+    
+    dataset = TabularDataset.from_dict(data_dict, target_name)
+    dataset.df.dropna(inplace=True)
+    return dataset
 
 def prepare_dataset_and_train_classifier(dataset_name: str, target_name: str, classifier: any, classifier_name: str):
     """
@@ -156,46 +229,46 @@ def prepare_dataset_and_train_classifier(dataset_name: str, target_name: str, cl
         tuple: A tuple containing (classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names)
             where dataset is the prepared TabularDataset and feature_names are the original feature names.
     """
-    from pythonHelpers.datasets import load_dataset
-    # Load dataset and corresponding metadata (feature names and target names)
-    raw_dataset, feature_names, target_names = load_dataset(dataset_name)
+    # Load and extract dataset components
+    X, y, feature_names, target_names = extract_features_and_targets(dataset_name)
     
-    # Extract feature matrix X and target vector y
-    X = raw_dataset.data
-    y = raw_dataset.target
-
-    # Prepare a dictionary for LORE where each feature name maps to its data column
-    # Handle pandas DataFrame vs numpy array differently to preserve dtypes
-    if isinstance(X, pd.DataFrame):
-        # For pandas DataFrame: preserve dtypes by keeping Series objects
-        data_dict = {}
-        for name in feature_names:
-            series = X[name]
-            if pd.api.types.is_numeric_dtype(series):
-                # Keep numeric data as numpy array
-                data_dict[name] = series.values
-            else:
-                # Keep categorical data as strings/objects
-                data_dict[name] = series.astype(str).values
-    else:
-        # For numpy arrays (sklearn datasets like iris, wine, etc.)
-        if not isinstance(X, np.ndarray):
-            X = X.to_numpy()
-        data_dict = {name: X[:, i] for i, name in enumerate(feature_names)}
-    
-    # Map target indices to target names and add as target column
-    data_dict[target_name] = [target_names[i] for i in y]
-    
-    from lore_sa.dataset import TabularDataset
-    # Create a LORE-compatible TabularDataset from the dictionary and clean the data
-    dataset = TabularDataset.from_dict(data_dict, target_name)
-    dataset.df.dropna(inplace=True)
+    # Create data dictionary and dataset
+    data_dict = create_data_dictionary(X, feature_names, target_names, y, target_name)
+    dataset = create_tabular_dataset(data_dict, target_name)
     
     # Train the model using the LORE generalized training function
     classifier_bbox, X_train, X_test, y_train, y_test = train_model_generalized(dataset, target_name, classifier)
     
     return classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names
 
+# ---------------- Caching System ---------------- #
+
+def generate_cache_filename(dataset_name: str, target_name: str, classifier_name: str, classifier_params_hash: str, cache_dir: str):
+    """Generate unique cache filename based on parameters."""
+    return os.path.join(
+        cache_dir, 
+        f'classifier_{dataset_name}_{target_name}_{classifier_name}_{classifier_params_hash}.pkl'
+    )
+
+def load_from_cache(cache_file: str):
+    """Load classifier data from cache file."""
+    cached_data = joblib.load(cache_file)
+    classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names = cached_data
+    logging.info(f"Loaded classifier from cache: {cache_file}")
+    return classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names
+
+def save_to_cache(cache_file: str, classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names):
+    """Save classifier data to cache file."""
+    cache_data = (classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names)
+    joblib.dump(cache_data, cache_file)
+    logging.info(f"Cached classifier to file: {cache_file}")
+
+def update_global_training_state(X_train, y_train, X_test, y_test):
+    """Update global state with training data."""
+    global_state.X_train = X_train
+    global_state.y_train = y_train
+    global_state.X_test = X_test
+    global_state.y_test = y_test
 
 def load_cached_classifier(dataset_name: str, target_name: str, classifier: any, classifier_name: str, cache_dir='cache'):
     """
@@ -225,41 +298,33 @@ def load_cached_classifier(dataset_name: str, target_name: str, classifier: any,
     # Ensure cache directory exists
     os.makedirs(cache_dir, exist_ok=True)
             
-    # Generate a hash of the classifier parameters to ensure uniqueness based on its configuration
+    # Generate cache filename
     classifier_params_hash = joblib.hash(classifier.get_params())
-    
-    # Create a unique cache file name
-    cache_file = os.path.join(
-        cache_dir, 
-        f'classifier_{dataset_name}_{target_name}_{classifier_name}_{classifier_params_hash}.pkl'
-    )
+    cache_file = generate_cache_filename(dataset_name, target_name, classifier_name, classifier_params_hash, cache_dir)
     
     if os.path.exists(cache_file):
-        # Load from cache - this skips all expensive preprocessing
-        cached_data = joblib.load(cache_file)
-        classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names = cached_data
-        logging.info(f"Loaded classifier for {dataset_name} from cache.")
+        # Load from cache
+        classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names = load_from_cache(cache_file)
     else:
-        # No cache found - perform full dataset preparation and training
+        # Train new classifier and cache
         classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names = prepare_dataset_and_train_classifier(
             dataset_name, target_name, classifier, classifier_name
         )
-        # Cache all results including dataset and feature names for future fast loading
-        joblib.dump((classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names), cache_file)
-        logging.info(f"Cached classifier for {dataset_name} to file.")
+        save_to_cache(cache_file, classifier_bbox, X_train, X_test, y_train, y_test, dataset, feature_names)
         
-    # Set global state as before
-    global_state.X_train = X_train
-    global_state.y_train = y_train
-    global_state.X_test = X_test
-    global_state.y_test = y_test
+    # Update global state
+    update_global_training_state(X_train, y_train, X_test, y_test)
 
     return classifier_bbox, dataset, feature_names
 
+# ---------------- Feature Name Processing ---------------- #
 
 def create_encoded_feature_names(dataset):
     """
     Manually create encoded feature names when automatic methods fail.
+    
+    Creates encoded feature names by combining numeric features (unchanged) and
+    categorical features (one-hot encoded with value suffixes).
     """
     encoded_feature_names = []
     
@@ -275,8 +340,79 @@ def create_encoded_feature_names(dataset):
     
     return encoded_feature_names
 
+# ---------------- Instance Processing ---------------- #
 
-def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbourhood_size=100):
+def convert_instance_to_dataframe(instance, ordered_feature_names):
+    """Convert instance to properly ordered DataFrame preserving original format."""
+    if isinstance(instance, pd.Series):
+        instance_dict = instance.to_dict()
+        return pd.DataFrame([{feature: instance_dict[feature] for feature in ordered_feature_names}])
+    elif isinstance(instance, dict):
+        return pd.DataFrame([{feature: instance[feature] for feature in ordered_feature_names}])
+    else:
+        if hasattr(instance, 'columns'):
+            return instance[ordered_feature_names].copy()
+        else:
+            return instance
+
+# ---------------- Neighborhood Processing ---------------- #
+
+def remove_duplicates(neighbourhood):
+    """Remove duplicate rows from the neighbourhood."""
+    unique_neighbourhood = []
+    seen = set()
+    for row in neighbourhood:
+        row_tuple = tuple(row)
+        if row_tuple not in seen:
+            unique_neighbourhood.append(row)
+            seen.add(row_tuple)
+    return np.array(unique_neighbourhood, dtype=neighbourhood.dtype)
+
+def ensure_instance_at_end_perfect_match(instance_encoded, neighbourhood_encoded):
+    """
+    Ensure the encoded instance is at the END of the encoded neighbourhood.
+    Uses perfect match comparison (np.array_equal) for exact matching.
+    """
+    # Find exact matches using np.array_equal
+    instance_indices = []
+    for i, row in enumerate(neighbourhood_encoded):
+        if np.array_equal(row, instance_encoded):
+            instance_indices.append(i)
+    
+    if len(instance_indices) == 0:
+        # Instance not found, add it to the end
+        neighbourhood_encoded = np.vstack([neighbourhood_encoded, instance_encoded])
+    else:
+        # Remove ALL existing instances of this point
+        neighbourhood_encoded = np.delete(neighbourhood_encoded, instance_indices, axis=0)
+        # Add exactly one copy to the end
+        neighbourhood_encoded = np.vstack([neighbourhood_encoded, instance_encoded])
+    
+    return neighbourhood_encoded
+
+def ensure_proper_instance_preservation(neighb_train_X, original_instance_dict, ordered_feature_names):
+    """Ensure the last row of decoded neighborhood matches the original instance exactly."""
+    if len(neighb_train_X) > 0:
+        last_index = len(neighb_train_X) - 1
+        for feature_name in ordered_feature_names:
+            if feature_name in original_instance_dict:
+                if hasattr(neighb_train_X, 'iloc'):
+                    # DataFrame - use iloc
+                    neighb_train_X.iloc[last_index, neighb_train_X.columns.get_loc(feature_name)] = original_instance_dict[feature_name]
+                else:
+                    # Fallback for array-like objects
+                    feature_index = ordered_feature_names.index(feature_name)
+                    neighb_train_X[last_index, feature_index] = original_instance_dict[feature_name]
+
+def convert_neighborhood_to_dataframe(neighb_train_X, ordered_feature_names):
+    """Convert neighborhood to DataFrame if needed."""
+    if isinstance(neighb_train_X, np.ndarray):
+        return pd.DataFrame(neighb_train_X, columns=ordered_feature_names)
+    return neighb_train_X
+
+# ---------------- Main LORE Functions ---------------- #
+
+def create_neighbourhood_with_lore(instance, bbox, dataset, neighbourhood_size=100):
     """
     Generate a neighbourhood of instances around a given instance using LORE (Local Rule-based Explanation).
 
@@ -286,7 +422,7 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbour
     and encodes the target predictions.
 
     Parameters:
-        instance (pd.Series): The input instance for which to generate the neighbourhood.
+        instance: The input instance for which to generate the neighbourhood (dict, pd.Series, or DataFrame).
         bbox: The black-box model used to predict the target variable.
         dataset: The dataset object containing the descriptor and data.
         neighbourhood_size (int, optional): Number of instances to generate in the neighbourhood. Defaults to 100.
@@ -297,61 +433,39 @@ def create_neighbourhood_with_lore(instance: pd.Series, bbox, dataset, neighbour
             - neighb_train_X: Decoded neighbourhood instances in original feature space.
             - neighb_train_y: Predictions from the black-box model on the decoded instances.
             - neighb_train_yz: Encoded target predictions.
+            - encoded_feature_names: List of encoded feature names.
     """
-    # Import only when needed
     from lore_sa.encoder_decoder import ColumnTransformerEnc
     from lore_sa.neighgen import GeneticGenerator
     
-    def remove_duplicates(neighbourhood):
-        """Remove duplicate rows from the neighbourhood."""
-        unique_neighbourhood = []
-        seen = set()
-        for row in neighbourhood:
-            row_tuple = tuple(row)
-            if row_tuple not in seen:
-                unique_neighbourhood.append(row)
-                seen.add(row_tuple)
-        return np.array(unique_neighbourhood, dtype=neighbourhood.dtype)
-
-    def ensure_instance_in_neighbourhood(instance, neighbourhood):
-        """Ensure the instance is present at the end of the neighbourhood."""
-        instance_idx = np.where((neighbourhood == instance).all(axis=1))[0]
-
-        if instance_idx.size == 0:
-            neighbourhood = np.vstack([neighbourhood, instance])
-        elif instance_idx[0] != len(neighbourhood) - 1:
-            neighbourhood = np.delete(neighbourhood, instance_idx[0], axis=0)
-            neighbourhood = np.vstack([neighbourhood, instance])
-
-        return neighbourhood
-    
-    # Initialize the encoder/decoder based on the dataset descriptor
+    # Initialize encoder and get feature order
     tabular_enc = ColumnTransformerEnc(dataset.descriptor)
+    ordered_feature_names = get_ordered_feature_names_from_dataset(dataset)
     
-    # Encode the input instance; [0] to get the first (and only) element of the list
-    z = tabular_enc.encode([instance])[0]
+    # Convert and prepare instance
+    instance_df = convert_instance_to_dataframe(instance, ordered_feature_names)
+    original_instance_dict = instance_df.iloc[0].to_dict()
     
-    # Initialize the Genetic neighbourhood generator 
+    # Encode the input instance
+    z = tabular_enc.encode(instance_df)[0]
+    
+    # Generate neighborhood
     gen = GeneticGenerator(bbox=bbox, dataset=dataset, encoder=tabular_enc)
-    
-    # Generate the neighbourhood in the encoded space
     neighbourhood = gen.generate(z, neighbourhood_size, dataset.descriptor, tabular_enc)
     
-    # Remove duplicates from encoded neighbourhood
+    # Process neighborhood
     neighbourhood = remove_duplicates(neighbourhood)
+    neighbourhood = ensure_instance_at_end_perfect_match(z, neighbourhood)
     
-    # Decode the neighbourhood back to the original feature space
-    neighb_train_X = tabular_enc.decode(neighbourhood)
-    # Ensure instance is in the decoded neighbourhood (do this only once, in decoded space)
-    neighb_train_X = ensure_instance_in_neighbourhood(instance, neighb_train_X)
+    # Decode neighborhood
+    neighb_train_X = tabular_enc.decode(neighbourhood)    
+    neighb_train_X = convert_neighborhood_to_dataframe(neighb_train_X, ordered_feature_names)
     
-    # Re-encode the final neighbourhood to keep everything synchronized
-    neighbourhood = tabular_enc.encode(neighb_train_X)
+    # Ensure original instance is preserved exactly
+    ensure_proper_instance_preservation(neighb_train_X, original_instance_dict, ordered_feature_names)
     
-    # Get predictions from the black-box model on the decoded neighbourhood instances
+    # Get predictions and encode targets
     neighb_train_y = bbox.predict(neighb_train_X)
-    
-    # Encode the target predictions
     neighb_train_yz = tabular_enc.encode_target_class(neighb_train_y.reshape(-1, 1)).squeeze()
     
     # Get encoded feature names
@@ -373,10 +487,7 @@ def get_lore_decision_tree_surrogate(neighbour, neighb_train_yz):
     Returns:
         DecisionTreeSurrogate: A trained decision tree surrogate model.
     """
-    # Import only when needed
     from lore_sa.surrogate import DecisionTreeSurrogate
     
-    # Initialize the decision tree surrogate model
     dt = DecisionTreeSurrogate()
-    # Train the surrogate model on the neighbourhood data and encoded target predictions
     return dt.train(neighbour, neighb_train_yz)

@@ -1,7 +1,6 @@
 import {
     setBlocksTreeVisualization,
 } from "./visualizationConnector.js";
-import { createHierarchy, traceInstancePath, getAllPathsFromHierarchy } from "./TreesCommon/dataProcessing.js";
 import { calculateTreeMetrics, depthAlignedLayout } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -14,6 +13,7 @@ import { createLinks, renderLinks } from "./BlocksDecisionTreeHelpers/link_block
 import { renderNodes, renderLabels } from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
 import { blocksTreeState } from "./TreesCommon/state.js";
 import { TREES_SETTINGS } from "./TreesCommon/settings.js";
+import { createHierarchy, getAllPathsFromHierarchy, traceInstancePath } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
 
 export function createBlocksTreeVisualization(rawTreeData, instance) {
     const containerSelector = "#blocks-tree-plot";
@@ -77,7 +77,7 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
         linkElements,
         nodeElements,
         allPaths,
-        rawTreeData: rawTreeData,  // Store raw tree data for scatter plot highlighting
+        rawTreeData: rawTreeData,
     };
 
     // Set the blocks tree visualization for interaction

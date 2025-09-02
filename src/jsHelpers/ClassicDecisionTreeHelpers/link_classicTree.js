@@ -1,7 +1,7 @@
-import { colorScheme } from "../visualizationConnector.js";
+import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
 import { classicTreeState } from "../TreesCommon/state.js";
 import { getStrokeWidth } from "../TreesCommon/metrics.js";
-import { findInstancePath } from "../TreesCommon/dataProcessing.js";
+import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 function createSplitPath({ source, target }) {
@@ -26,7 +26,6 @@ export function addLinks(contentGroup, treeData, metrics) {
         .attr("data-source-id", (d) => d.source.data.node_id)
         .attr("data-target-id", (d) => d.target.data.node_id)
         .each(function(d) {
-            // Calculate and store the original stroke width based on samples
             const totalSamples = classicTreeState.treeData ? classicTreeState.treeData[0].n_samples : d.target.data.n_samples;
             const originalStrokeWidth = getStrokeWidth(
                 d.target.data.weighted_n_samples, 
@@ -34,11 +33,9 @@ export function addLinks(contentGroup, treeData, metrics) {
                 metrics.linkStrokeWidth,
                 TREES_SETTINGS.treeKindID.classic
             );
-            // Store as data attribute for later retrieval
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
         })
         .style("stroke-width", function(d) {
-            // Use the stored original stroke width
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
         })
         .attr("d", (d) => createSplitPath(d))
@@ -47,12 +44,12 @@ export function addLinks(contentGroup, treeData, metrics) {
 }
 
 export function highlightInstancePath(contentGroup, pathNodeIds) {
-    // If no pathNodeIds provided, calculate from classicTreeState
+    // If no pathNodeIds provided, calculate using new processor
     if (!pathNodeIds && classicTreeState.instanceData && classicTreeState.hierarchyRoot) {
-        pathNodeIds = findInstancePath(classicTreeState.hierarchyRoot, classicTreeState.instanceData);
+        const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.classic);
+        pathNodeIds = processor.findInstancePath(classicTreeState.instanceData);
     }
 
-    // Add validation for pathNodeIds
     if (!contentGroup || !pathNodeIds) {
         console.warn("Missing required parameters for highlightInstancePath");
         return;
@@ -66,40 +63,29 @@ export function highlightInstancePath(contentGroup, pathNodeIds) {
 
     if (!pathNodeIds || pathNodeIds.length < 2) return;
 
-    // Create an array of link identifiers (source-target pairs)
     const linkPairs = pathNodeIds.slice(0, -1).map((source, i) => ({
         source,
         target: pathNodeIds[i + 1],
     }));
 
-    // Add highlights
     contentGroup
         .selectAll(".link")
         .filter((d) => {
             const sourceId = d.source.data.node_id;
             const targetId = d.target.data.node_id;
-
-            return linkPairs.some(
-                (pair) => pair.source === sourceId && pair.target === targetId
-            );
+            return linkPairs.some(pair => pair.source === sourceId && pair.target === targetId);
         })
         .each(function () {
             const originalPath = d3.select(this);
             const pathD = originalPath.attr("d");
-            // Use the stored original stroke width instead of parseFloat
-            const baseStrokeWidth = parseFloat(
-                originalPath.attr("data-original-stroke-width")
-            );
+            const baseStrokeWidth = parseFloat(originalPath.attr("data-original-stroke-width"));
 
             contentGroup
                 .append("path")
                 .attr("class", "link-highlight")
                 .attr("d", pathD)
                 .style("stroke", colorScheme.ui.instancePathHighlight)
-                .style(
-                    "stroke-width",
-                    `${baseStrokeWidth * TREES_SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`
-                )
+                .style("stroke-width", `${baseStrokeWidth * TREES_SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`)
                 .style("fill", "none")
                 .style("opacity", colorScheme.opacity.originalInstancePath)
                 .lower();

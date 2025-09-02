@@ -1,18 +1,10 @@
-import {
-    colorScheme,
-    getNodeColor,
-    handleTreeNodeClick,
-} from "../visualizationConnector.js";
+import { colorScheme, getNodeColor } from "../visualizationConnectorHelpers/colors.js";
+import { coordinateHighlightingAcrossAllTrees } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
+import { getFeatureMappingInfo } from "../visualizationConnectorHelpers/encoding_decoding.js";
 
-export function addNodes(
-    contentGroup,
-    treeData,
-    metrics,
-    tooltip,
-    colorMap
-) {
+export function addNodes(contentGroup, treeData, metrics, tooltip, colorMap) {
     const nodes = contentGroup
         .selectAll(".node")
         .data(treeData.descendants())
@@ -27,21 +19,26 @@ export function addNodes(
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("stroke", colorScheme.ui.nodeStroke)
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.classic)
+            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.classic, getFeatureMappingInfo())
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>
             handleMouseOut(tooltip)
-        );
-        
-    nodes.on("click", (event, d) => {
-        handleTreeNodeClick(
-            event,
-            d,
-            contentGroup,
-            metrics,
-        );
-    });
+        )
+        .on("click", (event, d) => {
+            handleNodeClick(event, d);
+        });
 
     return nodes;
+}
+
+// Updated click handler using new coordination system
+function handleNodeClick(event, d) {
+    event.stopPropagation();
+
+    const nodeId = d.data.node_id;
+    const isLeaf = d.data.is_leaf;
+
+    // Use the new central highlighting coordination function
+    coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'classic');
 }

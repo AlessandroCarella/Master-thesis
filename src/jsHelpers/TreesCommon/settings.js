@@ -42,14 +42,14 @@ export const TREES_SETTINGS = {
         rectMargin: 100, // Base spacing between rectangles in path
 
         // Subtree-based spacing configuration
-        subtreeSizeSpacingMultiplier: 10, // Additional pixels per node in subtree
+        subtreeSizeSpacingMultiplier: 20, // Additional pixels per node in subtree
 
         // Layout spacing
         verticalGap: 100, // Gap between path and subtrees
 
         // Stroke widths
         strokeWidth: {
-            pathHighlightMultiplier: 2,
+            pathHighlightMultiplier: 2
         },
     },
     treeKindID: {

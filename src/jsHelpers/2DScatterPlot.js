@@ -1,13 +1,10 @@
 // scatterPlot.js
-
-import {
-    setScatterPlotVisualization,
-} from "./visualizationConnector.js";
 import { createTooltip } from "./2DScatterPlotHelpers/tooltip.js";
 import { createZoom } from "./2DScatterPlotHelpers/zoom.js";
 import { drawVoronoi } from "./2DScatterPlotHelpers/voronoi.js";
 import { createPoints } from "./2DScatterPlotHelpers/points.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
+import { registerScatterPlot } from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
 
 // Main function to create the scatter plot
 export function createScatterPlot(data, treeVis, container) {
@@ -18,7 +15,7 @@ export function createScatterPlot(data, treeVis, container) {
 
     const treeVisualization = treeVis || window.treeVisualization;
     const visualization = { data, points: null };
-    setScatterPlotVisualization(visualization);
+    registerScatterPlot(visualization);
 
     const width = 800;
     const height = 800;
@@ -60,7 +57,6 @@ export function createScatterPlot(data, treeVis, container) {
         data,
         colorMap,
         tooltip,
-        treeVisualization,
         x,
         y
     );

@@ -6,6 +6,7 @@ export function createTreeState() {
         instanceData: null,
         hierarchyRoot: null,
         instancePath: [], // Added for all trees, used primarily by spawn
+        featureMappingInfo: null,
     };
 }
 

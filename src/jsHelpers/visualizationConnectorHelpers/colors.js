@@ -11,7 +11,7 @@ export const colorScheme = {
         nodeStroke: "#666666",
         linkStroke: "#999999",
         background: "#ffffff",
-        instancePathHighlight: "#0000FF",
+        instancePathHighlight: "#FFFF00",
     },
     // Opacity settings
     opacity: {

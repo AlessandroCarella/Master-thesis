@@ -1,8 +1,8 @@
 import { getTreeState } from "./state.js";
 import { blocksTreeState } from "./state.js";
-import { traceInstancePath } from "./dataProcessing.js";
 import { createLinearPathLayout } from "../TreeSpawnDecisionTreeHelpers/subtrees_spawnTree.js";
 import { TREES_SETTINGS, calculateSeparation } from "./settings.js";
+import { getNodeLabelLines } from "../visualizationConnectorHelpers/encoding_decoding.js";
 
 export function calculateMetrics(root, treeKind) {
     if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
@@ -95,9 +95,6 @@ export function createTreeLayout(metrics, root, treeKind) {
         // Get instance path from spawnTreeState or trace it
         const state = getTreeState(treeKind);
         let instancePath = state.instancePath;
-        if (!instancePath || instancePath.length === 0) {
-            instancePath = traceInstancePath();
-        }
 
         // Return a function that applies the linear path layout
         return function(rootNode) {
@@ -201,7 +198,7 @@ export function depthAlignedLayout(allPaths, instancePath, metrics, treeKind) {
             id: nodeId,
             x: depthToX[depth],
             y: bottomY,
-            label: getNodeLabel(nodeId, blocksTreeState.instanceData),
+            label: getNodeLabel(nodeId),
         };
     });
 
@@ -228,7 +225,7 @@ export function depthAlignedLayout(allPaths, instancePath, metrics, treeKind) {
                     id: nodeId,
                     x: depthToX[depth],
                     y,
-                    label: getNodeLabel(nodeId, blocksTreeState.instanceData),
+                    label: getNodeLabel(nodeId),
                 };
             }
         });
@@ -242,41 +239,28 @@ function arraysEqual(a, b) {
     return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
-function getNodeLabel(nodeId, instance) {
-    // Import from blocks node helpers
-    const getNodeLabelLines = function(nodeId, instance) {
-        const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
-        const node = state.hierarchyRoot;
-        
-        // Simple implementation - can be enhanced
-        if (!node) return [`Node ${nodeId}`];
-        
-        // Find node by DFS
-        function findNode(currentNode) {
-            if (currentNode.data.node_id === nodeId) return currentNode.data;
-            if (currentNode.children) {
-                for (const child of currentNode.children) {
-                    const found = findNode(child);
-                    if (found) return found;
-                }
-            }
-            return null;
-        }
-        
-        const nodeData = findNode(node);
-        if (!nodeData) return [`Node ${nodeId}`];
-
-        if (nodeData.is_leaf) {
-            return [nodeData.class_label || "Unknown"];
-        }
-        const th = Number(nodeData.threshold) ?? 0;
-        return [
-            `${nodeData.feature_name} ≤ ${Number.isFinite(th) ? th.toFixed(3) : th}`,
-            `Instance: ${instance?.[nodeData.feature_name]}`,
-        ];
-    };
+function getNodeLabel(nodeId) {
+    const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
+    const node = state.hierarchyRoot;
     
-    const lines = getNodeLabelLines(nodeId, instance);
+    if (!node) return `Node ${nodeId}`;
+    
+    // Find node by DFS
+    function findNode(currentNode) {
+        if (currentNode.data.node_id === nodeId) return currentNode.data;
+        if (currentNode.children) {
+            for (const child of currentNode.children) {
+                const found = findNode(child);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    
+    const nodeData = findNode(node);
+    if (!nodeData) return `Node ${nodeId}`;
+    
+    const lines = getNodeLabelLines(nodeData);
     return lines.join("\n");
 }
 

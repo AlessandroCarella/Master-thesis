@@ -1,3 +1,4 @@
+// visualizations.js - Updated to use new architecture
 import { createTreeVisualization } from "./ClassicDecisionTree.js";
 import { createScatterPlot } from "./2DScatterPlot.js";
 import { createBlocksTreeVisualization } from "./BlocksDecisionTree.js";
@@ -10,12 +11,12 @@ import { getSurrogateParameters, getVisualizationSettings } from "./UIHelpers/fe
 import { fetchVisualizationUpdate } from "./API.js";
 import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { 
-    highlightInstancePathInTree, 
-    highlightInstancePathInBlocksTree,
-    highlightInstancePathInTreeSpawn,
     getExplainedInstance,
     resetVisualizationState
 } from "./visualizationConnector.js";
+import { 
+    highlightInstancePathsForAllTrees,
+} from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
 
 export function initializeVisualizations(data) {
     if (!data) {
@@ -27,20 +28,11 @@ export function initializeVisualizations(data) {
     createVisualizations(data);
     setupScatterPlotMethodListeners();
     
-    // Highlight instance paths after all visualizations are created
+    // Highlight instance paths after all visualizations are created using new system
     const instance = getExplainedInstance();
     if (instance) {
-        const vizSettings = getVisualizationSettings();
-        
-        if (vizSettings.classicTree) {
-            highlightInstancePathInTree(instance);
-        }
-        if (vizSettings.blocksTree) {
-            highlightInstancePathInBlocksTree(instance);
-        }
-        if (vizSettings.treeSpawn) {
-            highlightInstancePathInTreeSpawn(instance);
-        }
+        // Use unified highlighting system instead of individual tree highlighting
+        highlightInstancePathsForAllTrees(instance);
     }
 }
 
@@ -53,7 +45,7 @@ function clearVisualizations() {
     // Also remove any tooltips that might be lingering
     d3.selectAll(".decision-tree-tooltip").remove();
     
-    // Reset the visualization state tracking
+    // Reset the visualization state tracking and highlighting coordinator
     resetVisualizationState();
 }
 
@@ -153,17 +145,8 @@ function updateVisualizations(data) {
     
     createVisualizations(updatedData);
     
+    // Highlight instance paths using new unified system
     if (instance) {
-        const vizSettings = getVisualizationSettings();
-        
-        if (vizSettings.classicTree) {
-            highlightInstancePathInTree(instance);
-        }
-        if (vizSettings.blocksTree) {
-            highlightInstancePathInBlocksTree(instance);
-        }
-        if (vizSettings.treeSpawn) {
-            highlightInstancePathInTreeSpawn(instance);
-        }
+        highlightInstancePathsForAllTrees(instance);
     }
 }

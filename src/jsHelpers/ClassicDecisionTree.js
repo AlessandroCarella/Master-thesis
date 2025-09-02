@@ -1,8 +1,3 @@
-import {
-    setTreeVisualization,
-    highlightInstancePathInTree,
-} from "./visualizationConnector.js";
-import { createHierarchy } from "./TreesCommon/dataProcessing.js";
 import { calculateMetrics, createTreeLayout, calculateInitialTransform } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -17,12 +12,16 @@ import { addNodes } from "./ClassicDecisionTreeHelpers/node_classicTree.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { classicTreeState } from "./TreesCommon/state.js";
 import { TREES_SETTINGS } from "./TreesCommon/settings.js";
+import { registerClassicTree } from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
+import { TreeDataProcessorFactory } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
+import { highlightInstancePathInTree } from "./visualizationConnector.js";
 
 export function createTreeVisualization(rawTreeData, instance, container) {    
     // Store data in global classicTreeState
     classicTreeState.treeData = rawTreeData;
     classicTreeState.instanceData = instance;
-    classicTreeState.hierarchyRoot = createHierarchy(TREES_SETTINGS.treeKindID.classic);
+    const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.classic);
+    classicTreeState.hierarchyRoot = processor.createHierarchy(rawTreeData);
 
     const colorMap = getGlobalColorMap();
 
@@ -52,7 +51,7 @@ export function createTreeVisualization(rawTreeData, instance, container) {
 
     svg.call(zoom.transform, initialTransform);
 
-    setTreeVisualization({ contentGroup, treeData, metrics });
+    registerClassicTree({ contentGroup, treeData, metrics });
     window.treeVisualization = { contentGroup, treeData, metrics };
 
     if (instance) {

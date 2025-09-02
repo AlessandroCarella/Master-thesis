@@ -7,43 +7,57 @@ export function createTooltip() {
         .attr("class", "scatter-plot-tooltip");
 }
 
-export function showTooltip(event, data, tooltip) {
-    const pointIndex = getPointIndex(event, data);
-    if (pointIndex === -1) return;
+export function showTooltip(event, data, tooltip, index, featureMappingInfo) {
+    // Get the original data for this point using the provided index
+    const originalData = data.originalData[index];
+    const target = data.targets[index];
+    
+    let content = `<div class="tooltip-content">`;
+    content += "<strong>Decoded values:</strong>"
+    content += `<div class="tooltip-features">`;
+    
+    // Handle both dictionary and array formats properly
+    if (originalData && typeof originalData === 'object') {
+        if (Array.isArray(originalData)) {
+            // Handle array format (fallback)
+            const featureNames = featureMappingInfo?.originalFeatureNames || 
+            Object.keys(featureMappingInfo?.datasetDescriptor?.numeric || {}).concat(
+                Object.keys(featureMappingInfo?.datasetDescriptor?.categorical || {})
+            ) || 
+            originalData.map((_, i) => `Feature ${i}`);
+            
+            originalData.forEach((value, i) => {
+                const featureName = featureNames[i] || `Feature ${i}`;
+                const displayValue = value;
+                content += `<div class="tooltip-feature">${featureName}: ${displayValue}</div>`;
+            });
+        } else {
+            // Handle dictionary format (preferred)
+            Object.entries(originalData).forEach(([featureName, value]) => {
+                // Handle different value types
+                let displayValue;
+                if (typeof value === 'number') {
+                    displayValue = Number.isInteger(value) ? value.toString() : value.toFixed(3);
+                } else {
+                    displayValue = value.toString();
+                }
+                
+                content += `<div class="tooltip-feature">${featureName}: ${displayValue}</div>`;
+            });
+        }
+    } else {
+        content += `<div class="tooltip-feature">No feature data available</div>`;
+    }
+    
+    content += `</div>`;
+    content += `<div class="tooltip-target"><strong>Class: ${target}</strong></div>`;
+    content += `</div>`;
 
-    const className = data.targets[pointIndex];
-    const originalData = data.originalData[pointIndex];
-
-    let tooltipContent = "<strong>Decoded Values:</strong><br>";
-    Object.entries(originalData).forEach(([feature, value]) => {
-        tooltipContent += `${feature}: ${
-            typeof value === "number" ? value.toFixed(3) : value
-        }<br>`;
-    });
-    tooltipContent += `<strong>Class: ${className}</strong>`;
-
-    showTooltipContent(event, tooltip, tooltipContent);
-}
-
-function getPointIndex(event, data) {
-    const targetData = event.target.__data__;
-    if (!targetData) return -1;
-
-    const index = data.transformedData.findIndex(
-        (p) => p[0] === targetData[0] && p[1] === targetData[1]
-    );
-    if (index === -1) console.warn("Could not find matching point data");
-    return index;
-}
-
-function showTooltipContent(event, tooltip, content) {
-    tooltip
-        .html(content)
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY - 28}px`)
-        .transition()
-        .duration(200)
-        .style("opacity", colorScheme.opacity.default);
+    tooltip.html(content)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 10) + "px")
+        .style("visibility", "visible")
+        .style("opacity", 1);
 }
 
 export function hideTooltip(tooltip) {

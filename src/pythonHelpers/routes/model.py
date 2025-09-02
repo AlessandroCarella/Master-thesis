@@ -32,6 +32,7 @@ async def train_model(request: TrainingRequest):
         request.dataset_name, request.classifier, request.parameters
     )
     global_state.descriptor = global_state.dataset.descriptor
+    print (global_state.descriptor)
 
     return {
         "status": "success",

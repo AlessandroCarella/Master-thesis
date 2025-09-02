@@ -1,41 +1,26 @@
+// visualizationConnector.js - Simplified version using new architecture
 export {
     colorScheme,
     getNodeColor,
 } from "./visualizationConnectorHelpers/colors.js";
 
+// Import the new coordination system
 import {
-    resetHighlights,
-    highlightNode,
-    highlightPathToRoot,
-    highlightDescendants,
-    highlightPointsForLeaf,
-    highlightPointsForDescendants,
-    highlightPointsForNodeId,
-    highlightPointsForNodeIdDescendants,
-} from "./visualizationConnectorHelpers/highlight.js";
+    highlightingCoordinator,
+    registerClassicTree,
+    registerBlocksTree,
+    registerSpawnTree,
+    registerScatterPlot,
+    highlightInstancePathsForAllTrees,
+} from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
 
-import { findInstancePath } from "./TreesCommon/dataProcessing.js";
-import { highlightInstancePath } from "./ClassicDecisionTreeHelpers/link_classicTree.js";
-import { highlightInstancePathInBlocks } from "./BlocksDecisionTreeHelpers/link_blocksTree.js";
-import { 
-    highlightBlocksTreeNode, 
-    highlightBlocksTreePath,
-    highlightBlocksTreeDescendants,
-    resetBlocksTreeHighlights
-} from "./BlocksDecisionTreeHelpers/node_blocksTree.js";
-import { 
-    highlightTreeSpawnPath,
-    highlightTreeSpawnNode,
-    highlightTreeSpawnDescendants
-} from "./TreeSpawnDecisionTreeHelpers/node_spawnTree.js";
-import { 
-    resetTreeSpawnHighlights,
-    getPathToNodeInTreeSpawn,
-    addInstancePathHighlightToTreeSpawn
-} from "./TreeSpawnDecisionTreeHelpers/link_spawnTree.js"
+import { TreeDataProcessorFactory } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
 import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 
-// Visualization state tracking
+// ============================================
+// VISUALIZATION STATE TRACKING (Keep for backward compatibility)
+// ============================================
+
 let visualizationState = {
     scatterPlotCreated: false,
     classicTreeCreated: false,
@@ -43,38 +28,64 @@ let visualizationState = {
     treeSpawnCreated: false,
 };
 
-// Visualization storage
+// Visualization storage (keep for legacy access)
 let scatterPlotVisualization = null;
 let treeVisualization = null;
 let blocksTreeVisualization = null;
 let treeSpawnVisualization = null;
 
-// Setters with state tracking
+// ============================================
+// SETTERS WITH NEW REGISTRATION (Updated to use new system)
+// ============================================
+
 export function setScatterPlotVisualization(vis) {
     scatterPlotVisualization = vis;
     window.scatterPlotVisualization = vis;
     visualizationState.scatterPlotCreated = vis !== null;
+    
+    // Register with new highlighting system
+    if (vis) {
+        registerScatterPlot(vis);
+    }
 }
 
 export function setTreeVisualization(vis) {
     treeVisualization = vis;
     window.treeVisualization = vis;
     visualizationState.classicTreeCreated = vis !== null;
+    
+    // Register with new highlighting system
+    if (vis) {
+        registerClassicTree(vis);
+    }
 }
 
 export function setBlocksTreeVisualization(vis) {
     blocksTreeVisualization = vis;
     window.blocksTreeVisualization = vis;
     visualizationState.blocksTreeCreated = vis !== null;
+    
+    // Register with new highlighting system
+    if (vis) {
+        registerBlocksTree(vis);
+    }
 }
 
 export function setTreeSpawnVisualization(vis) {
     treeSpawnVisualization = vis;
     window.treeSpawnVisualization = vis;
     visualizationState.treeSpawnCreated = vis !== null;
+    
+    // Register with new highlighting system
+    if (vis) {
+        registerSpawnTree(vis);
+    }
 }
 
-// Getters
+// ============================================
+// GETTERS (Keep unchanged)
+// ============================================
+
 export function getScatterPlotVisualization() {
     return scatterPlotVisualization;
 }
@@ -91,7 +102,10 @@ export function getTreeSpawnVisualization() {
     return treeSpawnVisualization;
 }
 
-// State checking functions
+// ============================================
+// STATE CHECKING FUNCTIONS (Keep unchanged)
+// ============================================
+
 export function isScatterPlotCreated() {
     return visualizationState.scatterPlotCreated && scatterPlotVisualization !== null;
 }
@@ -108,7 +122,10 @@ export function isTreeSpawnCreated() {
     return visualizationState.treeSpawnCreated && treeSpawnVisualization !== null;
 }
 
-// Reset all visualization state (call when clearing visualizations)
+// ============================================
+// RESET STATE (Updated)
+// ============================================
+
 export function resetVisualizationState() {
     visualizationState = {
         scatterPlotCreated: false,
@@ -126,9 +143,15 @@ export function resetVisualizationState() {
     window.treeVisualization = null;
     window.blocksTreeVisualization = null;
     window.treeSpawnVisualization = null;
+    
+    // Reset highlighting coordinator
+    highlightingCoordinator.resetAllHighlights();
 }
 
-// Store the currently explained instance
+// ============================================
+// EXPLAINED INSTANCE MANAGEMENT (Keep unchanged)
+// ============================================
+
 let explainedInstance = null;
 
 export function getExplainedInstance() {
@@ -139,250 +162,32 @@ export function setExplainedInstance(instance) {
     explainedInstance = instance;
 }
 
-let selectedNode = null;
+// ============================================
+// LEGACY COMPATIBILITY FUNCTIONS (Delegate to new system)
+// ============================================
 
-// Helper function to find classic tree node by ID
-function findClassicTreeNodeById(nodeId) {
-    if (!isClassicTreeCreated()) return null;
-    
-    const descendants = treeVisualization.treeData.descendants();
-    return descendants.find(node => node.data.node_id === nodeId);
-}
-
-// Central highlighting coordination function that can be called by any tree type
-export function coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, sourceTreeType, sourceNodeData = null, sourceContentGroup = null, sourceMetrics = null) {
-    // Deselect if clicking the already selected node
-    if (selectedNode === nodeId) {
-        resetAllHighlights();
-        selectedNode = null;
-        return;
-    }
-
-    // Reset all highlights and select new node
-    resetAllHighlights();
-    selectedNode = nodeId;
-
-    // Highlight in all available trees
-    if (isLeaf) {
-        highlightLeafNodeAcrossAllTrees(nodeId, sourceTreeType, sourceNodeData, sourceContentGroup, sourceMetrics);
-    } else {
-        highlightSplitNodeAcrossAllTrees(nodeId, sourceTreeType, sourceNodeData, sourceContentGroup, sourceMetrics);
-    }
-}
-
-// Helper function to reset all highlights across all trees
-function resetAllHighlights() {
-    if (isClassicTreeCreated() && isScatterPlotCreated()) {
-        resetHighlights(treeVisualization, scatterPlotVisualization);
-    }
-    if (isBlocksTreeCreated()) {
-        resetBlocksTreeHighlights(blocksTreeVisualization);
-    }
-    if (isTreeSpawnCreated()) {
-        resetTreeSpawnHighlights(treeSpawnVisualization);
-    }
-}
-
-// Helper function to get raw tree data for scatter plot highlighting when classic tree isn't available
-function getRawTreeData() {
-    // Try to get raw tree data from any available tree state
-    if (isBlocksTreeCreated()) {
-        const blocksTreeData = window.blocksTreeState?.treeData || blocksTreeVisualization?.rawTreeData;
-        if (blocksTreeData) {
-            return blocksTreeData;
-        }
-    }
-    
-    if (isTreeSpawnCreated()) {
-        const spawnTreeData = window.spawnTreeState?.treeData || treeSpawnVisualization?.rawTreeData;
-        if (spawnTreeData) {
-            return spawnTreeData;
-        }
-    }
-    
-    if (isClassicTreeCreated()) {
-        const classicTreeData = window.classicTreeState?.treeData;
-        if (classicTreeData) {
-            return classicTreeData;
-        }
-    }
-    
-    console.warn("No raw tree data found for scatter plot highlighting");
-    return null;
-}
-
-// Helper function to get path to node in blocks tree
-function getPathToNodeInBlocks(nodeId) {
-    if (!isBlocksTreeCreated()) return [];
-    
-    const allPaths = blocksTreeVisualization.allPaths || [];
-    
-    for (const path of allPaths) {
-        const nodeIndex = path.indexOf(nodeId);
-        if (nodeIndex !== -1) {
-            return path.slice(0, nodeIndex + 1);
-        }
-    }
-    
-    return [];
-}
-
-// Highlight leaf node across all available trees
-function highlightLeafNodeAcrossAllTrees(nodeId, sourceTreeType, sourceNodeData, sourceContentGroup, sourceMetrics) {
-    // Highlight in classic tree if available (FIXED: always try if classic tree exists)
-    if (isClassicTreeCreated()) {
-        if (sourceTreeType === 'classic' && sourceNodeData && sourceContentGroup && sourceMetrics) {
-            // Use provided classic tree data
-            highlightNode(sourceContentGroup, sourceNodeData, sourceMetrics);
-            highlightPathToRoot(sourceContentGroup, sourceNodeData, sourceMetrics);
-        } else {
-            // Find corresponding node in classic tree by nodeId
-            const classicTreeNode = findClassicTreeNodeById(nodeId);
-            if (classicTreeNode) {
-                highlightNode(treeVisualization.contentGroup, classicTreeNode, treeVisualization.metrics);
-                highlightPathToRoot(treeVisualization.contentGroup, classicTreeNode, treeVisualization.metrics);
-            }
-        }
-    }
-    
-    // Highlight in blocks tree if available
-    if (isBlocksTreeCreated()) {
-        highlightBlocksTreeNode(blocksTreeVisualization, nodeId);
-        const pathToRoot = getPathToNodeInBlocks(nodeId);
-        if (pathToRoot.length > 0) {
-            highlightBlocksTreePath(blocksTreeVisualization, pathToRoot);
-        }
-    }
-    
-    // Highlight in TreeSpawn tree if available
-    if (isTreeSpawnCreated()) {
-        highlightTreeSpawnNode(treeSpawnVisualization, nodeId);
-        const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVisualization, nodeId);
-        if (treeSpawnPath.length > 0) {
-            highlightTreeSpawnPath(treeSpawnVisualization, treeSpawnPath);
-        }
-    }
-    
-    // Highlight scatter plot points if available
-    if (isScatterPlotCreated()) {
-        if (sourceTreeType === 'classic' && sourceNodeData) {
-            // Use classic tree node data directly
-            highlightPointsForLeaf(sourceNodeData, scatterPlotVisualization);
-        } else {
-            // Use node ID with raw tree data when classic tree isn't available
-            const rawTreeData = getRawTreeData();
-            if (rawTreeData) {
-                highlightPointsForNodeId(nodeId, rawTreeData, scatterPlotVisualization);
-            } else {
-                console.warn("No raw tree data available for scatter plot highlighting");
-            }
-        }
-    }
-}
-
-// Highlight split node across all available trees
-function highlightSplitNodeAcrossAllTrees(nodeId, sourceTreeType, sourceNodeData, sourceContentGroup, sourceMetrics) {
-    // Highlight in classic tree if available (FIXED: always try if classic tree exists)
-    if (isClassicTreeCreated()) {
-        if (sourceTreeType === 'classic' && sourceNodeData && sourceContentGroup && sourceMetrics) {
-            // Use provided classic tree data
-            highlightNode(sourceContentGroup, sourceNodeData, sourceMetrics);
-            highlightPathToRoot(sourceContentGroup, sourceNodeData, sourceMetrics);
-            highlightDescendants(sourceContentGroup, sourceNodeData, sourceMetrics);
-        } else {
-            // Find corresponding node in classic tree by nodeId
-            const classicTreeNode = findClassicTreeNodeById(nodeId);
-            if (classicTreeNode) {
-                highlightNode(treeVisualization.contentGroup, classicTreeNode, treeVisualization.metrics);
-                highlightPathToRoot(treeVisualization.contentGroup, classicTreeNode, treeVisualization.metrics);
-                highlightDescendants(treeVisualization.contentGroup, classicTreeNode, treeVisualization.metrics);
-            }
-        }
-    }
-    
-    // Highlight in blocks tree if available
-    if (isBlocksTreeCreated()) {
-        highlightBlocksTreeNode(blocksTreeVisualization, nodeId);
-        const pathToRoot = getPathToNodeInBlocks(nodeId);
-        if (pathToRoot.length > 0) {
-            highlightBlocksTreePath(blocksTreeVisualization, pathToRoot);
-        }
-        highlightBlocksTreeDescendants(blocksTreeVisualization, nodeId);
-    }
-    
-    // Highlight in TreeSpawn tree if available
-    if (isTreeSpawnCreated()) {
-        highlightTreeSpawnNode(treeSpawnVisualization, nodeId);
-        const treeSpawnPath = getPathToNodeInTreeSpawn(treeSpawnVisualization, nodeId);
-        if (treeSpawnPath.length > 0) {
-            highlightTreeSpawnPath(treeSpawnVisualization, treeSpawnPath);
-        }
-        highlightTreeSpawnDescendants(treeSpawnVisualization, nodeId);
-    }
-    
-    // Highlight scatter plot points if available
-    if (isScatterPlotCreated()) {
-        if (sourceTreeType === 'classic' && sourceNodeData) {
-            // Use classic tree node data directly
-            highlightPointsForDescendants(sourceNodeData, scatterPlotVisualization);
-        } else {
-            // Use node ID with raw tree data when classic tree isn't available
-            const rawTreeData = getRawTreeData();
-            if (rawTreeData) {
-                highlightPointsForNodeIdDescendants(nodeId, rawTreeData, scatterPlotVisualization);
-            } else {
-                console.warn("No raw tree data available for scatter plot highlighting");
-            }
-        }
-    }
-}
-
-// LEGACY: Keep the original function for classic tree backward compatibility
-export function handleTreeNodeClick(
-    event,
-    d,
-    contentGroup,
-    metrics
-) {
-    event.stopPropagation();
-
-    const nodeId = d.data.node_id;
-    const isLeaf = d.data.is_leaf;
-
-    // Use the new central coordination function
-    coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'classic', d, contentGroup, metrics);
-}
-
+// Instance path highlighting functions (delegate to new system)
 export function highlightInstancePathInTree(instance) {
     if (!isClassicTreeCreated() || !instance) return;
-
-    const { contentGroup, treeData } = treeVisualization;
-
-    // Get the hierarchical data (before d3.hierarchy transformation)
-    const hierarchyRoot = treeData.data;
-
-    // Find the path for this instance
-    const pathNodeIds = findInstancePath(hierarchyRoot, instance, TREES_SETTINGS.treeKindID.classic);
     
-    // Highlight the path in the visualization
-    highlightInstancePath(contentGroup, pathNodeIds);
-}
-
-export function highlightInstancePathInBlocksTree(instance) {
-    if (!isBlocksTreeCreated() || !instance) return;
-
-    const { container, instancePath } = blocksTreeVisualization;
-
-    // Use the existing instance path from the blocks tree
-    if (instancePath && instancePath.length > 0) {
-        highlightInstancePathInBlocks(container, instancePath);
+    try {
+        const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.classic);
+        const pathNodeIds = processor.findInstancePath(instance);
+        
+        if (pathNodeIds.length > 0 && treeVisualization?.contentGroup) {
+            // Use the link helper to highlight the path
+            import("./ClassicDecisionTreeHelpers/link_classicTree.js").then(module => {
+                module.highlightInstancePath(treeVisualization.contentGroup, pathNodeIds);
+            });
+        }
+    } catch (error) {
+        console.warn("Error highlighting instance path in classic tree:", error);
     }
 }
 
 export function highlightInstancePathInTreeSpawn(instance) {
     if (!isTreeSpawnCreated() || !instance) return;
 
-    // Check if TreeSpawn visualization is fully initialized
     if (!treeSpawnVisualization.container || !treeSpawnVisualization.instancePath) {
         console.warn("TreeSpawn visualization not fully initialized, skipping instance path highlighting");
         return;
@@ -390,23 +195,14 @@ export function highlightInstancePathInTreeSpawn(instance) {
 
     const { instancePath } = treeSpawnVisualization;
 
-    // Use the existing instance path from the TreeSpawn tree
     if (instancePath && instancePath.length > 0) {
         try {
-            // Use the highlight function that adds background highlights
-            addInstancePathHighlightToTreeSpawn(treeSpawnVisualization, instancePath);
+            // Use the link helper to highlight the path
+            import("./TreeSpawnDecisionTreeHelpers/link_spawnTree.js").then(module => {
+                module.addInstancePathBackgroundDirect(treeSpawnVisualization, instancePath);
+            });
         } catch (error) {
             console.warn("Error highlighting TreeSpawn instance path:", error);
         }
     }
-}
-
-let originalPointsNeighPointsBoolArray = null;
-
-export function getOriginalPointsNeighPointsBoolArrayValAti(i) {
-    return originalPointsNeighPointsBoolArray[i];
-}
-
-export function setOriginalPointsNeighPointsBoolArray(value) {
-    originalPointsNeighPointsBoolArray = value;
 }

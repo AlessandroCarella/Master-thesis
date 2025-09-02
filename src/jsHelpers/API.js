@@ -1,3 +1,5 @@
+import { storeFeatureMappingInfo } from "./visualizationConnectorHelpers/encoding_decoding.js";
+
 export const API_BASE = "http://127.0.0.1:8000/api";
 
 export const fetchJSON = async (url, options = {}) => {
@@ -29,12 +31,20 @@ export const trainModel = async (trainingData) =>
         body: JSON.stringify(trainingData),
     });
 
-export const fetchExplanation = async (requestData) =>
-    fetchJSON(`${API_BASE}/explain`, {
+export const fetchExplanation = async (requestData) => {
+    const response = await fetchJSON(`${API_BASE}/explain`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
     });
+    
+    // Store feature mapping info from response
+    if (response.featureMappingInfo) {
+        storeFeatureMappingInfo(response.featureMappingInfo);
+    }
+    
+    return response;
+};
 
 export const fetchClassColors = (method = 'umap') =>
     fetchJSON(`${API_BASE}/get-classes-colors?method=${method}`);
@@ -56,7 +66,14 @@ export async function fetchVisualizationUpdate(requestData) {
             );
         }
 
-        return await response.json();
+        const result = await response.json();
+        
+        // Store feature mapping info from response
+        if (result.featureMappingInfo) {
+            storeFeatureMappingInfo(result.featureMappingInfo);
+        }
+        
+        return result;
     } catch (error) {
         console.error("Error updating visualization:", error);
         throw error;

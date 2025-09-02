@@ -1,17 +1,20 @@
 import {
     colorScheme,
-    getBlocksTreeVisualization,
     getNodeColor,
-    getScatterPlotVisualization,
-    getTreeSpawnVisualization,
-    getTreeVisualization,
-    coordinateHighlightingAcrossAllTrees,
-} from "../visualizationConnector.js";
+} from "../visualizationConnectorHelpers/colors.js";
+import { coordinateHighlightingAcrossAllTrees } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 import { spawnTreeState } from "../TreesCommon/state.js";
 import { createContextMenu } from "./contextMenu_spawnTree.js"
-import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
-import { isNodeInPath, getInstanceValue } from "../TreesCommon/dataProcessing.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut, getNodeTextLines } from "../TreesCommon/tooltip.js";
+import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
+import { getFeatureMappingInfo } from "../visualizationConnectorHelpers/encoding_decoding.js";
+
+// Helper function to check if node is in path using new processor
+function isNodeInPath(nodeId, instancePath) {
+    const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.spawn);
+    return processor.isNodeInPath(nodeId, instancePath);
+}
 
 export function addNodes(
     contentGroup,
@@ -56,7 +59,7 @@ export function addNodes(
                 .style("opacity", colorScheme.opacity.default);
 
             // Add text for path nodes
-            const textLines = getNodeTextLines(d, instanceData);
+            const textLines = getNodeTextLines(d, TREES_SETTINGS.treeKindID.spawn, getFeatureMappingInfo());
             const fontSize = calculateFontSize(textLines);
             const lineHeight = fontSize * 1.2;
             
@@ -99,10 +102,9 @@ export function addNodes(
         }
     });
 
-    // Add event handlers
     nodes.selectAll("circle, rect")
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.spawn)
+            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.spawn, getFeatureMappingInfo())
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", () =>
@@ -120,7 +122,7 @@ export function addNodes(
     return nodes;
 }
 
-// Simple, independent TreeSpawn node click handler
+// Updated click handler using new coordination system
 function handleNodeClick(event, spawnNodeData) {
     event.stopPropagation();
 
@@ -129,208 +131,4 @@ function handleNodeClick(event, spawnNodeData) {
 
     // Use the central highlighting coordination function
     coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'spawn');
-}
-
-// Function to prepare text lines for a node
-function getNodeTextLines(d, instanceData) {
-    const lines = [];
-    
-    if (!d.data.is_leaf) {
-        // Decision node - show split condition and instance value
-        const featureName = d.data.feature_name || 'Unknown';
-        const threshold = d.data.threshold !== undefined ? d.data.threshold.toFixed(2) : 'N/A';
-        const instanceValue = getInstanceValue(featureName, instanceData);
-        
-        lines.push(`${featureName} ≤ ${threshold}`);
-        
-        if (instanceValue !== null && instanceValue !== undefined) {
-            const formattedValue = typeof instanceValue === 'number' ? instanceValue.toFixed(2) : instanceValue;
-            lines.push(`Instance: ${formattedValue}`);
-        }
-    } else {
-        // Leaf node - show class label
-        lines.push(`${d.data.class_label}`);
-    }
-    
-    return lines;
-}
-
-// Helper functions for highlighting (used by the central highlighting system)
-export function highlightTreeSpawnNode(visualization, nodeId) {
-    // Get the TreeSpawn visualization if not provided
-    const treeSpawnVis = visualization || getTreeSpawnVisualization();
-    
-    if (!treeSpawnVis || !treeSpawnVis.container) {
-        console.warn("TreeSpawn visualization not available for highlighting");
-        return;
-    }
-
-    // Use the container from the visualization object
-    const contentGroup = treeSpawnVis.container;
-    
-    contentGroup
-        .selectAll(".node")
-        .filter((d) => d.data.node_id === nodeId)
-        .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.highlight);
-}
-
-export function highlightTreeSpawnPath(visualization, pathNodeIds) {
-    // Get the TreeSpawn visualization if not provided
-    const treeSpawnVis = visualization || getTreeSpawnVisualization();
-    
-    if (!treeSpawnVis || !treeSpawnVis.container || !pathNodeIds) {
-        console.warn("TreeSpawn visualization or path data not available for highlighting");
-        return;
-    }
-
-    const container = treeSpawnVis.container;
-
-    // Highlight nodes in the path
-    pathNodeIds.forEach(nodeId => {
-        container
-            .selectAll(".node")
-            .filter((d) => d.data.node_id === nodeId)
-            .selectAll("circle, rect")
-            .style("stroke", colorScheme.ui.highlight); // Red color for highlighted nodes
-    });
-
-    // Highlight links in the path with red color
-    for (let i = 0; i < pathNodeIds.length - 1; i++) {
-        const sourceId = pathNodeIds[i];
-        const targetId = pathNodeIds[i + 1];
-
-        container
-            .selectAll(".link")
-            .filter((d) => {
-                return (d.source.data.node_id === sourceId && d.target.data.node_id === targetId) ||
-                       (d.source.data.node_id === targetId && d.target.data.node_id === sourceId);
-            })
-            .style("stroke", colorScheme.ui.highlight); // Red color for path links
-    }
-}
-
-export function highlightTreeSpawnDescendants(visualization, nodeId) {
-    // Get the TreeSpawn visualization if not provided
-    const treeSpawnVis = visualization || getTreeSpawnVisualization();
-    
-    if (!treeSpawnVis || !treeSpawnVis.container || !spawnTreeState.hierarchyRoot) {
-        console.warn("TreeSpawn visualization or hierarchy data not available for highlighting descendants");
-        return;
-    }
-
-    // Find all descendant node IDs
-    const descendants = [];
-    
-    function collectDescendants(node) {
-        descendants.push(node.node_id);
-        if (node.children) {
-            node.children.forEach(child => collectDescendants(child));
-        }
-    }
-
-    function findNode(node, targetId) {
-        if (node.node_id === targetId) return node;
-        if (node.children) {
-            for (const child of node.children) {
-                const found = findNode(child, targetId);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-
-    const startNode = findNode(spawnTreeState.hierarchyRoot, nodeId);
-    if (startNode) {
-        collectDescendants(startNode);
-        
-        descendants.forEach(descendantId => {
-            highlightTreeSpawnNode(treeSpawnVis, descendantId);
-        });
-    }
-}
-
-// Function to find TreeSpawn path for given features (similar to blocks tree)
-export function findTreeSpawnPath(features) {
-    const treeSpawnVis = getTreeSpawnVisualization();
-    if (!treeSpawnVis || !treeSpawnVis.treeData) {
-        console.warn("TreeSpawn visualization or tree data not available");
-        return [];
-    }
-
-    try {
-        // Find the root node in the TreeSpawn hierarchy
-        const root = treeSpawnVis.treeData.descendants().find(node => node.depth === 0);
-        if (!root) return [];
-
-        let path = [];
-        let currentNode = root;
-
-        while (currentNode) {
-            path.push(currentNode);
-
-            // If we've reached a leaf node, stop
-            if (currentNode.data.is_leaf) {
-                break;
-            }
-
-            // Get the feature value for the current split
-            const featureValue = features[currentNode.data.feature_name];
-
-            // Decide which child to traverse to
-            if (featureValue <= currentNode.data.threshold) {
-                // Find left child
-                currentNode = currentNode.children?.find(child => 
-                    child.data.node_id === currentNode.data.left_child
-                ) || null;
-            } else {
-                // Find right child  
-                currentNode = currentNode.children?.find(child => 
-                    child.data.node_id === currentNode.data.right_child
-                ) || null;
-            }
-        }
-
-        return path;
-    } catch (error) {
-        console.error("Error finding TreeSpawn path:", error);
-        return [];
-    }
-}
-
-// Function to highlight TreeSpawn path from scatter plot (similar to blocks tree)
-export function highlightTreeSpawnPathFromScatterPlot(path) {
-    const treeSpawnVis = getTreeSpawnVisualization();
-    if (!treeSpawnVis || !path || path.length === 0) {
-        return;
-    }
-
-    try {
-        // Reset previous highlights first
-        resetTreeSpawnHighlights(treeSpawnVis);
-
-        // Extract node IDs from path
-        const pathNodeIds = path.map(node => node.data.node_id);
-        
-        // Use the standard highlighting function
-        highlightTreeSpawnPath(treeSpawnVis, pathNodeIds);
-    } catch (error) {
-        console.error("Error highlighting TreeSpawn path:", error);
-    }
-}
-
-// Helper function to reset TreeSpawn highlights (used by the central highlighting system)
-export function resetTreeSpawnHighlights(treeSpawnVis) {
-    if (!treeSpawnVis || !treeSpawnVis.container) return;
-
-    // Reset node highlights
-    treeSpawnVis.container
-        .selectAll(".node")
-        .selectAll("circle, rect")
-        .style("stroke", colorScheme.ui.nodeStroke);
-
-    // Reset link highlights
-    treeSpawnVis.container
-        .selectAll(".link")
-        .style("stroke", colorScheme.ui.linkStroke);
 }
