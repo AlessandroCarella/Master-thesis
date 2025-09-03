@@ -129,7 +129,8 @@ export function getSurrogateParameters() {
         scatterPlotStep: parseFloat(
             document.getElementById("surrogate-scatterPlotStep").value
         ),
-        includeOriginalDataset: document.getElementById("surrogate-includeOriginalDataset").value === "Yes"
+        includeOriginalDataset: document.getElementById("surrogate-includeOriginalDataset").value === "Yes",
+        keepDuplicates: document.getElementById("surrogate-keepDuplicates").value == "Yes",
     };
 }
 

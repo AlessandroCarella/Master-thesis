@@ -32,6 +32,7 @@ export function buildExplanationRequestData(
         scatterPlotStep: surrogateParams.scatterPlotStep,
         scatterPlotMethod: scatterPlotMethod,
         includeOriginalDataset: surrogateParams.includeOriginalDataset,
+        keepDuplicates: surrogateParams.keepDuplicates,
     };
 }
 

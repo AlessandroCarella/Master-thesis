@@ -24,6 +24,7 @@ class InstanceRequest(BaseModel):
     scatterPlotStep: float
     scatterPlotMethod: str = "umap"
     includeOriginalDataset: bool
+    keepDuplicates: bool
 
 class VisualizationRequest(BaseModel):
     dataset_name: str
@@ -257,6 +258,7 @@ async def explain_instance(request: InstanceRequest):
         instance=instance_dict,
         bbox=global_state.bbox,
         dataset=global_state.dataset,
+        keepDuplicates=request.keepDuplicates,
         neighbourhood_size=request.neighbourhood_size,
     )
     

@@ -101,7 +101,6 @@ export class ClassicTreeHandler extends BaseTreeHandler {
             const featureValue = features[featureName];
             
             if (featureValue === undefined) {
-                console.warn(`Feature ${featureName} not found in features for classic tree`);
                 break;
             }
             
@@ -272,7 +271,6 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             const featureValue = features[featureName];
             
             if (featureValue === undefined) {
-                console.warn(`Feature ${featureName} not found in features for blocks tree`);
                 break;
             }
             
@@ -521,7 +519,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             const featureValue = features[featureName];
             
             if (featureValue === undefined) {
-                console.warn(`Feature ${featureName} not found in features for spawn tree`);
                 break;
             }
             
@@ -564,7 +561,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             const featureValue = features[featureName];
             
             if (featureValue === undefined) {
-                console.warn(`Feature ${featureName} not found in features for spawn tree hierarchy`);
                 break;
             }
             

@@ -1,7 +1,7 @@
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { getTreeState } from "../TreesCommon/state.js";
 import { colorScheme } from "../visualizationConnector.js";
-import { showTooltip, hideTooltip } from "./tooltipScatterPlot.js";
+import { showTooltip, hideTooltip, handleMouseMove } from "./tooltipScatterPlot.js";
 import { togglePointColor } from "./tree.js";
 import { setOriginalPointsNeighPointsBoolArray } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 
@@ -18,7 +18,7 @@ export function createPoints(
     );
 
     const defaultSymbolSize = 100;
-    const starSymbolSize = defaultSymbolSize * 1.5; 
+    const starSymbolSize = defaultSymbolSize * 3; 
 
     // Last elements rendered appear on top of everything else,
     // in fact the original instance is at the end of the list
@@ -68,6 +68,9 @@ export function createPoints(
                 "stroke",
                 colorScheme.ui.nodeStroke
             );
+        })
+        .on("mousemove", (event) => {
+            handleMouseMove(event, tooltip);
         })
         .on("click", function (event, d) {
             // Pass encoded features to togglePointColor

@@ -171,7 +171,7 @@ class NeighborhoodGenerator:
         self.processor = DatasetProcessor(dataset)
         self.feature_names = self.processor.get_ordered_feature_names()
         
-    def generate_neighborhood(self, instance, neighborhood_size=100):
+    def generate_neighborhood(self, instance, keepDuplicates, neighborhood_size):
         """Generate neighborhood around instance using LORE."""
         from lore_sa.encoder_decoder import ColumnTransformerEnc
         from lore_sa.neighgen import GeneticGenerator
@@ -190,7 +190,8 @@ class NeighborhoodGenerator:
                                         self.dataset.descriptor, encoder)
         
         # Process neighborhood
-        neighborhood = self._remove_duplicates(neighborhood)
+        if not keepDuplicates:
+            neighborhood = self._remove_duplicates(neighborhood)
         neighborhood = self._ensure_instance_at_end(encoded_instance, neighborhood)
         
         # Decode and get predictions
@@ -226,12 +227,23 @@ class NeighborhoodGenerator:
         return np.array(unique_rows, dtype=neighborhood.dtype)
     
     def _ensure_instance_at_end(self, instance, neighborhood):
-        """Ensure instance is at the end of neighborhood."""
-        # Remove existing instances
-        mask = ~np.array([np.array_equal(row, instance) for row in neighborhood])
-        neighborhood = neighborhood[mask]
-        # Add instance at end
-        return np.vstack([neighborhood, instance])
+        """Ensure instance is at the end of neighborhood with exact matching."""
+        # Ensure consistent data types and shapes
+        instance = instance.astype(neighborhood.dtype)
+        if instance.ndim == 1:
+            instance = instance.reshape(1, -1)
+        
+        # Use exact comparison - find all rows that exactly match the instance
+        def rows_exactly_equal(row1, row2):
+            """Exact comparison between two rows."""
+            return np.array_equal(row1, row2)
+        
+        # Remove ALL existing instances of the explained instance
+        mask = ~np.array([rows_exactly_equal(row, instance.flatten()) for row in neighborhood])
+        neighborhood_filtered = neighborhood[mask]
+        
+        # Add the exact instance at the end
+        return np.vstack([neighborhood_filtered, instance])
     
     def _to_dataframe(self, data):
         """Convert array to DataFrame with proper column names."""
@@ -274,10 +286,10 @@ def load_cached_classifier(dataset_name, classifier=None, classifier_name=None):
     trainer = ModelTrainer()
     return trainer.train_or_load_model(dataset_name, classifier)
 
-def create_neighbourhood_with_lore(instance, bbox, dataset, neighbourhood_size=100):
+def create_neighbourhood_with_lore(instance, bbox, dataset, keepDuplicates, neighbourhood_size):
     """Main interface for neighborhood generation."""
     generator = NeighborhoodGenerator(dataset, bbox)
-    return generator.generate_neighborhood(instance, neighbourhood_size)
+    return generator.generate_neighborhood(instance, keepDuplicates, neighbourhood_size)
 
 def get_lore_decision_tree_surrogate(neighbour, neighb_train_yz):
     """Main interface for creating decision tree surrogate."""

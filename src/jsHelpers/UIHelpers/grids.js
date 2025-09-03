@@ -81,7 +81,7 @@ export function populateSurrogateForm(container) {
             step: 10,
         },
         scatterPlotStep: {
-            label: "Scatter plot Step Size",
+            label: "Scatter plot PCA decision boundaries step Size",
             min: 0.001,
             max: 1,
             default: 0.1,
@@ -93,6 +93,12 @@ export function populateSurrogateForm(container) {
             options: ["Yes", "No"],
             default: "No",
         },
+        keepDuplicates: {
+            label: "Keep the duplicates in the generated neighborhood",
+            type: "select",
+            options: ["Yes", "No"],
+            default: "No",
+        }
     };
 
     const visualizationToggles = {

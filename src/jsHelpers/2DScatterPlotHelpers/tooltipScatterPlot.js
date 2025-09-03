@@ -1,5 +1,4 @@
 // Updated tooltip.js for 2DScatterPlotHelpers
-import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
 import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
 
 export function createTooltip() {
@@ -90,6 +89,12 @@ export function showTooltip(event, data, tooltip, index, featureMappingInfo) {
         .style("opacity", 1);
 }
 
+export function handleMouseMove(event, tooltip) {
+    tooltip
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 10 + "px");
+}
+
 export function hideTooltip(tooltip) {
-    tooltip.transition().duration(500).style("opacity", colorScheme.opacity.hidden);
+    tooltip.style("visibility", "hidden");
 }

@@ -90,7 +90,7 @@ export function handleMouseOver(event, nodeData, tooltip, treeKind, featureMappi
 
     tooltip
         .html(content.join("<br>"))
-        .style("class", "decision-tree-tooltip")
+        // .style("class", "decision-tree-tooltip")
         .style("visibility", "visible")
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
