@@ -4,20 +4,16 @@
     "description": "Webapp for showing LORE_sa output in an interactive way",
     "main": "script.js",
     "scripts": {
-        "start": "concurrently \"npm run start-server\" \"npm run start-client\"",
-        "start-server": "py -m uvicorn main:app --reload",
-        "start-client": "concurrently \"serve -s . -p 8080 --no-request-logging\" \"npm run open-browser\"",
-        "open-browser": "wait-on http://localhost:8080 http://localhost:8000/health && cmd /c start http://localhost:8080",
+        "start": "python main.py",
+        "start-client": "serve -s . -p 8080 --no-request-logging && cmd /c start http://localhost:8080",
+        "serve-only": "serve -s . -p 8080 --no-request-logging",
         "postinstall": "pip install -r requirements.txt"
     },
     "dependencies": {
         "d3": "^7.8.5"
     },
     "devDependencies": {
-        "concurrently": "^7.0.0",
-        "dependency-cruiser": "^16.10.4",
         "serve": "^14.2.0",
-        "open": "^10.1.0",
-        "wait-on": "^7.2.0"
+        "dependency-cruiser": "^16.10.4"
     }
 }

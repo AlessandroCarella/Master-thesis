@@ -112,11 +112,11 @@ export function populateSurrogateForm(container) {
         },
         classicTree: {
             label: "Classic Decision Tree",
-            default: true,
+            default: false,
         },
         treeSpawn: {
             label: "TreeSpawn Decision Tree",
-            default: true,
+            default: false,
         },
     };
 

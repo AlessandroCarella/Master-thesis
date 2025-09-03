@@ -77,5 +77,8 @@ export function createPoints(
             togglePointColor(this, d, data, colorMap);
         });
 
+    // Move the instance point to the front so it appears on top of all other points
+    points.filter((d, i) => i === instanceIndex).raise();
+
     return points;
 }
