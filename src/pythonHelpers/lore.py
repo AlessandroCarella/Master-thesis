@@ -48,7 +48,8 @@ class DatasetProcessor:
         self.dataset.df = self.dataset.df[self.dataset.df[target_name].isin(valid_classes)]
         
         # Split features and target
-        feature_indices = sorted(self.numeric_indices + self.categorical_indices)
+        # feature_indices = sorted(self.numeric_indices + self.categorical_indices)
+        feature_indices = self.numeric_indices + self.categorical_indices
         X = self.dataset.df.iloc[:, feature_indices]
         y = self.dataset.df[target_name]
         
@@ -170,7 +171,7 @@ class NeighborhoodGenerator:
         self.bbox = bbox
         self.processor = DatasetProcessor(dataset)
         self.feature_names = self.processor.get_ordered_feature_names()
-        
+
     def generate_neighborhood(self, instance, keepDuplicates, neighborhood_size):
         """Generate neighborhood around instance using LORE."""
         from lore_sa.encoder_decoder import ColumnTransformerEnc
@@ -178,27 +179,28 @@ class NeighborhoodGenerator:
         
         # Initialize encoder
         encoder = ColumnTransformerEnc(self.dataset.descriptor)
-        
+
         # Prepare instance
         instance_df = self._prepare_instance(instance)
         original_dict = instance_df.iloc[0].to_dict()
         
         # Encode and generate neighborhood
         encoded_instance = encoder.encode(instance_df)[0]
+
         generator = GeneticGenerator(self.bbox, self.dataset, encoder)
         neighborhood = generator.generate(encoded_instance, neighborhood_size, 
                                         self.dataset.descriptor, encoder)
         
         # Process neighborhood
+        neighborhood = self._ensure_instance_at_beginning(encoded_instance, neighborhood)
         if not keepDuplicates:
             neighborhood = self._remove_duplicates(neighborhood)
-        neighborhood = self._ensure_instance_at_end(encoded_instance, neighborhood)
         
         # Decode and get predictions
-        decoded_neighborhood = encoder.decode(neighborhood)
+        decoded_neighborhood = encoder.decode(neighborhood)  # neighborhood should already be numpy array
         decoded_neighborhood = self._to_dataframe(decoded_neighborhood)
         self._preserve_original_instance(decoded_neighborhood, original_dict)
-        
+
         predictions = self.bbox.predict(decoded_neighborhood)
         encoded_predictions = encoder.encode_target_class(predictions.reshape(-1, 1)).squeeze()
         
@@ -209,11 +211,18 @@ class NeighborhoodGenerator:
         """Convert instance to properly ordered DataFrame."""
         if isinstance(instance, pd.Series):
             instance_dict = instance.to_dict()
-            return pd.DataFrame([{f: instance_dict[f] for f in self.feature_names}])
+            instance_df = pd.DataFrame([{f: instance_dict[f] for f in self.feature_names}])
         elif isinstance(instance, dict):
-            return pd.DataFrame([{f: instance[f] for f in self.feature_names}])
+            instance_df = pd.DataFrame([{f: instance[f] for f in self.feature_names}])
         else:
-            return instance[self.feature_names].copy() if hasattr(instance, 'columns') else instance
+            instance_df = instance[self.feature_names].copy() if hasattr(instance, 'columns') else instance
+        
+        # Ensure data types match the dataset
+        for col in instance_df.columns:
+            if col in self.dataset.df.columns:
+                instance_df[col] = instance_df[col].astype(self.dataset.df[col].dtype)
+        
+        return instance_df
     
     def _remove_duplicates(self, neighborhood):
         """Remove duplicate rows from neighborhood."""
@@ -226,24 +235,14 @@ class NeighborhoodGenerator:
                 seen.add(row_tuple)
         return np.array(unique_rows, dtype=neighborhood.dtype)
     
-    def _ensure_instance_at_end(self, instance, neighborhood):
-        """Ensure instance is at the end of neighborhood with exact matching."""
-        # Ensure consistent data types and shapes
-        instance = instance.astype(neighborhood.dtype)
-        if instance.ndim == 1:
-            instance = instance.reshape(1, -1)
+    def _ensure_instance_at_beginning(self, instance, neighborhood):
+        """Ensure instance is at the beginning of neighborhood with exact matching."""
+        # Convert to numpy arrays if needed
+        instance = np.array(instance) if not isinstance(instance, np.ndarray) else instance
+        neighborhood = np.array(neighborhood) if not isinstance(neighborhood, np.ndarray) else neighborhood
         
-        # Use exact comparison - find all rows that exactly match the instance
-        def rows_exactly_equal(row1, row2):
-            """Exact comparison between two rows."""
-            return np.array_equal(row1, row2)
-        
-        # Remove ALL existing instances of the explained instance
-        mask = ~np.array([rows_exactly_equal(row, instance.flatten()) for row in neighborhood])
-        neighborhood_filtered = neighborhood[mask]
-        
-        # Add the exact instance at the end
-        return np.vstack([neighborhood_filtered, instance])
+        # Add the exact instance at the beginning
+        return np.vstack([instance.reshape(1, -1), neighborhood])
     
     def _to_dataframe(self, data):
         """Convert array to DataFrame with proper column names."""
@@ -252,23 +251,27 @@ class NeighborhoodGenerator:
     def _preserve_original_instance(self, neighborhood_df, original_dict):
         """Ensure last row matches original instance exactly."""
         if len(neighborhood_df) > 0:
-            last_idx = len(neighborhood_df) - 1
             for feature, value in original_dict.items():
                 if feature in neighborhood_df.columns:
-                    neighborhood_df.iloc[last_idx, neighborhood_df.columns.get_loc(feature)] = value
-    
+                    neighborhood_df.iloc[0, neighborhood_df.columns.get_loc(feature)] = value
+
     def _get_encoded_feature_names(self):
         """Create encoded feature names for one-hot encoded categoricals."""
         names = []
-        # Numeric features keep original names
-        for name in self.dataset.descriptor['numeric'].keys():
+        
+        # Numeric features keep original names (sorted by index)
+        for name, info in sorted(self.dataset.descriptor['numeric'].items(), 
+                            key=lambda x: x[1]['index']):
             names.append(name)
-        # Categorical features get expanded names
-        for name, info in self.dataset.descriptor['categorical'].items():
-            for value in info['distinct_values']:
+        
+        # Categorical features get expanded names (sorted by index, then alphabetical categories)
+        for name, info in sorted(self.dataset.descriptor['categorical'].items(), 
+                            key=lambda x: x[1]['index']):
+            # Sort categories alphabetically to match sklearn's OneHotEncoder behavior
+            for value in sorted(info['distinct_values']):
                 names.append(f"{name}_{value}")
+        
         return names
-
 
 # ---------------- Decision Tree Surrogate ---------------- #
 

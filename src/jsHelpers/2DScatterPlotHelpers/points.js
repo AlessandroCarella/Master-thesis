@@ -22,7 +22,7 @@ export function createPoints(
 
     // Last elements rendered appear on top of everything else,
     // in fact the original instance is at the end of the list
-    const lastIndex = data.transformedData.length - 1;
+    const instanceIndex = 0;
     
     // Create all points normally
     const points = g
@@ -34,11 +34,11 @@ export function createPoints(
         .attr("transform", (d) => `translate(${x(d[0])},${y(d[1])})`)
         .attr("d", (d, i) => {
             // Use larger size for star symbol, default size for circles
-            const size = i === lastIndex ? starSymbolSize : defaultSymbolSize;
+            const size = i === instanceIndex ? starSymbolSize : defaultSymbolSize;
             return d3
                 .symbol()
                 .size(size)
-                .type(i === lastIndex ? d3.symbolStar : d3.symbolCircle)();
+                .type(i === instanceIndex ? d3.symbolStar : d3.symbolCircle)();
         })
         .style("fill", (d, i) => colorMap[data.targets[i]])
         .style("stroke", colorScheme.ui.nodeStroke)
