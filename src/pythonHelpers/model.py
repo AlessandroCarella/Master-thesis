@@ -111,9 +111,6 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
           dataset loading, data dictionary creation, and TabularDataset preparation.
         - Only when no cache is available does it perform the full preparation pipeline.
     """
-    # Define the target column name (consistent with LORE framework)
-    target_name = 'target'
-    
     # Create the classifier instance with the provided parameters
     classifier = create_classifier(classifier_name, parameters)
 
@@ -121,7 +118,6 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
     # Load cached classifier or train new one with optimized caching
     trained_model, dataset, feature_names = load_cached_classifier(
         dataset_name=dataset_name,
-        target_name=target_name,
         classifier=classifier,
         classifier_name=classifier_name
     )

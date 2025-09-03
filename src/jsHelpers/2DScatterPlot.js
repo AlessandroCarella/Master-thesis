@@ -1,5 +1,5 @@
 // scatterPlot.js
-import { createTooltip } from "./2DScatterPlotHelpers/tooltip.js";
+import { createTooltip } from "./2DScatterPlotHelpers/tooltipScatterPlot.js";
 import { createZoom } from "./2DScatterPlotHelpers/zoom.js";
 import { drawVoronoi } from "./2DScatterPlotHelpers/voronoi.js";
 import { createPoints } from "./2DScatterPlotHelpers/points.js";

@@ -1,4 +1,4 @@
-// visualizations.js - Updated to use new architecture
+// visualizations.js - Updated to handle encoded categorical features
 import { createTreeVisualization } from "./ClassicDecisionTree.js";
 import { createScatterPlot } from "./2DScatterPlot.js";
 import { createBlocksTreeVisualization } from "./BlocksDecisionTree.js";
@@ -12,27 +12,61 @@ import { fetchVisualizationUpdate } from "./API.js";
 import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { 
     getExplainedInstance,
-    resetVisualizationState
+    resetVisualizationState,
+    setExplainedInstance
 } from "./visualizationConnector.js";
 import { 
     highlightInstancePathsForAllTrees,
 } from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
 
+// Updated to handle encoded instance data properly
 export function initializeVisualizations(data) {
     if (!data) {
         console.error("No visualization data provided");
         return;
     }
 
+    // Clear previous visualizations    
     clearVisualizations();
-    createVisualizations(data);
+    
+    // Store feature mapping info if provided
+    if (data.featureMappingInfo) {
+        window.currentFeatureMappingInfo = data.featureMappingInfo;
+    }
+
+    // Determine which instance to use for tree operations
+    // Priority: encodedInstance > originalInstance > fallback to last scatter plot data point
+    const instanceForTrees = data.encodedInstance || 
+                            data.originalInstance || 
+                            (data.scatterPlotVisualizationData?.originalData?.length > 0 ? 
+                             data.scatterPlotVisualizationData.originalData[data.scatterPlotVisualizationData.originalData.length - 1] : 
+                             null);
+
+    if (!instanceForTrees) {
+        console.warn("No instance data available for tree path highlighting");
+    }
+
+    // Create visualizations with the appropriate instance
+    createVisualizations({
+        decisionTreeVisualizationData: data.decisionTreeVisualizationData,
+        scatterPlotVisualizationData: data.scatterPlotVisualizationData,
+        instance: instanceForTrees,  // Use encoded instance for tree operations
+        encodedInstance: data.encodedInstance,
+        originalInstance: data.originalInstance
+    });
+    
     setupScatterPlotMethodListeners();
     
-    // Highlight instance paths after all visualizations are created using new system
-    const instance = getExplainedInstance();
-    if (instance) {
-        // Use unified highlighting system instead of individual tree highlighting
-        highlightInstancePathsForAllTrees(instance);
+    // Set explained instance in the coordinator (use encoded for tree operations)
+    if (instanceForTrees) {
+        setExplainedInstance(instanceForTrees, data.originalInstance);
+        
+        // Use unified highlighting system with encoded instance
+        try {
+            highlightInstancePathsForAllTrees(instanceForTrees);
+        } catch (error) {
+            console.error("Error applying instance path highlighting:", error);
+        }
     }
 }
 
@@ -51,39 +85,55 @@ function clearVisualizations() {
 
 function createVisualizations(data) {
     const vizSettings = getVisualizationSettings();
-    
+
     // Create blocks tree visualization if enabled
     if (vizSettings.blocksTree) {
-        createBlocksTreeVisualization(
-            data.decisionTreeVisualizationData,
-            data.instance
-        );
+        try {
+            createBlocksTreeVisualization(
+                data.decisionTreeVisualizationData,
+                data.instance  // Use encoded instance
+            );
+        } catch (error) {
+            console.error("Error creating blocks tree visualization:", error);
+        }
     }
 
     // Create classic tree visualization if enabled
     if (vizSettings.classicTree) {
-        createTreeVisualization(
-            data.decisionTreeVisualizationData,
-            data.instance,
-            "#classic-tree-plot"
-        );
+        try {
+            createTreeVisualization(
+                data.decisionTreeVisualizationData,
+                data.instance,  // Use encoded instance
+                "#classic-tree-plot"
+            );
+        } catch (error) {
+            console.error("Error creating classic tree visualization:", error);
+        }
     }
 
     // Create scatter plot visualization if enabled
     if (vizSettings.scatterPlot) {
-        createScatterPlot(
-            data.scatterPlotVisualizationData,
-            window.treeVisualization,
-            "#scatter-plot"
-        );
+        try {
+            createScatterPlot(
+                data.scatterPlotVisualizationData,
+                window.treeVisualization,
+                "#scatter-plot"
+            );
+        } catch (error) {
+            console.error("Error creating scatter plot visualization:", error);
+        }
     }
 
     // Create TreeSpawn tree visualization if enabled
     if (vizSettings.treeSpawn) {
-        createTreeSpawnVisualization(
-            data.decisionTreeVisualizationData,
-            data.instance
-        );
+        try {
+            createTreeSpawnVisualization(
+                data.decisionTreeVisualizationData,
+                data.instance  // Use encoded instance
+            );
+        } catch (error) {
+            console.error("Error creating TreeSpawn visualization:", error);
+        }
     }
 }
 
@@ -134,19 +184,27 @@ function updateVisualizations(data) {
     clearVisualizations();
     
     // Get the current explained instance to preserve it during updates
-    const instance = getExplainedInstance();
+    // This should be the encoded instance for proper tree path tracing
+    const currentEncodedInstance = getExplainedInstance();
+    const currentOriginalInstance = window.currentOriginalInstance;
     
-    // Create the updated data object with preserved instance
+    // Create the updated data object with preserved encoded instance
     const updatedData = {
         decisionTreeVisualizationData: data.decisionTreeVisualizationData,
         scatterPlotVisualizationData: data.scatterPlotVisualizationData,
-        instance: instance
+        instance: currentEncodedInstance,  // Use encoded instance
+        encodedInstance: currentEncodedInstance,
+        originalInstance: currentOriginalInstance
     };
     
     createVisualizations(updatedData);
     
-    // Highlight instance paths using new unified system
-    if (instance) {
-        highlightInstancePathsForAllTrees(instance);
+    // Highlight instance paths using new unified system with encoded instance
+    if (currentEncodedInstance) {
+        try {
+            highlightInstancePathsForAllTrees(currentEncodedInstance);
+        } catch (error) {
+            console.error("Error applying instance path highlighting after update:", error);
+        }
     }
 }

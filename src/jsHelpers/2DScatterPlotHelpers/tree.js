@@ -1,11 +1,8 @@
-// 2DScatterPlotHelpers/tree.js - Updated to work with unified architecture
+// 2DScatterPlotHelpers/tree.js - Updated to work with encoded features only
 import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
 import { 
     highlightingCoordinator,
 } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
-import { 
-    isClassicTreeCreated,
-} from "../visualizationConnector.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
 // This function is used in pointsHelper.js to toggle a point's color and highlight tree paths.
@@ -40,11 +37,11 @@ export function togglePointColor(node, d, data, colorMap) {
     d3.select(node)
         .style("fill", colorScheme.ui.highlight);
 
-    // Use unified highlighting approach for all trees
+    // Use unified highlighting approach for all trees with encoded features
     highlightPathsInAllTreesUnified(originalFeatures);
 }
 
-// Unified function to highlight paths in all available trees using the new handler system
+// Unified function to highlight paths in all available trees using encoded features only
 function highlightPathsInAllTreesUnified(originalFeatures) {
     // Get all available handlers
     const handlers = [
@@ -53,18 +50,19 @@ function highlightPathsInAllTreesUnified(originalFeatures) {
         { kind: TREES_SETTINGS.treeKindID.spawn, handler: highlightingCoordinator.treeHandlers.get(TREES_SETTINGS.treeKindID.spawn) }
     ];
     
-    // Highlight path in each available tree using the unified handler approach
+    // Highlight path in each available tree using encoded features directly
     handlers.forEach(({ kind, handler }) => {
         if (handler) {
             try {
+                // originalFeatures now contains encoded feature names and values (0/1 for categorical, scaled values for numeric)
                 const path = handler.findPath(originalFeatures);                
                 if (path && path.length > 0) {
                     handler.highlightPath(path);
                 } else {
-                    console.warn(`No path found for ${kind} tree`);
+                    console.warn(`No path found for ${kind} tree with encoded features`);
                 }
             } catch (error) {
-                console.warn(`Error highlighting ${kind} tree path:`, error);
+                console.warn(`Error highlighting ${kind} tree path with encoded features:`, error);
             }
         } else {
             console.warn(`No handler found for ${kind} tree`);

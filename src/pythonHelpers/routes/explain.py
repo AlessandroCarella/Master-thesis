@@ -1,6 +1,4 @@
-# routes/explain.py
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import numpy as np
@@ -13,9 +11,11 @@ from pythonHelpers.generate_decision_tree_visualization_data import (
 )
 from pythonHelpers.create_scatter_plot_data import create_scatter_plot_data_raw
 from pythonHelpers.routes.state import global_state
-from pythonHelpers.datasets import DATASETS
 
 router = APIRouter(prefix="/api")
+
+
+# ---------------- Request Models ---------------- #
 
 class InstanceRequest(BaseModel):
     instance: Optional[Dict[str, Any]] = None
@@ -31,228 +31,262 @@ class VisualizationRequest(BaseModel):
     scatterPlotMethod: str = "umap"
     includeOriginalDataset: bool
 
-# ---------------- Data Processing Functions ---------------- #
 
-def validate_instance_features(instance: Dict[str, Any]) -> None:
-    """Validate that all required features are present in the instance."""
-    missing_features = set(global_state.feature_names) - set(instance.keys())
-    if missing_features:
-        raise ValueError(f"Missing features: {missing_features}")
+# ---------------- Core Processing Classes ---------------- #
 
-def get_ordered_feature_names() -> list[str]:
-    """Get feature names in the correct order based on dataset descriptor indices."""
-    feature_order = []
+class InstanceProcessor:
+    """Handles instance data processing and validation."""
     
-    # Collect numeric features with their indices
-    for feature_name, info in global_state.dataset.descriptor['numeric'].items():
-        feature_order.append((info['index'], feature_name))
+    @staticmethod
+    def get_ordered_feature_names():
+        """Get feature names in order based on dataset descriptor indices."""
+        features = []
+        for name, info in global_state.dataset.descriptor['numeric'].items():
+            features.append((info['index'], name))
+        for name, info in global_state.dataset.descriptor['categorical'].items():
+            features.append((info['index'], name))
+        features.sort(key=lambda x: x[0])
+        return [name for _, name in features]
     
-    # Collect categorical features with their indices    
-    for feature_name, info in global_state.dataset.descriptor['categorical'].items():
-        feature_order.append((info['index'], feature_name))
+    @staticmethod
+    def process_instance(request: InstanceRequest):
+        """Convert instance request to ordered dictionary."""
+        ordered_names = InstanceProcessor.get_ordered_feature_names()
+        return OrderedDict((name, request.instance[name]) for name in ordered_names)
     
-    # Sort by index and return feature names
-    feature_order.sort(key=lambda x: x[0])
-    return [name for _, name in feature_order]
-
-def process_instance(request: InstanceRequest) -> OrderedDict:
-    """Process tabular data input - return ordered dictionary for better handling."""
-    validate_instance_features(request.instance)
-    ordered_feature_names = get_ordered_feature_names()
-    
-    # Return as OrderedDict maintaining the dataset's expected feature order
-    return OrderedDict((feature, request.instance[feature]) for feature in ordered_feature_names)
-
-# ---------------- Visualization Generation Functions ---------------- #
-
-def generate_scatter_plot_with_original_data(request, X, y, surrogate, class_names, X_original, y_original):
-    """Generate scatter plot visualization including original dataset data."""
-    from pythonHelpers.lore import ColumnTransformerEnc
-    
-    # Initialize encoder with the dataset descriptor
-    tabular_enc = ColumnTransformerEnc(global_state.dataset.descriptor)
-    
-    # Encode the original training data
-    X_train_encoded = tabular_enc.encode(global_state.X_train)
-    
-    scatter_data = create_scatter_plot_data_raw(
-        X=X,  # Use encoded neighborhood data
-        y=y,
-        pretrained_tree=surrogate,
-        class_names=class_names,
-        feature_names=global_state.feature_names,
-        step=request.scatterPlotStep,
-        method=request.scatterPlotMethod,
-        X_original=X_train_encoded,  # Use encoded original data
-        y_original=y_original
-    )
-    
-    # Override with mixed original training and decoded neighborhood data
-    original_data_list = []
-    
-    # Add original training data (decoded format)
-    for _, row in global_state.X_train.iterrows():
-        original_data_list.append(row.to_dict())
+    @staticmethod
+    def encode_instance(instance_dict):
+        """Encode instance using the same encoder as the dataset."""
+        from lore_sa.encoder_decoder import ColumnTransformerEnc
+        encoder = ColumnTransformerEnc(global_state.dataset.descriptor)
+        # Convert OrderedDict to a single row for encoding
+        instance_array = np.array([[instance_dict[name] for name in instance_dict.keys()]])
+        encoded_instance = encoder.encode(instance_array)[0]  # Get first (and only) row
         
-    # Add neighborhood data (decoded format)  
-    for _, row in global_state.neighb_train_X.iterrows():
-        original_data_list.append(row.to_dict())
+        # Convert back to dictionary with encoded feature names
+        encoded_instance_dict = {}
+        for i, feature_name in enumerate(global_state.encoded_feature_names or []):
+            if i < len(encoded_instance):
+                encoded_instance_dict[feature_name] = float(encoded_instance[i])
         
-    scatter_data['originalData'] = original_data_list
-    return scatter_data
+        return encoded_instance_dict
 
-def generate_scatter_plot_neighborhood_only(request, X, y, surrogate, class_names):
-    """Generate scatter plot visualization with neighborhood data only."""
-    scatter_data = create_scatter_plot_data_raw(
-        X=X,  # Use encoded numerical data for dimensionality reduction
-        y=y,
-        pretrained_tree=surrogate,
-        class_names=class_names,
-        feature_names=global_state.feature_names,
-        step=request.scatterPlotStep,
-        method=request.scatterPlotMethod,
-    )
+class VisualizationGenerator:
+    """Handles visualization data generation."""
     
-    # Override with decoded data for proper display
-    scatter_data['originalData'] = []
-    for _, row in global_state.neighb_train_X.iterrows():
-        scatter_data['originalData'].append(row.to_dict())
-        
-    return scatter_data
-
-def generate_scatter_plot_visualization(request, X, y, surrogate, class_names, X_original=None, y_original=None):
-    """Generate scatter plot data for frontend processing."""
-    if request.includeOriginalDataset and X_original is not None and y_original is not None:
-        return generate_scatter_plot_with_original_data(
-            request, X, y, surrogate, class_names, X_original, y_original
+    @staticmethod
+    def generate_decision_tree_data(surrogate, feature_names, target_names):
+        """Generate decision tree visualization data."""
+        tree_structure = extract_tree_structure(surrogate, feature_names, target_names)
+        return generate_decision_tree_visualization_data_raw(tree_structure)
+    
+    @staticmethod
+    def generate_scatter_plot_data(request, X, y, surrogate, class_names, 
+                                 X_original=None, y_original=None):
+        """Generate scatter plot visualization data."""
+        return create_scatter_plot_data_raw(
+            X=X,
+            y=y,
+            pretrained_tree=surrogate,
+            class_names=class_names,
+            feature_names=global_state.encoded_feature_names,
+            step=request.scatterPlotStep,
+            method=request.scatterPlotMethod,
+            X_original=X_original,
+            y_original=y_original
         )
-    else:
+
+
+class DataProcessor:
+    """Handles data processing for visualizations."""
+    
+    @staticmethod
+    def prepare_scatter_data_with_original(request, X, y, surrogate, class_names):
+        """Prepare scatter plot data including original dataset."""
+        from lore_sa.encoder_decoder import ColumnTransformerEnc
+        
+        # Encode original training data
+        encoder = ColumnTransformerEnc(global_state.dataset.descriptor)
+        X_train_encoded = encoder.encode(global_state.X_train)
+        
+        # Generate scatter plot data
+        scatter_data = VisualizationGenerator.generate_scatter_plot_data(
+            request, X, y, surrogate, class_names, X_train_encoded, global_state.y_train
+        )
+        
+        # Add encoded data to original data list (pass encoded neighborhood X instead of decoded)
+        DataProcessor._add_encoded_data_to_output(scatter_data, X_train_encoded, X)  # X is already encoded
+        
+        return scatter_data
+    
+    @staticmethod
+    def prepare_scatter_data_neighborhood_only(request, X, y, surrogate, class_names):
+        """Prepare scatter plot data with neighborhood only."""
         global_state.target_names = list(np.unique(y))
-        return generate_scatter_plot_neighborhood_only(
+        
+        scatter_data = VisualizationGenerator.generate_scatter_plot_data(
             request, X, y, surrogate, class_names
         )
+        
+        # Add encoded neighborhood data (X is already encoded)
+        DataProcessor._add_encoded_data_to_output(scatter_data, None, X)
+        
+        return scatter_data
+    
+    @staticmethod
+    def _add_encoded_data_to_output(scatter_data, X_train_encoded, X_neighborhood):
+        """Add encoded data arrays to scatter plot output."""
+        data_list = []
+        
+        # Add original training data if provided (keep encoded)
+        if X_train_encoded is not None:
+            for row in X_train_encoded:
+                data_list.append(DataProcessor._convert_row_to_dict(row))
+        
+        # Add neighborhood data (use encoded version)
+        for row in X_neighborhood:
+            data_list.append(DataProcessor._convert_row_to_dict(row))
+        
+        scatter_data['originalData'] = data_list
+    
+    @staticmethod
+    def _convert_row_to_dict(row):
+        """Convert data row to dictionary with proper type conversion."""
+        data_dict = {}
+        for j, feature_name in enumerate(global_state.encoded_feature_names):
+            if j < len(row):
+                value = row[j]
+                if isinstance(value, np.integer):
+                    data_dict[feature_name] = int(value)
+                elif isinstance(value, np.floating):
+                    data_dict[feature_name] = float(value)
+                else:
+                    data_dict[feature_name] = value
+        return data_dict
 
-def generate_decision_tree_visualization(surrogate, encoded_feature_names, target_names):
-    """Extract decision tree data for frontend processing."""
-    tree_structure = extract_tree_structure(
-        tree_classifier=surrogate,
-        feature_names=encoded_feature_names,
-        target_names=target_names
-    )
-    return generate_decision_tree_visualization_data_raw(tree_structure)
 
-# ---------------- Response Building Functions ---------------- #
+class StateManager:
+    """Manages global state updates."""
+    
+    @staticmethod
+    def update_neighborhood_data(neighborhood, neighb_train_X, neighb_train_y, 
+                                neighb_train_yz, encoded_feature_names):
+        """Update global state with neighborhood data."""
+        global_state.neighborhood = neighborhood
+        global_state.neighb_train_X = neighb_train_X
+        global_state.neighb_train_y = neighb_train_y
+        global_state.neighb_train_yz = neighb_train_yz
+        global_state.encoded_feature_names = encoded_feature_names
+    
+    @staticmethod
+    def update_surrogate_model(surrogate):
+        """Update global state with surrogate model."""
+        global_state.dt_surrogate = surrogate
 
-def build_feature_mapping_info(encoded_feature_names=None):
-    """Build feature mapping information for the response."""
-    return {
-        "originalFeatureNames": global_state.feature_names,
-        "encodedFeatureNames": encoded_feature_names or global_state.encoded_feature_names,
-        "datasetDescriptor": global_state.dataset.descriptor
-    }
 
-def build_visualization_response(tree_data, scatter_data, encoded_feature_names=None):
-    """Build the complete visualization response."""
-    return {
-        "status": "success",
-        "message": "Visualization updated",
-        "decisionTreeVisualizationData": tree_data,
-        "scatterPlotVisualizationData": scatter_data,
-        "uniqueClasses": global_state.target_names,
-        "featureMappingInfo": build_feature_mapping_info(encoded_feature_names)
-    }
+class ResponseBuilder:
+    """Builds API responses."""
+    
+    @staticmethod
+    def build_feature_mapping():
+        """Build feature mapping information."""
+        return {
+            "originalFeatureNames": global_state.feature_names,
+            "encodedFeatureNames": global_state.encoded_feature_names,
+            "datasetDescriptor": global_state.dataset.descriptor
+        }
+    
+    @staticmethod
+    def build_success_response(message, tree_data, scatter_data, encoded_instance=None):
+        """Build successful response with visualization data."""
+        response = {
+            "status": "success",
+            "message": message,
+            "decisionTreeVisualizationData": tree_data,
+            "scatterPlotVisualizationData": scatter_data,
+            "uniqueClasses": global_state.target_names,
+            "featureMappingInfo": ResponseBuilder.build_feature_mapping()
+        }
+        
+        if encoded_instance is not None:
+            response["encodedInstance"] = encoded_instance
+            
+        return response
 
-def build_explanation_response(tree_data, scatter_data, encoded_feature_names):
-    """Build the complete explanation response."""
-    return {
-        "status": "success",
-        "message": "Instance explained",
-        "decisionTreeVisualizationData": tree_data,
-        "scatterPlotVisualizationData": scatter_data,
-        "uniqueClasses": global_state.target_names,
-        "featureMappingInfo": build_feature_mapping_info(encoded_feature_names)
-    }
 
-# ---------------- Global State Update Functions ---------------- #
-
-def update_global_state_with_neighborhood(neighborhood, neighb_train_X, neighb_train_y, neighb_train_yz, encoded_feature_names):
-    """Update global state with neighborhood data and encoded feature names."""
-    global_state.neighborhood = neighborhood
-    global_state.neighb_train_X = neighb_train_X
-    global_state.neighb_train_y = neighb_train_y
-    global_state.neighb_train_yz = neighb_train_yz
-    global_state.encoded_feature_names = encoded_feature_names
-
-def update_global_state_with_surrogate(dt_surrogate):
-    """Update global state with the decision tree surrogate."""
-    global_state.dt_surrogate = dt_surrogate
-
-# ---------------- API Endpoint Functions ---------------- #
+# ---------------- API Endpoints ---------------- #
 
 @router.post("/update-visualization")
 async def update_visualization(request: VisualizationRequest):
-    """Update visualization technique without regenerating the neighborhood.""" 
-    # Generate decision tree visualization data
-    tree_data = generate_decision_tree_visualization(
-        surrogate=global_state.dt_surrogate,
-        encoded_feature_names=global_state.encoded_feature_names,
-        target_names=global_state.target_names
+    """Update visualization technique without regenerating neighborhood."""
+    
+    # Generate decision tree visualization
+    tree_data = VisualizationGenerator.generate_decision_tree_data(
+        global_state.dt_surrogate,
+        global_state.encoded_feature_names,
+        global_state.target_names
+    )
+    
+    # Generate scatter plot visualization
+    if request.includeOriginalDataset:
+        scatter_data = DataProcessor.prepare_scatter_data_with_original(
+            request, global_state.neighborhood, global_state.neighb_train_y,
+            global_state.dt_surrogate, global_state.target_names
+        )
+    else:
+        scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
+            request, global_state.neighborhood, global_state.neighb_train_y,
+            global_state.dt_surrogate, global_state.target_names
+        )
+    
+    return ResponseBuilder.build_success_response(
+        "Visualization updated", tree_data, scatter_data
     )
 
-    # Generate scatter plot based on whether to include original dataset
-    scatter_data = generate_scatter_plot_visualization(
-        request=request,
-        X=global_state.neighborhood,
-        y=global_state.neighb_train_y,
-        surrogate=global_state.dt_surrogate,
-        class_names=global_state.target_names,
-        X_original=global_state.X_train if request.includeOriginalDataset else None,
-        y_original=global_state.y_train if request.includeOriginalDataset else None
-    )
-    
-    return build_visualization_response(tree_data, scatter_data, global_state.encoded_feature_names)
-    
+
 @router.post("/explain")
 async def explain_instance(request: InstanceRequest):
-    """Generate a local explanation for a given instance."""
-    # Process and validate instance data
-    instance_dict = process_instance(request)
-            
-    # Create neighborhood using LORE
-    neighborhood, neighb_train_X, neighb_train_y, neighb_train_yz, encoded_feature_names = create_neighbourhood_with_lore(
+    """Generate local explanation for a given instance."""
+    
+    # Process instance data (original features)
+    instance_dict = InstanceProcessor.process_instance(request)
+
+    # Generate neighborhood using LORE
+    (neighborhood, neighb_train_X, neighb_train_y, 
+     neighb_train_yz, encoded_feature_names) = create_neighbourhood_with_lore(
         instance=instance_dict,
         bbox=global_state.bbox,
         dataset=global_state.dataset,
         neighbourhood_size=request.neighbourhood_size,
     )
     
-    # Update global state with neighborhood data
-    update_global_state_with_neighborhood(
-        neighborhood, neighb_train_X, neighb_train_y, neighb_train_yz, encoded_feature_names
+    # Update global state
+    StateManager.update_neighborhood_data(
+        neighborhood, neighb_train_X, neighb_train_y, 
+        neighb_train_yz, encoded_feature_names
     )
-
-    # Create and store decision tree surrogate
-    dt_surrogate = get_lore_decision_tree_surrogate(
-        neighbour=neighborhood,
-        neighb_train_yz=neighb_train_yz
-    )
-    update_global_state_with_surrogate(dt_surrogate)
+    
+    # NOW encode the instance using the same encoder
+    encoded_instance = InstanceProcessor.encode_instance(instance_dict)
+    
+    # Create decision tree surrogate
+    surrogate = get_lore_decision_tree_surrogate(neighborhood, neighb_train_yz)
+    StateManager.update_surrogate_model(surrogate)
     
     # Generate visualizations
-    tree_data = generate_decision_tree_visualization(
-        surrogate=dt_surrogate,
-        encoded_feature_names=encoded_feature_names,
-        target_names=global_state.target_names
+    tree_data = VisualizationGenerator.generate_decision_tree_data(
+        surrogate, encoded_feature_names, global_state.target_names
     )
     
-    scatter_data = generate_scatter_plot_visualization(
-        request=request,
-        X=neighborhood,
-        y=neighb_train_y,
-        surrogate=dt_surrogate,
-        class_names=global_state.target_names,
-        X_original=global_state.X_train if request.includeOriginalDataset else None,
-        y_original=global_state.y_train if request.includeOriginalDataset else None
+    if request.includeOriginalDataset:
+        scatter_data = DataProcessor.prepare_scatter_data_with_original(
+            request, neighborhood, neighb_train_y, surrogate, global_state.target_names
+        )
+    else:
+        scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
+            request, neighborhood, neighb_train_y, surrogate, global_state.target_names
+        )
+    
+    return ResponseBuilder.build_success_response(
+        "Instance explained", tree_data, scatter_data, encoded_instance
     )
-
-    return build_explanation_response(tree_data, scatter_data, encoded_feature_names)

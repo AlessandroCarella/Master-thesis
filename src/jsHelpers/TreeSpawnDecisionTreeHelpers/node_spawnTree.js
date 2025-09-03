@@ -5,10 +5,50 @@ import {
 import { coordinateHighlightingAcrossAllTrees } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 import { spawnTreeState } from "../TreesCommon/state.js";
 import { createContextMenu } from "./contextMenu_spawnTree.js"
-import { handleMouseOver, handleMouseMove, handleMouseOut, getNodeTextLines } from "../TreesCommon/tooltip.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
-import { getFeatureMappingInfo } from "../visualizationConnectorHelpers/encoding_decoding.js";
+import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
+
+function getSpawnNodeTextLines(nodeData, featureMappingInfo = null) {
+    if (!nodeData) return ['Unknown Node'];
+
+    // Handle both direct data and d3 hierarchy structure
+    const data = nodeData.data || nodeData;
+
+    if (data.is_leaf) {
+        return [data.class_label || 'Unknown'];
+    }
+    
+    const encodedFeatureName = data.feature_name;
+    const threshold = data.threshold;
+    
+    if (!encodedFeatureName || threshold === undefined) {
+        return ['Internal Node'];
+    }
+    
+    // Create decoder for split condition
+    const originalInstance = window.currentOriginalInstance || {};
+    const decoder = new FeatureDecoder(featureMappingInfo, originalInstance);
+    
+    try {
+        // Use decoder to create human-readable split condition
+        const decodedCondition = decoder.decodeTreeSplitCondition(encodedFeatureName, threshold, true);
+        return [decodedCondition];
+        
+    } catch (error) {
+        console.warn("Error decoding node text for spawn tree:", error);
+        
+        // Fallback to encoded display
+        const thresholdStr = Number.isFinite(threshold) ? threshold.toFixed(1) : threshold;
+        return [`${encodedFeatureName} ≤ ${thresholdStr}`];
+    }
+}
+
+function getNodeTextLines(nodeData) {
+    const featureMappingInfo = window.currentFeatureMappingInfo || null;
+    return getSpawnNodeTextLines(nodeData, featureMappingInfo);
+}
 
 // Helper function to check if node is in path using new processor
 function isNodeInPath(nodeId, instancePath) {
@@ -26,6 +66,9 @@ export function addNodes(
     // Get instance path from spawnTreeState
     const instancePath = spawnTreeState.instancePath || [];
     const instanceData = spawnTreeState.instanceData;
+    
+    // Get feature mapping info for tooltip
+    const featureMappingInfo = window.currentFeatureMappingInfo || null;
     
     const visibleNodes = treeData.descendants().filter(d => !d.isHidden);
     
@@ -58,8 +101,8 @@ export function addNodes(
                 .style("stroke", colorScheme.ui.nodeStroke)
                 .style("opacity", colorScheme.opacity.default);
 
-            // Add text for path nodes
-            const textLines = getNodeTextLines(d, TREES_SETTINGS.treeKindID.spawn, getFeatureMappingInfo());
+            // Add text for path nodes using simplified text generation
+            const textLines = getNodeTextLines(d);
             const fontSize = calculateFontSize(textLines);
             const lineHeight = fontSize * 1.2;
             
@@ -104,7 +147,7 @@ export function addNodes(
 
     nodes.selectAll("circle, rect")
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.spawn, getFeatureMappingInfo())
+            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.spawn, featureMappingInfo)
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", () =>

@@ -1,10 +1,12 @@
 import { colorScheme, getNodeColor } from "../visualizationConnectorHelpers/colors.js";
 import { coordinateHighlightingAcrossAllTrees } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
-import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
-import { getFeatureMappingInfo } from "../visualizationConnectorHelpers/encoding_decoding.js";
 
 export function addNodes(contentGroup, treeData, metrics, tooltip, colorMap) {
+    // Get feature mapping info for tooltip
+    const featureMappingInfo = window.currentFeatureMappingInfo || null;
+    
     const nodes = contentGroup
         .selectAll(".node")
         .data(treeData.descendants())
@@ -19,7 +21,7 @@ export function addNodes(contentGroup, treeData, metrics, tooltip, colorMap) {
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("stroke", colorScheme.ui.nodeStroke)
         .on("mouseover", (event, d) =>
-            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.classic, getFeatureMappingInfo())
+            handleMouseOver(event, d, tooltip, TREES_SETTINGS.treeKindID.classic, featureMappingInfo)
         )
         .on("mousemove", (event) => handleMouseMove(event, tooltip))
         .on("mouseout", (event, d) =>

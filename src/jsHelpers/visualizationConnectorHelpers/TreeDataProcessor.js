@@ -1,10 +1,6 @@
-// TreeDataProcessor.js - Replace dataProcessing.js with cleaner architecture
+// TreeDataProcessor.js - Updated to use encoded features only
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { getTreeState } from "../TreesCommon/state.js";
-import { 
-    evaluateCategoricalSplit,
-    getFeatureMappingInfo 
-} from "../visualizationConnectorHelpers/encoding_decoding.js";
 
 // Base strategy interface
 class TreeProcessingStrategy {
@@ -16,7 +12,7 @@ class TreeProcessingStrategy {
     getInstanceValue(featureName, instanceData) { return instanceData?.[featureName] ?? null; }
 }
 
-// Standard tree processing (Classic and Spawn)
+// Standard tree processing (Classic and Spawn) - using encoded features only
 class StandardTreeProcessingStrategy extends TreeProcessingStrategy {
     buildHierarchy(data) {
         if (!data || !Array.isArray(data)) {
@@ -55,30 +51,21 @@ class StandardTreeProcessingStrategy extends TreeProcessingStrategy {
 
         const path = [];
         let currentNode = root;
-        const featureMappingInfo = getFeatureMappingInfo();
 
         while (currentNode && !currentNode.is_leaf) {
             path.push(currentNode.node_id);
 
             const featureName = currentNode.feature_name;
             const threshold = currentNode.threshold;
+            const featureValue = instance[featureName];
 
-            // Handle categorical features properly
-            const categoricalResult = evaluateCategoricalSplit(featureName, threshold, instance, featureMappingInfo);
-            let goLeft;
-            
-            if (categoricalResult !== null) {
-                // Categorical feature
-                goLeft = categoricalResult;
-            } else {
-                // Numeric feature
-                const featureValue = instance[featureName];
-                if (featureValue === undefined) {
-                    console.warn(`Feature ${featureName} not found in instance data`);
-                    break;
-                }
-                goLeft = featureValue <= threshold;
+            if (featureValue === undefined) {
+                console.warn(`Encoded feature ${featureName} not found in instance data`);
+                break;
             }
+
+            // Simple threshold comparison for all features (encoded)
+            const goLeft = featureValue <= threshold;
 
             currentNode = currentNode.children?.find(child =>
                 goLeft ? 
@@ -129,7 +116,7 @@ class StandardTreeProcessingStrategy extends TreeProcessingStrategy {
     }
 }
 
-// Blocks tree specific processing
+// Blocks tree specific processing - using encoded features only
 class BlocksTreeProcessingStrategy extends TreeProcessingStrategy {
     buildHierarchy(data) {
         if (!data || !Array.isArray(data)) {
@@ -169,30 +156,21 @@ class BlocksTreeProcessingStrategy extends TreeProcessingStrategy {
 
         const path = [];
         let currentNode = hierarchyRoot;
-        const featureMappingInfo = getFeatureMappingInfo();
         
         while (currentNode && !currentNode.data.is_leaf) {
             path.push(currentNode.data.node_id);
 
             const featureName = currentNode.data.feature_name;
             const threshold = currentNode.data.threshold;
+            const featureValue = instance[featureName];
 
-            // Handle categorical features properly
-            const categoricalResult = evaluateCategoricalSplit(featureName, threshold, instance, featureMappingInfo);
-            let goLeft;
-            
-            if (categoricalResult !== null) {
-                // Categorical feature
-                goLeft = categoricalResult;
-            } else {
-                // Numeric feature
-                const value = instance[featureName];
-                if (value === undefined) {
-                    console.warn(`Feature ${featureName} not found in instance data`);
-                    break;
-                }
-                goLeft = value <= threshold;
+            if (featureValue === undefined) {
+                console.warn(`Encoded feature ${featureName} not found in instance data`);
+                break;
             }
+
+            // Simple threshold comparison for all features (encoded)
+            const goLeft = featureValue <= threshold;
 
             const parentData = currentNode.data;
 
@@ -255,7 +233,7 @@ class BlocksTreeProcessingStrategy extends TreeProcessingStrategy {
     }
 }
 
-// Spawn tree specific processing (extends standard with special path handling)
+// Spawn tree specific processing (extends standard) - using encoded features only
 class SpawnTreeProcessingStrategy extends StandardTreeProcessingStrategy {
     tracePath(rootOrState, instance, useRawData = false) {
         // Handle different parameter patterns
@@ -282,7 +260,6 @@ class SpawnTreeProcessingStrategy extends StandardTreeProcessingStrategy {
     _tracePathFromRawData(treeData, instance) {
         const path = [];
         const nodesById = {};
-        const featureMappingInfo = getFeatureMappingInfo();
         
         // Create lookup for nodes
         treeData.forEach(node => {
@@ -296,23 +273,15 @@ class SpawnTreeProcessingStrategy extends StandardTreeProcessingStrategy {
             
             const featureName = currentNode.feature_name;
             const threshold = currentNode.threshold;
+            const featureValue = instance[featureName];
 
-            // Handle categorical features properly
-            const categoricalResult = evaluateCategoricalSplit(featureName, threshold, instance, featureMappingInfo);
-            let goLeft;
-            
-            if (categoricalResult !== null) {
-                // Categorical feature
-                goLeft = categoricalResult;
-            } else {
-                // Numeric feature
-                const instanceValue = instance[featureName];
-                if (instanceValue === undefined) {
-                    console.warn(`Feature ${featureName} not found in instance data`);
-                    break;
-                }
-                goLeft = instanceValue <= threshold;
+            if (featureValue === undefined) {
+                console.warn(`Encoded feature ${featureName} not found in instance data`);
+                break;
             }
+            
+            // Simple threshold comparison for all features (encoded)
+            const goLeft = featureValue <= threshold;
             
             currentNode = goLeft ? 
                 nodesById[currentNode.left_child] : 

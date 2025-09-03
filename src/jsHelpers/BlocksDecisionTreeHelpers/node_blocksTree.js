@@ -1,22 +1,45 @@
-import { blocksTreeState } from "../TreesCommon/state.js";
 import { coordinateHighlightingAcrossAllTrees } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 import { colorScheme, getGlobalColorMap, getNodeColor } from "../visualizationConnectorHelpers/colors.js";
-import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltip.js";
+import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
-import { 
-    getNodeLabelLines,
-    getFeatureMappingInfo
-} from "../visualizationConnectorHelpers/encoding_decoding.js";
+import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
 
-function getNodeLabelLinesForBlocks(nodeId) {
+function getBlocksNodeLabelLines(nodeId, featureMappingInfo = null) {
     const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.blocks);
     const node = processor.getNodeById(nodeId);
-    const featureMappingInfo = getFeatureMappingInfo();
     
     if (!node) return [`Node ${nodeId}`];
     
-    return getNodeLabelLines(node, featureMappingInfo);
+    if (node.is_leaf) {
+        return [node.class_label || 'Unknown'];
+    }
+    
+    // Create decoder for split condition
+    const originalInstance = window.currentOriginalInstance || {};
+    const decoder = new FeatureDecoder(featureMappingInfo, originalInstance);
+    
+    try {
+        const encodedFeatureName = node.feature_name;
+        const threshold = Number(node.threshold) ?? 0;
+        
+        // Use decoder to create human-readable split condition
+        const decodedCondition = decoder.decodeTreeSplitCondition(encodedFeatureName, threshold, true);
+        return [decodedCondition];
+        
+    } catch (error) {
+        console.warn("Error decoding node label for blocks tree:", error);
+        
+        // Fallback to encoded feature display
+        const threshold = Number(node.threshold) ?? 0;
+        const thresholdStr = Number.isFinite(threshold) ? threshold.toFixed(1) : threshold;
+        return [`${node.feature_name} ≤ ${thresholdStr}`];
+    }
+}
+
+export function getNodeLabelLines(nodeId) {
+    const featureMappingInfo = window.currentFeatureMappingInfo || null;
+    return getBlocksNodeLabelLines(nodeId, featureMappingInfo);
 }
 
 // Helper function to get node color using global color management
@@ -40,6 +63,9 @@ function getBlocksNodeColor(nodeId) {
 
 export function renderNodes(container, nodePositions, instancePath, tooltip) {
     const nodes = Object.values(nodePositions);
+    
+    // Get feature mapping info for tooltip
+    const featureMappingInfo = window.currentFeatureMappingInfo || null;
 
     const nodeElements = container
         .selectAll(".node")
@@ -60,7 +86,7 @@ export function renderNodes(container, nodePositions, instancePath, tooltip) {
         .on("mouseover", (event, d) => {
             const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.blocks);
             const nodeData = processor.getNodeById(d.id);
-            handleMouseOver(event, nodeData, tooltip, TREES_SETTINGS.treeKindID.blocks, getFeatureMappingInfo());
+            handleMouseOver(event, nodeData, tooltip, TREES_SETTINGS.treeKindID.blocks, featureMappingInfo);
         })
         .on("mousemove", (event) => {
             handleMouseMove(event, tooltip);
@@ -86,7 +112,7 @@ export function renderLabels(container, nodePositions) {
         .attr("class", "node-label-group")
         .each(function (d) {
             const group = d3.select(this);
-            const lines = getNodeLabelLinesForBlocks(d.id);
+            const lines = getNodeLabelLines(d.id);
             const fontSize = calculateFontSize(lines);
             const lineHeight = fontSize * 1.2;
 

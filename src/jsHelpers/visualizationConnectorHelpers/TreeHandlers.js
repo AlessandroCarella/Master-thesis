@@ -1,11 +1,7 @@
-// TreeHandlers.js - Replace highlight.js and highlight_trees.js
+// TreeHandlers.js - Updated to use encoded features only
 import { colorScheme } from "./colors.js";
 import { getTreeState } from "../TreesCommon/state.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
-import { 
-    evaluateCategoricalSplit,
-    getFeatureMappingInfo 
-} from "./encoding_decoding.js";
 
 // Base class for all tree handlers
 class BaseTreeHandler {
@@ -96,17 +92,20 @@ export class ClassicTreeHandler extends BaseTreeHandler {
         const path = [];
         const root = this.visualization.treeData.descendants().find(d => d.depth === 0);
         let currentNode = root;
-        const featureMappingInfo = getFeatureMappingInfo();
 
         while (currentNode && !currentNode.data.is_leaf) {
             path.push(currentNode.data.node_id);
             
-            const shouldGoLeft = this._evaluateCondition(
-                currentNode.data.feature_name,
-                currentNode.data.threshold,
-                features,
-                featureMappingInfo
-            );
+            const featureName = currentNode.data.feature_name;
+            const threshold = currentNode.data.threshold;
+            const featureValue = features[featureName];
+            
+            if (featureValue === undefined) {
+                console.warn(`Feature ${featureName} not found in features for classic tree`);
+                break;
+            }
+            
+            const shouldGoLeft = featureValue <= threshold;
             
             currentNode = shouldGoLeft ?
                 currentNode.children?.find(c => c.data.node_id === currentNode.data.left_child) :
@@ -137,11 +136,6 @@ export class ClassicTreeHandler extends BaseTreeHandler {
                 const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
                 return `${baseWidth}px`;
             });
-    }
-    
-    _evaluateCondition(featureName, threshold, features, featureMappingInfo) {
-        const categoricalResult = evaluateCategoricalSplit(featureName, threshold, features, featureMappingInfo);
-        return categoricalResult !== null ? categoricalResult : features[featureName] <= threshold;
     }
     
     highlightInstancePath(instancePath) {
@@ -269,17 +263,20 @@ export class BlocksTreeHandler extends BaseTreeHandler {
 
         const path = [];
         let currentNode = root;
-        const featureMappingInfo = getFeatureMappingInfo();
 
         while (currentNode && !currentNode.data.is_leaf) {
             path.push(currentNode.data.node_id);
             
-            const shouldGoLeft = this._evaluateCondition(
-                currentNode.data.feature_name,
-                currentNode.data.threshold,
-                features,
-                featureMappingInfo
-            );
+            const featureName = currentNode.data.feature_name;
+            const threshold = currentNode.data.threshold;
+            const featureValue = features[featureName];
+            
+            if (featureValue === undefined) {
+                console.warn(`Feature ${featureName} not found in features for blocks tree`);
+                break;
+            }
+            
+            const shouldGoLeft = featureValue <= threshold;
             
             currentNode = currentNode.children?.find(child =>
                 shouldGoLeft ?
@@ -320,21 +317,6 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             .filter(d => (d.sourceId === sourceId && d.targetId === targetId) ||
                         (d.sourceId === targetId && d.targetId === sourceId))
             .style("stroke", colorScheme.ui.highlight);
-    }
-    
-    _evaluateCondition(featureName, threshold, features, featureMappingInfo) {
-        const categoricalResult = evaluateCategoricalSplit(featureName, threshold, features, featureMappingInfo);
-        return categoricalResult !== null ? categoricalResult : features[featureName] <= threshold;
-    }
-    
-    _getDescendantNodeIds(nodeId) {
-        const node = this.getNodeById(nodeId);
-        if (!node) return [];
-        
-        // Implementation for blocks tree descendants
-        const descendants = [];
-        // Add logic to traverse blocks tree structure
-        return descendants;
     }
     
     highlightInstancePath(instancePath) {
@@ -387,7 +369,6 @@ export class BlocksTreeHandler extends BaseTreeHandler {
 }
 
 // TreeSpawn handler
-// TreeSpawn handler - FIXED VERSION
 export class TreeSpawnHandler extends BaseTreeHandler {
     highlightNode(nodeId) {
         if (!this.visualization?.container) return;
@@ -490,7 +471,7 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .style("stroke", colorScheme.ui.linkStroke);
     }
     
-    // More robust findPath method
+    // More robust findPath method using encoded features only
     findPath(features) {
         // Method 1: Try using raw data traversal (most reliable)
         if (this.state.treeData && Array.isArray(this.state.treeData)) {
@@ -517,7 +498,7 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         return [];
     }
     
-    // Enhanced raw data traversal
+    // Enhanced raw data traversal using encoded features only
     _traverseFromRawData(features) {
         if (!this.state.treeData || !Array.isArray(this.state.treeData)) {
             console.warn("TreeSpawnHandler: No raw tree data available");
@@ -531,17 +512,20 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         
         const path = [];
         let currentNode = nodesById[0]; // Start at root
-        const featureMappingInfo = getFeatureMappingInfo();
         
         while (currentNode && !currentNode.is_leaf) {
             path.push(currentNode.node_id);
             
-            const shouldGoLeft = this._evaluateCondition(
-                currentNode.feature_name,
-                currentNode.threshold,
-                features,
-                featureMappingInfo
-            );
+            const featureName = currentNode.feature_name;
+            const threshold = currentNode.threshold;
+            const featureValue = features[featureName];
+            
+            if (featureValue === undefined) {
+                console.warn(`Feature ${featureName} not found in features for spawn tree`);
+                break;
+            }
+            
+            const shouldGoLeft = featureValue <= threshold;
             
             const nextNodeId = shouldGoLeft ? currentNode.left_child : currentNode.right_child;
             currentNode = nodesById[nextNodeId];
@@ -560,13 +544,12 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         return path;
     }
     
-    // Hierarchy traversal method
+    // Hierarchy traversal method using encoded features only
     _traverseFromHierarchy(features) {
         if (!this.state.hierarchyRoot) return [];
         
         const path = [];
         let currentNode = this.state.hierarchyRoot;
-        const featureMappingInfo = getFeatureMappingInfo();
         
         // If hierarchyRoot is a d3.hierarchy object, get the root node
         if (currentNode.descendants) {
@@ -576,12 +559,16 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         while (currentNode && !currentNode.data.is_leaf) {
             path.push(currentNode.data.node_id);
             
-            const shouldGoLeft = this._evaluateCondition(
-                currentNode.data.feature_name,
-                currentNode.data.threshold,
-                features,
-                featureMappingInfo
-            );
+            const featureName = currentNode.data.feature_name;
+            const threshold = currentNode.data.threshold;
+            const featureValue = features[featureName];
+            
+            if (featureValue === undefined) {
+                console.warn(`Feature ${featureName} not found in features for spawn tree hierarchy`);
+                break;
+            }
+            
+            const shouldGoLeft = featureValue <= threshold;
             
             currentNode = currentNode.children?.find(child =>
                 shouldGoLeft ?
@@ -610,16 +597,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .filter(d => (d.source.data.node_id === sourceId && d.target.data.node_id === targetId) ||
                         (d.source.data.node_id === targetId && d.target.data.node_id === sourceId))
             .style("stroke", colorScheme.ui.highlight);
-    }
-    
-    _evaluateCondition(featureName, threshold, features, featureMappingInfo) {
-        const categoricalResult = evaluateCategoricalSplit(featureName, threshold, features, featureMappingInfo);
-        return categoricalResult !== null ? categoricalResult : features[featureName] <= threshold;
-    }
-    
-    _getDescendantNodeIds(nodeId) {
-        // Implementation for spawn tree descendants
-        return [];
     }
     
     highlightInstancePath(instancePath) {

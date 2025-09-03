@@ -2,7 +2,38 @@ import { getTreeState } from "./state.js";
 import { blocksTreeState } from "./state.js";
 import { createLinearPathLayout } from "../TreeSpawnDecisionTreeHelpers/subtrees_spawnTree.js";
 import { TREES_SETTINGS, calculateSeparation } from "./settings.js";
-import { getNodeLabelLines } from "../visualizationConnectorHelpers/encoding_decoding.js";
+
+// Simplified node labeling - works directly with encoded features
+function getNodeLabel(nodeId) {
+    const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
+    const node = state.hierarchyRoot;
+    
+    if (!node) return `Node ${nodeId}`;
+    
+    // Find node by DFS
+    function findNode(currentNode) {
+        if (currentNode.data.node_id === nodeId) return currentNode.data;
+        if (currentNode.children) {
+            for (const child of currentNode.children) {
+                const found = findNode(child);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    
+    const nodeData = findNode(node);
+    if (!nodeData) return `Node ${nodeId}`;
+    
+    // Simple encoded feature display
+    if (nodeData.is_leaf) {
+        return nodeData.class_label || 'Unknown';
+    }
+    
+    const threshold = Number(nodeData.threshold) ?? 0;
+    const thresholdStr = Number.isFinite(threshold) ? threshold.toFixed(1) : threshold;
+    return `${nodeData.feature_name} ≤ ${thresholdStr}`;
+}
 
 export function calculateMetrics(root, treeKind) {
     if (treeKind === TREES_SETTINGS.treeKindID.blocks) {
@@ -237,31 +268,6 @@ export function depthAlignedLayout(allPaths, instancePath, metrics, treeKind) {
 // Helper functions for blocks layout
 function arraysEqual(a, b) {
     return a.length === b.length && a.every((v, i) => v === b[i]);
-}
-
-function getNodeLabel(nodeId) {
-    const state = getTreeState(TREES_SETTINGS.treeKindID.blocks);
-    const node = state.hierarchyRoot;
-    
-    if (!node) return `Node ${nodeId}`;
-    
-    // Find node by DFS
-    function findNode(currentNode) {
-        if (currentNode.data.node_id === nodeId) return currentNode.data;
-        if (currentNode.children) {
-            for (const child of currentNode.children) {
-                const found = findNode(child);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-    
-    const nodeData = findNode(node);
-    if (!nodeData) return `Node ${nodeId}`;
-    
-    const lines = getNodeLabelLines(nodeData);
-    return lines.join("\n");
 }
 
 function findBranchPoint(path, instancePath) {

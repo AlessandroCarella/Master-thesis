@@ -200,7 +200,7 @@ window.explainInstance = async () => {
 
     try {
         showExplanationLoading();
-        const instanceData = getFeatureValues();
+        const instanceData = getFeatureValues(); // Original instance data
         const surrogateParams = getSurrogateParameters();
         const requestData = buildExplanationRequestData(
             instanceData,
@@ -218,7 +218,6 @@ window.explainInstance = async () => {
 
         // Now fetch the colors based on the neighborhood data and current method
         await initializeColors(currentMethod);
-
         setGlobalColorMap(result.uniqueClasses);
 
         // Make main container visible
@@ -257,12 +256,30 @@ window.explainInstance = async () => {
 
         updateVisualizationUI();
 
-        setExplainedInstance(instanceData);
+        // **CRITICAL CHANGES FOR ENCODED FEATURES**
+        // Get the encoded instance from the backend response
+        const encodedInstance = result.encodedInstance;
+        
+        // Store both original and encoded instances
+        // Original for display/reference, encoded for tree path tracing
+        setExplainedInstance(
+            encodedInstance || instanceData,  // Use encoded for tree operations
+            instanceData,  // Store original as reference
+            result.featureMappingInfo,
+        );
 
+        // Store encoded instance globally for debugging/reference
+        window.currentFeatureMappingInfo = result.featureMappingInfo;
+        window.currentOriginalInstance = instanceData;
+        window.currentEncodedInstance = encodedInstance;
+
+        // Initialize visualizations with proper data structure
         initializeVisualizations({
             decisionTreeVisualizationData: result.decisionTreeVisualizationData,
             scatterPlotVisualizationData: result.scatterPlotVisualizationData,
-            instance: instanceData
+            encodedInstance: encodedInstance,  // Pass encoded instance
+            originalInstance: instanceData,    // Also pass original for reference
+            featureMappingInfo: result.featureMappingInfo  // Include feature mapping info
         });
 
         if (svgContainer) {
@@ -270,6 +287,16 @@ window.explainInstance = async () => {
         }
     } catch (error) {
         console.error("Failed to explain instance:", error);
+        
+        // Enhanced error logging for debugging
+        if (error.response) {
+            console.error("Response error:", error.response);
+        }
+        if (error.request) {
+            console.error("Request error:", error.request);
+        }
+        
+        alert("Failed to generate explanation. Please check the console for details.");
     } finally {
         loadingState.setLoading(false);
     }

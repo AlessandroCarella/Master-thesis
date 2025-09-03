@@ -1,7 +1,7 @@
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { getTreeState } from "../TreesCommon/state.js";
 import { colorScheme } from "../visualizationConnector.js";
-import { showTooltip, hideTooltip } from "./tooltip.js";
+import { showTooltip, hideTooltip } from "./tooltipScatterPlot.js";
 import { togglePointColor } from "./tree.js";
 import { setOriginalPointsNeighPointsBoolArray } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 
@@ -54,7 +54,7 @@ export function createPoints(
                 data.transformedData.findIndex(point => point === d) : 
                 Array.from(event.currentTarget.parentNode.children).indexOf(event.currentTarget);
             
-            // Get feature mapping info and pass it to showTooltip
+            // Get feature mapping info and pass it to showTooltip - it will show encoded features
             const featureMappingInfo = getTreeState(TREES_SETTINGS.treeKindID.classic).featureMappingInfo;
             showTooltip(event, data, tooltip, index, featureMappingInfo);
             d3.select(event.currentTarget).style(
@@ -70,6 +70,7 @@ export function createPoints(
             );
         })
         .on("click", function (event, d) {
+            // Pass encoded features to togglePointColor
             togglePointColor(this, d, data, colorMap);
         });
 

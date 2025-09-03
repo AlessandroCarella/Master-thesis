@@ -1,10 +1,6 @@
-// ScatterPlotHighlighter.js - Separate scatter plot concerns from tree highlighting
+// ScatterPlotHighlighter.js - Updated to work with encoded features only
 import { colorScheme } from "./colors.js";
 import { getGlobalColorMap } from "./colors.js";
-import { 
-    evaluateCategoricalSplit,
-    getFeatureMappingInfo 
-} from "./encoding_decoding.js";
 
 export class ScatterPlotHighlighter {
     constructor(scatterPlotVisualization) {
@@ -99,9 +95,7 @@ export class ScatterPlotHighlighter {
             return true; // Root node contains all points
         }
 
-        const featureMappingInfo = getFeatureMappingInfo();
-
-        // Check if point satisfies all conditions in the path
+        // Check if point satisfies all conditions in the path using encoded features
         for (let i = 0; i < pathToNode.length - 1; i++) {
             const currentNode = pathToNode[i];
             const nextNode = pathToNode[i + 1];
@@ -114,22 +108,14 @@ export class ScatterPlotHighlighter {
             const threshold = currentNode.threshold;
             const wentLeft = nextNode.node_id === currentNode.left_child;
             
-            // Evaluate split condition
-            const categoricalResult = evaluateCategoricalSplit(featureName, threshold, originalData, featureMappingInfo);
-            
-            let shouldGoLeft;
-            if (categoricalResult !== null) {
-                // Categorical feature
-                shouldGoLeft = categoricalResult;
-            } else {
-                // Numeric feature
-                const featureValue = originalData[featureName];
-                if (featureValue === undefined) {
-                    console.warn(`Feature ${featureName} not found in original data for node ${nodeId}:`, originalData);
-                    return false;
-                }
-                shouldGoLeft = featureValue <= threshold;
+            // For encoded features, simply compare with threshold
+            const featureValue = originalData[featureName];
+            if (featureValue === undefined) {
+                console.warn(`Encoded feature ${featureName} not found in original data for node ${nodeId}:`, originalData);
+                return false;
             }
+            
+            const shouldGoLeft = featureValue <= threshold;
 
             // Check if path matches
             if (wentLeft !== shouldGoLeft) {

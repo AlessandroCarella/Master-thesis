@@ -33,10 +33,22 @@ let scatterPlotVisualization = null;
 let treeVisualization = null;
 let blocksTreeVisualization = null;
 let treeSpawnVisualization = null;
+let explainedInstance = null;
+let originalInstance = null;
 
 // ============================================
 // SETTERS WITH NEW REGISTRATION (Updated to use new system)
 // ============================================
+
+export function setExplainedInstance(encodedInstance, originalInstance, featureMappingInfo) {
+    // Store both instances and feature mapping info
+    window.currentEncodedInstance = encodedInstance;
+    window.currentOriginalInstance = originalInstance; 
+    window.currentFeatureMappingInfo = featureMappingInfo;
+    
+    // Rest of existing logic...
+    highlightingCoordinator.setExplainedInstance(encodedInstance);
+}
 
 export function setScatterPlotVisualization(vis) {
     scatterPlotVisualization = vis;
@@ -85,6 +97,14 @@ export function setTreeSpawnVisualization(vis) {
 // ============================================
 // GETTERS (Keep unchanged)
 // ============================================
+
+export function getExplainedInstance() {
+    return explainedInstance;
+}
+
+export function getOriginalInstance() {
+    return originalInstance;
+}
 
 export function getScatterPlotVisualization() {
     return scatterPlotVisualization;
@@ -149,20 +169,6 @@ export function resetVisualizationState() {
 }
 
 // ============================================
-// EXPLAINED INSTANCE MANAGEMENT (Keep unchanged)
-// ============================================
-
-let explainedInstance = null;
-
-export function getExplainedInstance() {
-    return explainedInstance;
-}
-
-export function setExplainedInstance(instance) {
-    explainedInstance = instance;
-}
-
-// ============================================
 // LEGACY COMPATIBILITY FUNCTIONS (Delegate to new system)
 // ============================================
 
@@ -172,6 +178,7 @@ export function highlightInstancePathInTree(instance) {
     
     try {
         const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.classic);
+        // instance should already be encoded at this point
         const pathNodeIds = processor.findInstancePath(instance);
         
         if (pathNodeIds.length > 0 && treeVisualization?.contentGroup) {
@@ -188,21 +195,23 @@ export function highlightInstancePathInTree(instance) {
 export function highlightInstancePathInTreeSpawn(instance) {
     if (!isTreeSpawnCreated() || !instance) return;
 
-    if (!treeSpawnVisualization.container || !treeSpawnVisualization.instancePath) {
+    if (!treeSpawnVisualization.container || !treeSpawnVisualization.treeData) {
         console.warn("TreeSpawn visualization not fully initialized, skipping instance path highlighting");
         return;
     }
 
-    const { instancePath } = treeSpawnVisualization;
-
-    if (instancePath && instancePath.length > 0) {
-        try {
+    try {
+        const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.spawn);
+        // instance should already be encoded at this point
+        const instancePath = processor.findInstancePath(instance);
+        
+        if (instancePath && instancePath.length > 0) {
             // Use the link helper to highlight the path
             import("./TreeSpawnDecisionTreeHelpers/link_spawnTree.js").then(module => {
                 module.addInstancePathBackgroundDirect(treeSpawnVisualization, instancePath);
             });
-        } catch (error) {
-            console.warn("Error highlighting TreeSpawn instance path:", error);
         }
+    } catch (error) {
+        console.warn("Error highlighting TreeSpawn instance path:", error);
     }
 }
