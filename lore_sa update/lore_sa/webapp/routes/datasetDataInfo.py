@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse
 import numpy as np
 import pandas as pd
 
-from pythonHelpers.datasets import get_available_datasets, get_dataset_information, load_dataset
-from pythonHelpers.routes.state import global_state
+from ..datasets import get_available_datasets, get_dataset_information, load_dataset
+from .state import global_state
 
 router = APIRouter(prefix="/api")
 

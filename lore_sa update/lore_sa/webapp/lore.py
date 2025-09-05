@@ -9,7 +9,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
 
-from pythonHelpers.routes.state import global_state
+from .routes.state import global_state
 
 target_name = 'target'
 
@@ -111,7 +111,7 @@ class ModelTrainer:
     
     def _load_raw_dataset(self, dataset_name):
         """Load raw dataset from datasets module."""
-        from pythonHelpers.datasets import load_dataset
+        from .datasets import load_dataset
         raw_dataset, feature_names, target_names = load_dataset(dataset_name)
         return raw_dataset.data, raw_dataset.target, feature_names, target_names
     

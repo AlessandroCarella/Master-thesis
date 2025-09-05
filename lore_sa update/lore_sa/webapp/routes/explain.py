@@ -5,13 +5,13 @@ import numpy as np
 from collections import OrderedDict
 import os
 
-from pythonHelpers.lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
-from pythonHelpers.generate_decision_tree_visualization_data import (
+from ..lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
+from ..generate_decision_tree_visualization_data import (
     extract_tree_structure,
     generate_decision_tree_visualization_data_raw
 )
-from pythonHelpers.create_scatter_plot_data import create_scatter_plot_data_raw
-from pythonHelpers.routes.state import global_state
+from ..create_scatter_plot_data import create_scatter_plot_data_raw
+from .state import global_state
 
 router = APIRouter(prefix="/api")
 

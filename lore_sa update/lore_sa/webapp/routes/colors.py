@@ -7,7 +7,7 @@ import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 import umap
 
-from pythonHelpers.routes.state import global_state
+from .state import global_state
 
 DEFAULT_COLORS = [
     "#8dd3c7",
