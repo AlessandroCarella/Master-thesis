@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 from .surrogate import DecisionTreeSurrogate, Surrogate
 from .bbox import AbstractBBox
@@ -28,6 +29,7 @@ class Lore(object):
 
         super().__init__()
         self.bbox = bbox
+        self.dataset = dataset
         self.descriptor = dataset.descriptor
         self.encoder = encoder
         self.generator = generator
@@ -102,6 +104,32 @@ class Lore(object):
         }
 
 
+    def webapp(self):
+        print("🎯 Setting up Custom Dataset Explanation System")
+        print("=" * 50)
+        
+        # Clean up existing processes on target ports first
+        cleanup_ports([8000, 8080])
+        
+        from webapp.routes.state import global_state
+        
+        # Update global state to match what training normally does
+        global_state.bbox = self.bbox
+        global_state.dataset = self.dataset  
+        # global_state.X_train = X_train
+        # global_state.y_train = y_train
+        # global_state.X_test = X_test
+        # global_state.y_test = y_test
+        global_state.descriptor = self.descriptor
+        global_state.feature_names = [kk for k, v in self.dataset.descriptor.items() if k != "target" for kk in v.keys()]
+        global_state.target_names = sorted(self.dataset[self.class_name].unique().tolist())
+        global_state.dataset_name = "Custom Dataset"
+        
+        print("✅ Custom dataset and self.bbox loaded successfully!")
+        print("=" * 50)
+        os.environ["CUSTOM_DATA_LOADED"] = "true"
+        launch_demo(width=width, height=height, scale=scale)
+        
 
 class TabularRandomGeneratorLore(Lore):
 
@@ -122,6 +150,9 @@ class TabularRandomGeneratorLore(Lore):
 
     def explain_instance(self, x: np.array):
         return self.explain(x.values)
+
+    def interact(self):
+        self.webapp()
 
 class TabularGeneticGeneratorLore(Lore):
 
@@ -145,6 +176,9 @@ class TabularGeneticGeneratorLore(Lore):
     def explain_instance(self, x: np.array):
         return self.explain(x.values)
         
+    def interact(self):
+        self.webapp()
+
 class TabularRandGenGeneratorLore(Lore):
      
     def __init__(self, bbox: AbstractBBox, dataset: TabularDataset):
@@ -166,3 +200,6 @@ class TabularRandGenGeneratorLore(Lore):
 
     def explain_instance(self, x:np.array):
         return self.explain(x.values)
+    
+    def interact(self):
+        self.webapp()
