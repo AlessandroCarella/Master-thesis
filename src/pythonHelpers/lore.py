@@ -18,7 +18,7 @@ target_name = 'target'
 class DatasetProcessor:
     """Handles dataset preprocessing and preparation for LORE."""
     
-    def __init__(self, dataset, ):
+    def __init__(self, dataset):
         self.dataset = dataset
         self.numeric_indices = [v['index'] for v in dataset.descriptor['numeric'].values()]
         self.categorical_indices = [v['index'] for v in dataset.descriptor['categorical'].values()]
@@ -73,10 +73,7 @@ class ModelTrainer:
         )
     
     def train_or_load_model(self, dataset_name, classifier=None):
-        """Train model or load from cache."""
-        if classifier is None:
-            classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-        
+        """Train model or load from cache."""        
         # Check cache
         params_hash = joblib.hash(classifier.get_params())
         cache_path = self._get_cache_path(dataset_name, classifier.__class__.__name__, params_hash)
@@ -125,7 +122,7 @@ class ModelTrainer:
         if isinstance(X, pd.DataFrame):
             for name in feature_names:
                 series = X[name]
-                data_dict[name] = series.values if pd.api.types.is_numeric_dtype(series) else series.astype(str).values
+                data_dict[name] = series.astype(float).values if pd.api.types.is_numeric_dtype(series) else series.astype(str).values
         else:
             X_array = X.to_numpy() if not isinstance(X, np.ndarray) else X
             data_dict = {name: X_array[:, i] for i, name in enumerate(feature_names)}
@@ -144,7 +141,7 @@ class ModelTrainer:
         """Train model using dataset processor."""
         from lore_sa.bbox import sklearn_classifier_bbox
         
-        processor = DatasetProcessor(dataset, target_name)
+        processor = DatasetProcessor(dataset)
         preprocessor = processor.create_preprocessor()
         model = make_pipeline(preprocessor, classifier)
         
@@ -192,14 +189,15 @@ class NeighborhoodGenerator:
                                         self.dataset.descriptor, encoder)
         
         # Process neighborhood
-        neighborhood = self._ensure_instance_at_beginning(encoded_instance, neighborhood)
         if not keepDuplicates:
             neighborhood = self._remove_duplicates(neighborhood)
+        neighborhood = self._ensure_instance_at_end(encoded_instance, neighborhood)
         
         # Decode and get predictions
         decoded_neighborhood = encoder.decode(neighborhood)  # neighborhood should already be numpy array
         decoded_neighborhood = self._to_dataframe(decoded_neighborhood)
-        self._preserve_original_instance(decoded_neighborhood, original_dict)
+        print(decoded_neighborhood.iloc[-1])
+        # decoded_neighborhood = self._preserve_original_instance(decoded_neighborhood, original_dict)
 
         predictions = self.bbox.predict(decoded_neighborhood)
         encoded_predictions = encoder.encode_target_class(predictions.reshape(-1, 1)).squeeze()
@@ -235,25 +233,31 @@ class NeighborhoodGenerator:
                 seen.add(row_tuple)
         return np.array(unique_rows, dtype=neighborhood.dtype)
     
-    def _ensure_instance_at_beginning(self, instance, neighborhood):
-        """Ensure instance is at the beginning of neighborhood with exact matching."""
+    def _ensure_instance_at_end(self, instance, neighborhood):
+        """Ensure instance is at the end of neighborhood with exact matching."""
         # Convert to numpy arrays if needed
         instance = np.array(instance) if not isinstance(instance, np.ndarray) else instance
         neighborhood = np.array(neighborhood) if not isinstance(neighborhood, np.ndarray) else neighborhood
         
-        # Add the exact instance at the beginning
-        return np.vstack([instance.reshape(1, -1), neighborhood])
+        # Add the exact instance at the end
+        return np.vstack([neighborhood, instance.reshape(1, -1)])
     
     def _to_dataframe(self, data):
         """Convert array to DataFrame with proper column names."""
         return pd.DataFrame(data, columns=self.feature_names) if isinstance(data, np.ndarray) else data
     
     def _preserve_original_instance(self, neighborhood_df, original_dict):
-        """Ensure last row matches original instance exactly."""
-        if len(neighborhood_df) > 0:
-            for feature, value in original_dict.items():
-                if feature in neighborhood_df.columns:
-                    neighborhood_df.iloc[0, neighborhood_df.columns.get_loc(feature)] = value
+        """Add the original instance to the end of the neighborhood."""
+        # Convert original_dict to a DataFrame row
+        original_row = pd.DataFrame([original_dict])
+        
+        # Ensure the row has the same columns in the same order as neighborhood_df
+        original_row = original_row.reindex(columns=neighborhood_df.columns)
+        
+        # Append the original instance to the end of the neighborhood
+        updated_neighborhood = pd.concat([neighborhood_df, original_row], ignore_index=True)
+
+        return updated_neighborhood
 
     def _get_encoded_feature_names(self):
         """Create encoded feature names for one-hot encoded categoricals."""

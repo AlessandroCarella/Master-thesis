@@ -285,3 +285,189 @@ def show_localhost_content(port=8080, width='100%', height=1000, scale=0.7):
     """
     
     display(HTML(html_content))
+
+def launch_demo(width='100%', height=1000, path="", scale=0.7):
+    print("🎯 Launching Master Thesis Demo Application")
+    print("=" * 50)
+    
+    # Clean up1 existing processes on target ports
+    cleanup_ports([8000, 8080])
+    
+    # Find available ports
+    try:
+        api_port = find_available_port(8000)
+        client_port = find_available_port(8080)
+        print(f"🔍 Found available ports - API: {api_port}, Client: {client_port}")
+    except RuntimeError as e:
+        print(f"❌ {e}")
+        return
+    
+    # Reconfigure CORS with dynamic ports
+    try:
+        reconfigure_cors(api_port, client_port)
+    except Exception as e:
+        print(f"⚠️  Warning: Could not reconfigure CORS: {e}")
+    
+    # Get host configuration
+    host = os.environ.get("HOST", "0.0.0.0")
+    
+    print(f"📡 Starting API server on {host}:{api_port}")
+    
+    # Start server in background thread
+    server_thread, actual_api_port = start_server_thread(host, api_port)
+    
+    # Wait for server to be ready
+    if not wait_for_server("localhost", actual_api_port):
+        print("❌ Failed to start API server. Exiting...")
+        return
+    
+    # Start client
+    client_process, actual_client_port = start_client(client_port)
+    if not client_process or actual_client_port is None:
+        print("❌ Failed to start client. Exiting...")
+        return
+    
+    # Wait a moment for the client to start
+    print("⏳ Waiting for client to start...")
+    time.sleep(3)
+    
+    print("\n" + "=" * 50)
+    print("✅ Demo application started successfully!")
+    print(f"📡 API: http://localhost:{actual_api_port}")
+    print(f"🌐 Client: http://localhost:{actual_client_port}")
+    print("💡 If ports were busy, alternative ports were automatically selected")
+    print("=" * 50)
+    
+    # Show the client in the notebook
+    show_localhost_content(actual_client_port, width, height, scale)
+
+def setup_custom_explanation_system(dataset_df, classifier, target_column='target'):
+    print("🎯 Setting up Custom Dataset Explanation System")
+    print("=" * 50)
+    
+    # Clean up existing processes on target ports first
+    cleanup_ports([8000, 8080])
+    
+    try:
+        import pandas as pd
+        import numpy as np
+        from sklearn.model_selection import train_test_split
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+        from sklearn.compose import ColumnTransformer
+        from lore_sa.dataset import TabularDataset
+        from lore_sa.bbox import sklearn_classifier_bbox
+        from pythonHelpers.routes.state import global_state
+        
+        # Validate inputs
+        print("📊 Validating custom dataset...")
+        if dataset_df.empty:
+            raise ValueError("Dataset is empty")
+        if target_column not in dataset_df.columns:
+            raise ValueError(f"Target column '{target_column}' not found in dataset")
+        if len(dataset_df.columns) < 2:
+            raise ValueError("Dataset must have at least 2 columns (features + target)")
+            
+        print("🤖 Validating custom classifier...")
+        required_methods = ['predict', 'predict_proba']
+        for method in required_methods:
+            if not hasattr(classifier, method):
+                raise ValueError(f"Classifier must have '{method}' method")
+        
+        # Test classifier on sample
+        feature_cols = [col for col in dataset_df.columns if col != target_column]
+        X_sample = dataset_df[feature_cols].iloc[:1]
+        try:
+            prediction = classifier.predict(X_sample)
+            prob_prediction = classifier.predict_proba(X_sample)
+        except Exception as e:
+            raise ValueError(f"Classifier validation failed: {str(e)}")
+        
+        print("🔄 Converting dataset to LORE format...")
+        
+        # Create data dictionary for TabularDataset
+        data_dict = {}
+        for col in dataset_df.columns:
+            if col != target_column:
+                series = dataset_df[col]
+                if pd.api.types.is_numeric_dtype(series):
+                    print ("numeric", col)
+                    print (dataset_df[col].value_counts())
+                    data_dict[col] = series.astype(float).values
+                else:
+                    print ("cat", col)
+                    data_dict[col] = series.astype(str).values
+            else:
+                # Convert target to string labels
+                data_dict[target_column] = dataset_df[col].astype(str).values
+        
+        # Create TabularDataset
+        dataset = TabularDataset.from_dict(data_dict, target_column)
+        dataset.df.dropna(inplace=True)
+        
+        print("📦 Setting up classifier bbox...")
+        
+        # Create preprocessor for the classifier
+        numeric_indices = [v['index'] for v in dataset.descriptor['numeric'].values()]
+        categorical_indices = [v['index'] for v in dataset.descriptor['categorical'].values()]
+        
+        preprocessor = ColumnTransformer([
+            ('num', StandardScaler(), numeric_indices),
+            ('cat', OrdinalEncoder(), categorical_indices)
+        ])
+        
+        # Create pipeline with preprocessor and classifier
+        model = make_pipeline(preprocessor, classifier)
+        
+        # Prepare training data for fitting the preprocessor
+        feature_indices = numeric_indices + categorical_indices
+        X = dataset.df.iloc[:, feature_indices]
+        y = dataset.df[target_column]
+        
+        # Split for training (we need to fit the preprocessor)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.3, random_state=42, stratify=y
+        )
+        
+        # Fit the pipeline (this will fit the preprocessor)
+        model.fit(X_train, y_train)
+        
+        # Create LORE-compatible bbox
+        bbox = sklearn_classifier_bbox.sklearnBBox(model)
+        
+        print("💾 Updating global state...")
+        
+        # Update global state to match what training normally does
+        global_state.bbox = bbox
+        global_state.dataset = dataset  
+        global_state.X_train = X_train
+        global_state.y_train = y_train
+        global_state.X_test = X_test
+        global_state.y_test = y_test
+        global_state.descriptor = dataset.descriptor
+        global_state.feature_names = feature_cols
+        global_state.target_names = sorted(dataset_df[target_column].unique().tolist())
+        global_state.dataset_name = "Custom Dataset"
+        
+        print("✅ Custom dataset and classifier loaded successfully!")
+        print(f"📈 Dataset: {len(dataset_df)} samples, {len(feature_cols)} features")  
+        print(f"🏷️  Classes: {global_state.target_names}")
+        print(f"📊 Feature types: {len(dataset.descriptor.get('numeric', {}))} numeric, {len(dataset.descriptor.get('categorical', {}))} categorical")
+        print("=" * 50)
+        print("🌐 Custom data is now loaded!")
+        print("👉 Go to localhost:8080 in your browser and refresh the page")
+        print("🎯 You should see the feature inputs directly (skipping dataset selection)")
+        
+    except Exception as e:
+        print(f"❌ Error setting up custom explanation system: {str(e)}")
+        raise
+
+def launch_demo_with_custom_data(width='100%', height=1000, scale=0.7):
+    print("🚀 Launching demo with custom data loaded...")
+    
+    # Clean up existing processes on target ports first
+    cleanup_ports([8000, 8080])
+    
+    # Start the normal demo but with a flag to indicate custom data is loaded
+    os.environ["CUSTOM_DATA_LOADED"] = "true"
+    launch_demo(width=width, height=height, scale=scale)

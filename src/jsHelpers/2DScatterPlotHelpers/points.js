@@ -22,7 +22,7 @@ export function createPoints(
 
     // Last elements rendered appear on top of everything else,
     // in fact the original instance is at the end of the list
-    const instanceIndex = 0;
+    const instanceIndex = data.transformedData.length - 1;
     
     // Create all points normally
     const points = g
@@ -76,9 +76,6 @@ export function createPoints(
             // Pass encoded features to togglePointColor
             togglePointColor(this, d, data, colorMap);
         });
-
-    // Move the instance point to the front so it appears on top of all other points
-    points.filter((d, i) => i === instanceIndex).raise();
 
     return points;
 }
