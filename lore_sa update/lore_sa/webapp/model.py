@@ -109,12 +109,12 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
     Performance Notes:
         - When a cached classifier exists, this function avoids expensive operations like
           dataset loading, data dictionary creation, and TabularDataset preparation.
-        - Only when no cache is available does it perform the full preparation pipeline.
+        - Only when no webapp cache is available does it perform the full preparation pipeline.
     """
     # Create the classifier instance with the provided parameters
     classifier = create_classifier(classifier_name, parameters)
 
-    from pythonHelpers.lore import load_cached_classifier
+    from .lore import load_cached_classifier
     # Load cached classifier or train new one with optimized caching
     trained_model, dataset, feature_names = load_cached_classifier(
         dataset_name=dataset_name,

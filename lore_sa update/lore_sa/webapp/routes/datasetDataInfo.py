@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from ..datasets import get_available_datasets, get_dataset_information, load_dataset
-from .state import global_state
+from .state import webapp_state
 
 router = APIRouter(prefix="/api")
 
@@ -23,10 +23,10 @@ async def get_dataset_info(dataset_name_info: str):
     """
     dataset_info = get_dataset_information(dataset_name_info)
     
-    # Update global state
-    global_state.dataset_name = dataset_info["name"]
-    global_state.target_names = dataset_info["target_names"]
-    global_state.target_names.sort()
+    # Update webapp state
+    webapp_state.dataset_name = dataset_info["name"]
+    webapp_state.target_names = dataset_info["target_names"]
+    webapp_state.target_names.sort()
 
     return dataset_info
     
@@ -45,7 +45,7 @@ def process_tabular_dataset(ds, feature_names):
 @router.get("/get-selected-dataset")
 async def get_selected_dataset():
     """Return the currently selected dataset."""
-    ds, feature_names, target_names = load_dataset(global_state.dataset_name)
-    global_state.feature_names = feature_names  # Update state
+    ds, feature_names, target_names = load_dataset(webapp_state.dataset_name)
+    webapp_state.feature_names = feature_names  # Update state
     
     return process_tabular_dataset(ds, feature_names)

@@ -9,7 +9,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
 
-from .routes.state import global_state
+from .routes.state import webapp_state
 
 target_name = 'target'
 
@@ -53,7 +53,7 @@ class DatasetProcessor:
         X = self.dataset.df.iloc[:, feature_indices]
         y = self.dataset.df[target_name]
         
-        return train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+        return X, y
 
 
 # ---------------- Model Training and Caching ---------------- #
@@ -61,20 +61,20 @@ class DatasetProcessor:
 class ModelTrainer:
     """Handles model training with caching support."""
     
-    def __init__(self, cache_dir='cache'):
+    def __init__(self, cache_dir='webapp cache'):
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
     
     def _get_cache_path(self, dataset_name, classifier_name, params_hash):
-        """Generate cache file path."""
+        """Generate webapp cache file path."""
         return os.path.join(
             self.cache_dir, 
             f'classifier_{dataset_name}_target_{classifier_name}_{params_hash}.pkl'
         )
     
     def train_or_load_model(self, dataset_name, classifier=None):
-        """Train model or load from cache."""        
-        # Check cache
+        """Train model or load from webapp cache."""        
+        # Check webapp cache
         params_hash = joblib.hash(classifier.get_params())
         cache_path = self._get_cache_path(dataset_name, classifier.__class__.__name__, params_hash)
         
@@ -84,29 +84,29 @@ class ModelTrainer:
         return self._train_and_cache(dataset_name, classifier, cache_path)
     
     def _load_from_cache(self, cache_path):
-        """Load model and data from cache."""
+        """Load model and data from webapp cache."""
         cached_data = joblib.load(cache_path)
-        bbox, X_train, X_test, y_train, y_test, dataset, feature_names = cached_data
-        logging.info(f"Loaded model from cache: {cache_path}")
-        self._update_global_state(X_train, y_train, X_test, y_test)
+        bbox, X, y, dataset, feature_names = cached_data
+        logging.info(f"Loaded model from webapp cache: {cache_path}")
+        self._update_webapp_state(X, y)
         return bbox, dataset, feature_names
     
     def _train_and_cache(self, dataset_name, classifier, cache_path):
-        """Train new model and cache results."""
+        """Train new model and webapp cache results."""
         # Load and prepare dataset
         X, y, feature_names, target_names = self._load_raw_dataset(dataset_name)
         data_dict = self._create_data_dict(X, y, feature_names, target_names)
         dataset = self._create_tabular_dataset(data_dict)
         
         # Train model
-        bbox, X_train, X_test, y_train, y_test = self._train_model(dataset, classifier)
+        bbox, X, y = self._train_model(dataset, classifier)
         
         # Cache results
-        cache_data = (bbox, X_train, X_test, y_train, y_test, dataset, feature_names)
+        cache_data = (bbox, X, y, dataset, feature_names)
         joblib.dump(cache_data, cache_path)
         logging.info(f"Cached model to: {cache_path}")
         
-        self._update_global_state(X_train, y_train, X_test, y_test)
+        self._update_webapp_state(X, y)
         return bbox, dataset, feature_names
     
     def _load_raw_dataset(self, dataset_name):
@@ -145,17 +145,15 @@ class ModelTrainer:
         preprocessor = processor.create_preprocessor()
         model = make_pipeline(preprocessor, classifier)
         
-        X_train, X_test, y_train, y_test = processor.prepare_for_training()
-        model.fit(X_train, y_train)
+        X, y = processor.prepare_for_training()
+        model.fit(X, y)
         
-        return sklearn_classifier_bbox.sklearnBBox(model), X_train, X_test, y_train, y_test
+        return sklearn_classifier_bbox.sklearnBBox(model), X, y
     
-    def _update_global_state(self, X_train, y_train, X_test, y_test):
-        """Update global state with training data."""
-        global_state.X_train = X_train
-        global_state.y_train = y_train
-        global_state.X_test = X_test
-        global_state.y_test = y_test
+    def _update_webapp_state(self, X, y):
+        """Update webapp state with training data."""
+        webapp_state.X = X
+        webapp_state.y = y
 
 
 # ---------------- Neighborhood Generation ---------------- #
@@ -196,7 +194,6 @@ class NeighborhoodGenerator:
         # Decode and get predictions
         decoded_neighborhood = encoder.decode(neighborhood)  # neighborhood should already be numpy array
         decoded_neighborhood = self._to_dataframe(decoded_neighborhood)
-        print(decoded_neighborhood.iloc[-1])
         # decoded_neighborhood = self._preserve_original_instance(decoded_neighborhood, original_dict)
 
         predictions = self.bbox.predict(decoded_neighborhood)

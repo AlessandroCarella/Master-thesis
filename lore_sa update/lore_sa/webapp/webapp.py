@@ -14,7 +14,7 @@ from .portsUtil import (
     reconfigure_cors, wait_for_server, 
     start_server_thread, start_client 
 )
-from .routes.state import global_state
+from .routes.state import webapp_state
 
 
 class Webapp:
@@ -153,17 +153,17 @@ class Webapp:
         
         return actual_api_port, actual_client_port
     
-    def setup_custom_explanation_system(self, bbox, dataset, target_column, width='100%', height=1000, scale=0.7):
+    def interactive_explanation(self, bbox, dataset, target_column, width='100%', height=1000, scale=0.7):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "true"
 
-        # Update global state to match what training normally does
-        global_state.bbox = bbox
-        global_state.dataset = dataset  
-        global_state.descriptor = dataset.descriptor
-        global_state.feature_names = [kk for k, v in dataset.descriptor.items() if k != target_column for kk in v.keys()]
-        global_state.target_names = sorted(dataset[target_column].unique().tolist())
-        global_state.dataset_name = "Custom Dataset"
+        # Update webapp state to match what training normally does
+        webapp_state.bbox = bbox
+        webapp_state.dataset = dataset.df  
+        webapp_state.descriptor = dataset.descriptor
+        webapp_state.feature_names = [kk for k, v in dataset.descriptor.items() if k != target_column for kk in v.keys()]
+        webapp_state.target_names = sorted(dataset.df[target_column].unique().tolist())
+        webapp_state.dataset_name = "Custom Dataset"
         
         # Launch the demo with custom title
         return self.launch_demo(

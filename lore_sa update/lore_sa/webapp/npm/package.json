@@ -4,10 +4,8 @@
     "description": "Webapp for showing LORE_sa output in an interactive way",
     "main": "script.js",
     "scripts": {
-        "start": "python main.py",
-        "start-client": "serve -s . -p 8080 --no-request-logging && cmd /c start http://localhost:8080",
-        "serve-only": "serve -s . -p 8080 --no-request-logging",
-        "postinstall": "pip install -r requirements.txt"
+        "start": "serve -s . -p 8080 --no-request-logging && cmd /c start http://localhost:8080",
+        "serve-only": "serve -s . -p 8080 --no-request-logging"
     },
     "dependencies": {
         "d3": "^7.8.5"

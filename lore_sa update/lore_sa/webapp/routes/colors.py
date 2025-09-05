@@ -7,7 +7,7 @@ import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 import umap
 
-from .state import global_state
+from .state import webapp_state
 
 DEFAULT_COLORS = [
     "#8dd3c7",
@@ -198,11 +198,11 @@ def project_to_cielab(centroids, method, random_state=42):
 
 @router.get("/get-classes-colors")
 async def get_colors(method):
-    if len(global_state.target_names) > 10:
+    if len(webapp_state.target_names) > 10:
         # Compute centroids using the neighborhood data
         centroids = compute_centroids(
-            global_state.neighb_train_X,
-            global_state.neighb_train_y
+            webapp_state.neighb_train_X,
+            webapp_state.neighb_train_y
         )
             
         # Project centroids to 2D and map to CIELAB colors

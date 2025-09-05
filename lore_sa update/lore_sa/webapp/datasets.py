@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 
 # Available datasets with kind information
 DATASETS = {
-    # 'iris': 'tabular',
+    'iris': 'tabular',
     'wine': 'tabular',
     'breast_cancer': 'tabular',
     'diabetes': 'tabular',
@@ -135,14 +135,14 @@ def get_dataset_information_german():
         "target_names": target_names,
     }
 
-def load_cached_dataset_information(dataset_name, info_function, cache_dir='cache'):
-    """Load dataset information from cache if available, else compute and cache it"""
+def load_cached_dataset_information(dataset_name, info_function, cache_dir='webapp cache'):
+    """Load dataset information from webapp cache if available, else compute and webapp cache it"""
     os.makedirs(cache_dir, exist_ok=True)
     cache_file = os.path.join(cache_dir, f'{dataset_name}_info.pkl')
     
     if os.path.exists(cache_file):
         info = joblib.load(cache_file)
-        logging.info(f"Loaded {dataset_name} information from cache.")
+        logging.info(f"Loaded {dataset_name} information from webapp cache.")
     else:
         info = info_function()
         joblib.dump(info, cache_file)
@@ -373,17 +373,17 @@ def load_dataset_german():
     return mock_dataset, feature_names, target_names
 
 # Cache loading for datasets (for actual data)
-def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
-    """Load dataset from cache if available, else compute and cache it"""
+def load_cached_dataset(dataset_name, load_function, cache_dir='webapp cache'):
+    """Load dataset from webapp cache if available, else compute and webapp cache it"""
     os.makedirs(cache_dir, exist_ok=True)
     cache_file = os.path.join(cache_dir, f'{dataset_name}.pkl')
     
     if os.path.exists(cache_file):
         dataset = joblib.load(cache_file)
-        logging.info(f"Loaded {dataset_name} from cache.")
+        logging.info(f"Loaded {dataset_name} from webapp cache.")
         return dataset
     
-    # Load dataset fresh (either no cache exists or cache was corrupted)
+    # Load dataset fresh (either no webapp cache exists or webapp cache was corrupted)
     dataset = load_function()
     
     # Cache the new dataset
@@ -393,7 +393,7 @@ def load_cached_dataset(dataset_name, load_function, cache_dir='cache'):
     return dataset
 
 # Main interface functions
-def get_dataset_information(dataset_name: str, cache_dir='cache'):
+def get_dataset_information(dataset_name: str, cache_dir='webapp cache'):
     """Get detailed information about a specific dataset with caching support"""
     # Map of dataset names to their specific information functions
     information_functions = {

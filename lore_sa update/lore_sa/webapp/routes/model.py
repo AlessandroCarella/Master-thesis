@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from ..model import get_available_classifiers, train_model_with_lore
 from ..datasets import DATASETS
-from .state import global_state
+from .state import webapp_state
 
 router = APIRouter(prefix="/api")
 
@@ -27,14 +27,14 @@ async def train_model(request: TrainingRequest):
     """
     Train a model with the given dataset and classifier.
     """    
-    # Train the model and update the global state.
-    global_state.bbox, global_state.dataset, global_state.feature_names = train_model_with_lore(
+    # Train the model and update the webapp state.
+    webapp_state.bbox, webapp_state.dataset, webapp_state.feature_names = train_model_with_lore(
         request.dataset_name, request.classifier, request.parameters
     )
-    global_state.descriptor = global_state.dataset.descriptor
+    webapp_state.descriptor = webapp_state.dataset.descriptor
 
     return {
         "status": "success",
         "message": "Model trained successfully",
-        "descriptor": global_state.descriptor,
+        "descriptor": webapp_state.descriptor,
     }

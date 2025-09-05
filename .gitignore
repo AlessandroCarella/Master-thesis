@@ -1,6 +1,7 @@
 #### Personal ####
 *.csv
 cache 
+webapp cache
 
 #### Python ####
 # Byte-compiled / optimized / DLL files
