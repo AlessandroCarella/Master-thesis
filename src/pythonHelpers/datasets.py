@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 
 # Available datasets with kind information
 DATASETS = {
-    'iris': 'tabular',
+    # 'iris': 'tabular',
     'wine': 'tabular',
     'breast_cancer': 'tabular',
     'diabetes': 'tabular',

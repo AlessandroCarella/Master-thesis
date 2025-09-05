@@ -18,7 +18,7 @@ import {
 
 let state = null;
 
-export function initializeUI(appState) {
+export function setState(appState) {
     state = appState;
 }
 

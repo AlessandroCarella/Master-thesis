@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import numpy as np
 from collections import OrderedDict
+import os
 
 from pythonHelpers.lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
 from pythonHelpers.generate_decision_tree_visualization_data import (
@@ -292,3 +293,64 @@ async def explain_instance(request: InstanceRequest):
     return ResponseBuilder.build_success_response(
         "Instance explained", tree_data, scatter_data, encoded_instance
     )
+
+
+@router.get("/get-sample-instance")
+async def get_sample_instance():
+    """Get a sample instance from the current dataset for custom data workflows."""
+    
+    try:
+        if not hasattr(global_state, 'dataset') or global_state.dataset is None:
+            raise HTTPException(status_code=400, detail="No dataset loaded")
+        
+        # Get feature names in the correct order
+        ordered_names = InstanceProcessor.get_ordered_feature_names()
+        
+        # Get a sample from the dataset (use first row)
+        if len(global_state.dataset.df) == 0:
+            raise HTTPException(status_code=400, detail="Dataset is empty")
+        
+        # Get the first row excluding the target column
+        sample_row = global_state.dataset.df.iloc[0]
+        
+        # Create instance dictionary with ordered feature names
+        instance = {}
+        for name in ordered_names:
+            if name in sample_row:
+                instance[name] = sample_row[name]
+        
+        return {
+            "status": "success",
+            "instance": instance,
+            "feature_names": ordered_names
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get sample instance: {str(e)}")
+
+
+@router.get("/check-custom-data")
+async def check_custom_data():
+    """Check if custom data is loaded and return dataset info."""
+    
+    try:
+        # Check if custom data is loaded by looking for environment variable
+        custom_data_loaded = os.environ.get("CUSTOM_DATA_LOADED", "false").lower() == "true"
+        
+        if custom_data_loaded and hasattr(global_state, 'dataset') and global_state.dataset is not None:
+            return {
+                "custom_data_loaded": True,
+                "dataset_name": getattr(global_state, 'dataset_name', 'Custom Dataset'),
+                "descriptor": global_state.dataset.descriptor,
+                "feature_names": getattr(global_state, 'feature_names', [])
+            }
+        else:
+            return {
+                "custom_data_loaded": False
+            }
+            
+    except Exception as e:
+        return {
+            "custom_data_loaded": False,
+            "error": str(e)
+        }

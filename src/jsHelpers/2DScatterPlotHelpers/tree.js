@@ -64,8 +64,6 @@ function highlightPathsInAllTreesUnified(originalFeatures) {
             } catch (error) {
                 console.warn(`Error highlighting ${kind} tree path with encoded features:`, error);
             }
-        } else {
-            console.warn(`No handler found for ${kind} tree`);
         }
     });
 }

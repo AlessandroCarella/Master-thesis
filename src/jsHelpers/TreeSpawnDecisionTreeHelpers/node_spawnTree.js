@@ -17,7 +17,7 @@ function getSpawnNodeTextLines(nodeData, featureMappingInfo = null) {
     const data = nodeData.data || nodeData;
 
     if (data.is_leaf) {
-        return [data.class_label || 'Unknown'];
+        return [data.class_label];
     }
     
     const encodedFeatureName = data.feature_name;

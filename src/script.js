@@ -11,7 +11,7 @@ import {
     createFeatureInputs,
     getFeatureValues,
     resetFeatures,
-    initializeUI,
+    setState,
 } from "./jsHelpers/ui.js";
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
@@ -29,6 +29,7 @@ import {
     fetchClassifierParameters,
     trainModel,
     fetchExplanation,
+    getSampleInstance,
 } from "./jsHelpers/API.js";
 
 import {
@@ -59,6 +60,7 @@ import {
 
 import { scrollToElement } from "./jsHelpers/scroll.js";
 import { initializeColors, setGlobalColorMap } from "./jsHelpers/visualizationConnectorHelpers/colors.js";
+import { checkCustomData } from "./jsHelpers/API.js";
 
 /********************************************
  *            GLOBAL STATE
@@ -182,7 +184,7 @@ window.startTraining = async () => {
     }
 };
 
-// Explain an instance based on feature values.
+// Updated explainInstance function to handle custom data workflow
 window.explainInstance = async () => {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
@@ -200,7 +202,9 @@ window.explainInstance = async () => {
 
     try {
         showExplanationLoading();
-        const instanceData = getFeatureValues(); // Original instance data
+        
+        let instanceData = getFeatureValues();
+        
         const surrogateParams = getSurrogateParameters();
         const requestData = buildExplanationRequestData(
             instanceData,
@@ -295,8 +299,6 @@ window.explainInstance = async () => {
         if (error.request) {
             console.error("Request error:", error.request);
         }
-        
-        alert("Failed to generate explanation. Please check the console for details.");
     } finally {
         loadingState.setLoading(false);
     }
@@ -318,11 +320,55 @@ window.buildExplanationRequestData = buildExplanationRequestData;
 // Initialize UI and attach event listeners when DOM is loaded.
 document.addEventListener("DOMContentLoaded", async () => {
     try {
-        initializeUI(appState);
+        // Check if custom data is loaded first
+        const customDataCheck = await checkCustomData();
+        
+        if (customDataCheck.custom_data_loaded) {
+            // Update app state with custom data info
+            appState.dataset_name = customDataCheck.dataset_name;
+            appState.featureDescriptor = customDataCheck.descriptor;
+            
+            // CRITICAL FIX: Set the state in ui.js so getFeatureValues() works correctly
+            setState(appState);
+            
+            // Hide the first three sections
+            const datasetSection = document.getElementById("datasetSection");
+            const classifierSection = document.getElementById("classifierSection"); 
+            const parameterSection = document.getElementById("parameterSection");
+            
+            if (datasetSection) datasetSection.style.display = "none";
+            if (classifierSection) classifierSection.style.display = "none";
+            if (parameterSection) parameterSection.style.display = "none";
+            
+            // Show feature inputs directly
+            createFeatureInputs(customDataCheck.descriptor);
+            const featureButtonContainer = document.getElementById("featureButtonContainer");
+            if (featureButtonContainer) {
+                featureButtonContainer.style.display = "block";
+                
+                // Populate surrogate parameters form
+                const surrogateContainer = document.getElementById("surrogateContainer");
+                if (surrogateContainer) {
+                    populateSurrogateForm(surrogateContainer);
+                }
+                
+                scrollToElement(featureButtonContainer);
+            }
+            
+        } else {
+            // No custom data - show normal flow
+            setState(appState);
+            const datasets = await fetchDatasets();
+            populateDatasetGrid(datasets);
+            attachDatasetPanelEventListeners();
+        }
+        
+    } catch (error) {
+        console.error("Failed to initialize:", error);
+        // Fallback to normal flow
+        setState(appState);
         const datasets = await fetchDatasets();
         populateDatasetGrid(datasets);
         attachDatasetPanelEventListeners();
-    } catch (error) {
-        console.error("Failed to load datasets:", error);
     }
 });

@@ -27,7 +27,7 @@ function getNodeLabel(nodeId) {
     
     // Simple encoded feature display
     if (nodeData.is_leaf) {
-        return nodeData.class_label || 'Unknown';
+        return nodeData.class_label;
     }
     
     const threshold = Number(nodeData.threshold) ?? 0;

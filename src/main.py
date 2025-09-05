@@ -1,7 +1,6 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 from IPython.display import display, HTML
 import os
 import threading
@@ -11,6 +10,8 @@ import requests
 import sys
 import socket
 import uvicorn
+import psutil
+import signal
 
 from pythonHelpers.routes.datasetDataInfo import router as dataset_router
 from pythonHelpers.routes.model import router as model_router
@@ -43,6 +44,91 @@ app.include_router(dataset_router)
 app.include_router(model_router)
 app.include_router(explain_router)
 app.include_router(colors_router)
+
+def find_processes_using_port(port):
+    """Find all processes using a specific port."""
+    processes = []
+    try:
+        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+            try:
+                for conn in proc.info['connections'] or []:
+                    if conn.laddr.port == port:
+                        processes.append(proc)
+                        break
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess, AttributeError):
+                continue
+    except Exception as e:
+        print(f"⚠️  Error finding processes on port {port}: {e}")
+    return processes
+
+def kill_processes_on_port(port):
+    """Kill all processes using a specific port."""
+    processes = find_processes_using_port(port)
+    
+    if not processes:
+        print(f"✅ No processes found running on port {port}")
+        return True
+    
+    print(f"🔍 Found {len(processes)} process(es) using port {port}")
+    
+    killed_count = 0
+    for proc in processes:
+        try:
+            proc_info = f"PID {proc.pid} ({proc.name()})"
+            print(f"🔪 Terminating process {proc_info}")
+            
+            # Try graceful termination first
+            proc.terminate()
+            
+            # Wait up to 3 seconds for graceful termination
+            try:
+                proc.wait(timeout=3)
+                print(f"✅ Successfully terminated {proc_info}")
+                killed_count += 1
+            except psutil.TimeoutExpired:
+                # Force kill if graceful termination fails
+                print(f"⚡ Force killing {proc_info}")
+                proc.kill()
+                proc.wait(timeout=2)
+                print(f"✅ Successfully force-killed {proc_info}")
+                killed_count += 1
+                
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+            print(f"⚠️  Could not terminate process PID {proc.pid}: {e}")
+        except Exception as e:
+            print(f"❌ Unexpected error terminating process PID {proc.pid}: {e}")
+    
+    if killed_count > 0:
+        print(f"✅ Successfully terminated {killed_count} process(es) on port {port}")
+        # Give a moment for the OS to clean up
+        time.sleep(1)
+    
+    return killed_count > 0
+
+def cleanup_ports(ports=[8000, 8080]):
+    """Clean up processes running on specified ports."""
+    print("🧹 Cleaning up processes on target ports...")
+    print("=" * 40)
+    
+    success = True
+    for port in ports:
+        try:
+            print(f"🔍 Checking port {port}...")
+            killed = kill_processes_on_port(port)
+            if not killed and find_processes_using_port(port):
+                success = False
+                print(f"⚠️  Some processes on port {port} could not be terminated")
+        except Exception as e:
+            print(f"❌ Error cleaning up port {port}: {e}")
+            success = False
+    
+    print("=" * 40)
+    if success:
+        print("✅ Port cleanup completed successfully")
+    else:
+        print("⚠️  Port cleanup completed with some warnings")
+    
+    return success
 
 def find_available_port(start_port=8000, max_attempts=20):
     """Find an available port starting from start_port."""
@@ -157,7 +243,7 @@ def start_client(port=None):
         print(f"❌ Failed to start client: {e}")
         return None, None
 
-def show_localhost_content(port=8080, width='100%', height=1500, scale=0.7):
+def show_localhost_content(port=8080, width='100%', height=1000, scale=0.7):
     url = f"http://localhost:{port}"
     
     # Calculate scaled dimensions
@@ -199,66 +285,3 @@ def show_localhost_content(port=8080, width='100%', height=1500, scale=0.7):
     """
     
     display(HTML(html_content))
-
-def launch_demo(width='100%', height=1500, path="", scale=0.7):
-    """
-    Launch the complete demo application with dynamic port allocation.
-    
-    This method:
-    1. Finds available ports for both API and client
-    2. Reconfigures CORS with the dynamic ports
-    3. Starts the FastAPI server in a background thread
-    4. Waits for the API to be fully loaded and responsive  
-    5. Starts the npm client application
-    6. Opens the browser automatically
-    """
-    print("🎯 Launching Master Thesis Demo Application")
-    print("=" * 50)
-    
-    # Find available ports
-    try:
-        api_port = find_available_port(8000)
-        client_port = find_available_port(8080)
-        print(f"🔍 Found available ports - API: {api_port}, Client: {client_port}")
-    except RuntimeError as e:
-        print(f"❌ {e}")
-        return
-    
-    # Reconfigure CORS with dynamic ports
-    try:
-        reconfigure_cors(api_port, client_port)
-    except Exception as e:
-        print(f"⚠️  Warning: Could not reconfigure CORS: {e}")
-    
-    # Get host configuration
-    host = os.environ.get("HOST", "0.0.0.0")
-    
-    print(f"📡 Starting API server on {host}:{api_port}")
-    
-    # Start server in background thread
-    server_thread, actual_api_port = start_server_thread(host, api_port)
-    
-    # Wait for server to be ready
-    if not wait_for_server("localhost", actual_api_port):
-        print("❌ Failed to start API server. Exiting...")
-        return
-    
-    # Start client
-    client_process, actual_client_port = start_client(client_port)
-    if not client_process or actual_client_port is None:
-        print("❌ Failed to start client. Exiting...")
-        return
-    
-    # Wait a moment for the client to start
-    print("⏳ Waiting for client to start...")
-    time.sleep(3)
-    
-    print("\n" + "=" * 50)
-    print("✅ Demo application started successfully!")
-    print(f"📡 API: http://localhost:{actual_api_port}")
-    print(f"🌐 Client: http://localhost:{actual_client_port}")
-    print("💡 If ports were busy, alternative ports were automatically selected")
-    print("=" * 50)
-    
-    # Show the client in the notebook
-    show_localhost_content(actual_client_port, width, height, scale)

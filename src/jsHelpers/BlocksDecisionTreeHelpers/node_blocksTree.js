@@ -12,7 +12,7 @@ function getBlocksNodeLabelLines(nodeId, featureMappingInfo = null) {
     if (!node) return [`Node ${nodeId}`];
     
     if (node.is_leaf) {
-        return [node.class_label || 'Unknown'];
+        return [node.class_label];
     }
     
     // Create decoder for split condition
