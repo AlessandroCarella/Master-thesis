@@ -4,8 +4,7 @@
     "description": "Webapp for showing LORE_sa output in an interactive way",
     "main": "script.js",
     "scripts": {
-        "start": "serve -s . -p 8080 --no-request-logging && cmd /c start http://localhost:8080",
-        "serve-only": "serve -s . -p 8080 --no-request-logging"
+        "start": "serve -s . -p 8080 --no-request-logging"
     },
     "dependencies": {
         "d3": "^7.8.5"

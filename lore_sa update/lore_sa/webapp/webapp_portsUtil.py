@@ -1,4 +1,3 @@
-import psutil
 import time
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -7,9 +6,7 @@ import subprocess
 import time
 import requests
 import sys
-import socket
 import uvicorn
-import psutil
 
 def _update_cors_origins(client_port):
     """Update CORS origins dynamically based on the actual ports."""
@@ -82,30 +79,3 @@ def start_server_thread(app, host="0.0.0.0", port=None):
     server_thread = threading.Thread(target=run_server, daemon=True)
     server_thread.start()
     return port
-
-def start_client(port=None):
-    """Start the npm client on an available port."""
-    if port is None:
-        print(f"Found available port for client: {port}")
-    
-    #lore_sa\webapp
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    npm_directory = os.path.join(current_dir, "npm")
-
-    try:
-        # Set the PORT environment variable for the client
-        env = os.environ.copy()
-        env["PORT"] = str(port)
-        
-        # Capture both stdout and stderr
-        process = subprocess.Popen(
-            ["npm", "start"], 
-            shell=True if sys.platform == "win32" else False,
-            env=env,
-            cwd=npm_directory,  # Set the working directory
-        )
-        
-        return process, port
-    except Exception as e:
-        print(f"Failed to start client: {e}")
-        return None, None

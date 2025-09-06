@@ -12,8 +12,9 @@ from .routes.webapp_api_colors import router as colors_router
 from .webapp_logging_config import configure_logging
 from .webapp_portsUtil import (
     reconfigure_cors, wait_for_server, 
-    start_server_thread, start_client 
+    start_server_thread 
 )
+from .webapp_npm import start_client
 from .routes.webapp_api_state import webapp_state
 
 
