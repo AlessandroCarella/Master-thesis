@@ -59,7 +59,7 @@ class Webapp:
         self.app.include_router(explain_router)
         self.app.include_router(colors_router)
     
-    def _show_localhost_content(self, port=8080, width='100%', height=1000, scale=0.7):
+    def _show_localhost_content(self, port=8080, width='100%', height=1500, scale=0.7):
         """
         Display localhost content in a Jupyter notebook iframe.
         """
@@ -166,7 +166,7 @@ class Webapp:
         else:
             self._open_browser_at_localhost(actual_client_port)
 
-    def launch_demo(self, inJupyter=False, width='100%', height=1000, scale=0.7, title="Launching LORE_sa Demo Application"):
+    def launch_demo(self, inJupyter=False, width='100%', height=1500, scale=0.7, title="Launching LORE_sa Demo Application"):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "false"
 
@@ -187,7 +187,7 @@ class Webapp:
             title=title
         )
 
-    def interactive_explanation(self, bbox, dataset, target_column, inJupyter=True, width='100%', height=1000, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
+    def interactive_explanation(self, bbox, dataset, target_column, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "true"
 

@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from ..webapp_model import get_available_classifiers, train_model_with_lore
 from ..webapp_datasets import DATASETS
 from .webapp_api_state import webapp_state
+from .webapp_api_utils import safe_json_response
 
 router = APIRouter(prefix="/api")
 
@@ -15,7 +16,7 @@ async def get_classifiers():
     """
     Retrieve available classifiers and their parameters.
     """
-    return {"classifiers": get_available_classifiers()}
+    return safe_json_response({"classifiers": get_available_classifiers()})
 
 class TrainingRequest(BaseModel):
     dataset_name: str
@@ -33,8 +34,8 @@ async def train_model(request: TrainingRequest):
     )
     webapp_state.descriptor = webapp_state.dataset.descriptor
 
-    return {
+    return safe_json_response({
         "status": "success",
         "message": "Model trained successfully",
         "descriptor": webapp_state.descriptor,
-    }
+    })

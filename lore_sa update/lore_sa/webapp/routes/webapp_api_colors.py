@@ -8,6 +8,7 @@ logging.getLogger('numba').setLevel(logging.WARNING)
 import umap
 
 from .webapp_api_state import webapp_state
+from .webapp_api_utils import safe_json_response
 
 DEFAULT_COLORS = [
     "#8dd3c7",
@@ -210,4 +211,4 @@ async def get_colors(method):
             
         return colors
 
-    return DEFAULT_COLORS
+    return safe_json_response(DEFAULT_COLORS)

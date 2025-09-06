@@ -12,6 +12,7 @@ from ..webapp_generate_decision_tree_visualization_data import (
 )
 from ..webapp_create_scatter_plot_data import create_scatter_plot_data_raw
 from .webapp_api_state import webapp_state
+from .webapp_api_utils import safe_json_response
 
 router = APIRouter(prefix="/api")
 
@@ -245,9 +246,9 @@ async def update_visualization(request: VisualizationRequest):
             webapp_state.dt_surrogate, webapp_state.target_names
         )
     
-    return ResponseBuilder.build_success_response(
+    return safe_json_response(ResponseBuilder.build_success_response(
         "Visualization updated", tree_data, scatter_data
-    )
+    ))
 
 
 @router.post("/explain")
@@ -296,9 +297,9 @@ async def explain_instance(request: InstanceRequest):
             request, neighborhood, webapp_state.neighb_predictions, surrogate, webapp_state.target_names
         )
     
-    return ResponseBuilder.build_success_response(
+    return safe_json_response(ResponseBuilder.build_success_response(
         "Instance explained", tree_data, scatter_data, encoded_instance
-    )
+    ))
 
 
 @router.get("/check-custom-data")
@@ -310,12 +311,12 @@ async def check_custom_data():
         custom_data_loaded = os.environ.get("CUSTOM_DATA_LOADED", "false").lower() == "true"
         
         if custom_data_loaded and hasattr(webapp_state, 'dataset') and webapp_state.dataset is not None:
-            return {
+            return safe_json_response({
                 "custom_data_loaded": True,
                 "dataset_name": getattr(webapp_state, 'dataset_name', 'Custom Dataset'),
                 "descriptor": webapp_state.dataset.descriptor,
                 "feature_names": getattr(webapp_state, 'feature_names', [])
-            }
+            })
         else:
             return {
                 "custom_data_loaded": False

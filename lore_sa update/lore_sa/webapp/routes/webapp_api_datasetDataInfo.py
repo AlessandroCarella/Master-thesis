@@ -6,6 +6,7 @@ import pandas as pd
 
 from ..webapp_datasets import get_available_datasets, get_dataset_information, load_dataset
 from .webapp_api_state import webapp_state
+from .webapp_api_utils import safe_json_response
 
 router = APIRouter(prefix="/api")
 
@@ -14,7 +15,7 @@ async def get_datasets():
     """
     Retrieve a list of available datasets.
     """
-    return {"datasets": get_available_datasets()}
+    return safe_json_response({"datasets": get_available_datasets()})
     
 @router.get("/get-dataset-info/{dataset_name_info}")
 async def get_dataset_info(dataset_name_info: str):
@@ -28,7 +29,7 @@ async def get_dataset_info(dataset_name_info: str):
     webapp_state.target_names = dataset_info["target_names"]
     webapp_state.target_names.sort()
 
-    return dataset_info
+    return safe_json_response(dataset_info)
     
 def process_tabular_dataset(ds, feature_names):
     """Process tabular dataset and return a JSON response."""
@@ -48,4 +49,4 @@ async def get_selected_dataset():
     ds, feature_names, target_names = load_dataset(webapp_state.dataset_name)
     webapp_state.feature_names = feature_names  # Update state
     
-    return process_tabular_dataset(ds, feature_names)
+    return safe_json_response(process_tabular_dataset(ds, feature_names))
