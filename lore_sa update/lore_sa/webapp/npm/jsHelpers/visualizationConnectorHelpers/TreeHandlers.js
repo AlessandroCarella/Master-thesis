@@ -77,10 +77,13 @@ export class ClassicTreeHandler extends BaseTreeHandler {
             .style("stroke", colorScheme.ui.nodeStroke)
             .style("stroke-width", `${this.visualization.metrics.nodeBorderStrokeWidth}px`);
         
-        // Reset link highlights
+        // Reset link highlights - restore original colors and stroke widths
         this.visualization.contentGroup
             .selectAll(".link")
-            .style("stroke", colorScheme.ui.linkStroke)
+            .style("stroke", function(d) {
+                // Restore original color from data attribute
+                return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
+            })
             .style("stroke-width", function(d) {
                 return `${d3.select(this).attr("data-original-stroke-width")}px`;
             });
@@ -251,9 +254,16 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             .selectAll(".node")
             .style("stroke", colorScheme.ui.nodeStroke);
         
+        // Reset link colors to original colors
         this.visualization.container
             .selectAll(".link")
-            .style("stroke", colorScheme.ui.linkStroke);
+            .style("stroke", function(d) {
+                // Restore original color from data attribute
+                return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
+            })
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
+            });
     }
     
     findPath(features) {
@@ -314,7 +324,11 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             .selectAll(".link")
             .filter(d => (d.sourceId === sourceId && d.targetId === targetId) ||
                         (d.sourceId === targetId && d.targetId === sourceId))
-            .style("stroke", colorScheme.ui.highlight);
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", function(d) {
+                const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
+                return `${baseWidth}px`;
+            });
     }
     
     highlightInstancePath(instancePath) {
@@ -464,9 +478,13 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .selectAll("circle, rect")
             .style("stroke", colorScheme.ui.nodeStroke);
         
+        // Reset link colors to original colors
         this.visualization.container
             .selectAll(".link")
-            .style("stroke", colorScheme.ui.linkStroke);
+            .style("stroke", function(d) {
+                // Restore original color from data attribute
+                return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
+            });
     }
     
     // More robust findPath method using encoded features only
@@ -592,7 +610,11 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .selectAll(".link")
             .filter(d => (d.source.data.node_id === sourceId && d.target.data.node_id === targetId) ||
                         (d.source.data.node_id === targetId && d.target.data.node_id === sourceId))
-            .style("stroke", colorScheme.ui.highlight);
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", function(d) {
+                const baseWidth = parseFloat(d3.select(this).attr("data-original-stroke-width"));
+                return `${baseWidth}px`;
+            });
     }
     
     highlightInstancePath(instancePath) {

@@ -21,6 +21,27 @@ function createSplitPath({ source, target }) {
     }
 }
 
+function determineLinkColor(sourceNodeId, targetNodeId) {
+    if (!spawnTreeState.treeData) {
+        return colorScheme.ui.linkStroke;
+    }
+    
+    const sourceNode = spawnTreeState.treeData.find(node => node.node_id === sourceNodeId);
+    
+    if (!sourceNode || sourceNode.is_leaf) {
+        return colorScheme.ui.linkStroke;
+    }
+    
+    // Determine if link goes to left (false) or right (true) child
+    if (targetNodeId === sourceNode.left_child) {
+        return colorScheme.ui.falseLink; // Red for false path
+    } else if (targetNodeId === sourceNode.right_child) {
+        return colorScheme.ui.trueLink; // Green for true path
+    }
+    
+    return colorScheme.ui.linkStroke; // fallback
+}
+
 export function addLinks(contentGroup, treeData, metrics) {
     const visibleLinks = treeData.links().filter(link => 
         !link.source.isHidden && !link.target.isHidden
@@ -41,14 +62,19 @@ export function addLinks(contentGroup, treeData, metrics) {
                 metrics.linkStrokeWidth,
                 TREES_SETTINGS.treeKindID.spawn
             );
+            const linkColor = determineLinkColor(d.source.data.node_id, d.target.data.node_id);
+            
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
+            d3.select(this).attr("data-original-stroke-color", linkColor);
         })
         .style("stroke-width", function(d) {
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
         })
+        .style("stroke", function(d) {
+            return d3.select(this).attr("data-original-stroke-color");
+        })
         .attr("d", (d) => createSplitPath(d))
         .style("fill", "none")
-        .style("stroke", colorScheme.ui.linkStroke)
         .style("opacity", colorScheme.opacity.default);
 }
 

@@ -12,6 +12,8 @@ export const colorScheme = {
         linkStroke: "#999999",
         background: "#ffffff",
         instancePathHighlight: "#FFFF00",
+        falseLink: "#A50026",
+        trueLink: "#006837"
     },
     // Opacity settings
     opacity: {

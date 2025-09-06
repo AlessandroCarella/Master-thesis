@@ -16,6 +16,28 @@ function createSplitPath({ source, target }) {
     return `M${sourceX},${sourceY} Q${controlX},${controlY} ${targetX},${targetY}`;
 }
 
+function determineLinkColor(sourceNode, targetNodeId) {
+    if (!sourceNode || !sourceNode.data) {
+        return colorScheme.ui.linkStroke; // fallback
+    }
+    
+    const sourceData = sourceNode.data;
+    
+    // If source is a leaf, use default color
+    if (sourceData.is_leaf) {
+        return colorScheme.ui.linkStroke;
+    }
+    
+    // Determine if link goes to left (false) or right (true) child
+    if (targetNodeId === sourceData.left_child) {
+        return colorScheme.ui.falseLink; // Red for false path
+    } else if (targetNodeId === sourceData.right_child) {
+        return colorScheme.ui.trueLink; // Green for true path
+    }
+    
+    return colorScheme.ui.linkStroke; // fallback
+}
+
 export function addLinks(contentGroup, treeData, metrics) {
     contentGroup
         .selectAll(".link")
@@ -33,14 +55,19 @@ export function addLinks(contentGroup, treeData, metrics) {
                 metrics.linkStrokeWidth,
                 TREES_SETTINGS.treeKindID.classic
             );
+            const linkColor = determineLinkColor(d.source, d.target.data.node_id);
+            
             d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
+            d3.select(this).attr("data-original-stroke-color", linkColor);
         })
         .style("stroke-width", function(d) {
             return `${d3.select(this).attr("data-original-stroke-width")}px`;
         })
+        .style("stroke", function(d) {
+            return d3.select(this).attr("data-original-stroke-color");
+        })
         .attr("d", (d) => createSplitPath(d))
-        .style("fill", "none")
-        .style("stroke", colorScheme.ui.linkStroke);
+        .style("fill", "none");
 }
 
 export function highlightInstancePath(contentGroup, pathNodeIds) {

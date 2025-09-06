@@ -29,14 +29,7 @@ function createNodeTooltipContent(nodeData, treeKind, featureMappingInfo) {
         try {
             // Use decoder to create human-readable split condition
             const decodedCondition = decoder.decodeTreeSplitCondition(encodedFeatureName, threshold, true);
-            content.push(`<strong>Split:</strong> ${decodedCondition}`);
-            
-            // Show the logic explanation
-            if (decoder.isCategorical(encodedFeatureName)) {
-                content.push("<strong>Logic:</strong> Left = condition true, Right = condition false");
-            } else {
-                content.push("<strong>Logic:</strong> Left ≤ threshold, Right > threshold");
-            }
+            content.push(`<strong>Split:</strong> ${decodedCondition}`);            
         } catch (error) {
             console.warn("Error decoding split condition:", error);
             // Fallback to encoded display
