@@ -7,7 +7,7 @@ import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 import umap
 
-from .state import webapp_state
+from .webapp_api_state import webapp_state
 
 DEFAULT_COLORS = [
     "#8dd3c7",

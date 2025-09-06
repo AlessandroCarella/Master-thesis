@@ -114,7 +114,7 @@ def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: D
     # Create the classifier instance with the provided parameters
     classifier = create_classifier(classifier_name, parameters)
 
-    from .lore import load_cached_classifier
+    from .webapp_lore import load_cached_classifier
     # Load cached classifier or train new one with optimized caching
     trained_model, dataset, feature_names = load_cached_classifier(
         dataset_name=dataset_name,

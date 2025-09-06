@@ -5,16 +5,16 @@ from IPython.display import display, HTML
 import os
 import webbrowser
 
-from .routes.datasetDataInfo import router as dataset_router
-from .routes.model import router as model_router
-from .routes.explain import router as explain_router
-from .routes.colors import router as colors_router
-from .logging_config import configure_logging
-from .portsUtil import (
+from .routes.webapp_api_datasetDataInfo import router as dataset_router
+from .routes.webapp_api_model import router as model_router
+from .routes.webapp_api_explain import router as explain_router
+from .routes.webapp_api_colors import router as colors_router
+from .webapp_logging_config import configure_logging
+from .webapp_portsUtil import (
     reconfigure_cors, wait_for_server, 
     start_server_thread, start_client 
 )
-from .routes.state import webapp_state
+from .routes.webapp_api_state import webapp_state
 
 
 class Webapp:

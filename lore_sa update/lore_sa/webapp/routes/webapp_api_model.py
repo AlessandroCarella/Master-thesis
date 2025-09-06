@@ -4,9 +4,9 @@ from pydantic import BaseModel
 from typing import Dict, Any
 from fastapi.responses import JSONResponse
 
-from ..model import get_available_classifiers, train_model_with_lore
-from ..datasets import DATASETS
-from .state import webapp_state
+from ..webapp_model import get_available_classifiers, train_model_with_lore
+from ..webapp_datasets import DATASETS
+from .webapp_api_state import webapp_state
 
 router = APIRouter(prefix="/api")
 
