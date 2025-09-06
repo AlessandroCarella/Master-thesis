@@ -1,6 +1,7 @@
-// Updated tooltip.js for TreesCommon
+// Updated tooltip.js for TreesCommon with link tooltip support
 import { TREES_SETTINGS } from "./settings.js";
 import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
+import { getTreeState } from "./state.js";
 
 function createNodeTooltipContent(nodeData, treeKind, featureMappingInfo) {
     const content = [];
@@ -78,12 +79,55 @@ function createNodeTooltipContent(nodeData, treeKind, featureMappingInfo) {
     return content;
 }
 
+function createLinkTooltipContent(sourceId, targetId, treeKind) {
+    const state = getTreeState(treeKind);
+    
+    if (!state.treeData) {
+        return ["<strong>Link:</strong> Unknown"];
+    }
+    
+    const sourceNode = state.treeData.find(node => node.node_id === sourceId);
+    
+    if (!sourceNode || sourceNode.is_leaf) {
+        return ["<strong>Link:</strong> Unknown"];
+    }
+    
+    // Determine if link goes to left (false) or right (true) child
+    let linkType = "Unknown";
+    if (targetId === sourceNode.left_child) {
+        linkType = "False (≤ threshold)";
+    } else if (targetId === sourceNode.right_child) {
+        linkType = "True (> threshold)";
+    }
+    
+    const content = [];
+    content.push(`<strong>Link Type:</strong> ${linkType}`);
+    
+    // Add the split condition if available
+    if (sourceNode.feature_name && sourceNode.threshold !== undefined) {
+        const threshold = sourceNode.threshold;
+        const thresholdStr = Number.isFinite(threshold) ? threshold.toFixed(1) : threshold;
+        content.push(`<strong>Split:</strong> ${sourceNode.feature_name} ≤ ${thresholdStr}`);
+    }
+    
+    return content;
+}
+
 export function handleMouseOver(event, nodeData, tooltip, treeKind, featureMappingInfo) {
     const content = createNodeTooltipContent(nodeData, treeKind, featureMappingInfo);
 
     tooltip
         .html(content.join("<br>"))
-        // .style("class", "decision-tree-tooltip")
+        .style("visibility", "visible")
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 10 + "px");
+}
+
+export function handleLinkMouseOver(event, sourceId, targetId, tooltip, treeKind) {
+    const content = createLinkTooltipContent(sourceId, targetId, treeKind);
+
+    tooltip
+        .html(content.join("<br>"))
         .style("visibility", "visible")
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");

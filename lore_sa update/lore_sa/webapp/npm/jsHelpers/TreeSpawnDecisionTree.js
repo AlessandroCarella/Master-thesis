@@ -44,7 +44,7 @@ export function createTreeSpawnVisualization(rawTreeData, instance, container) {
     const treeData = treeLayout(root);
 
     addBackgroundLayer(contentGroup, metrics);
-    addLinks(contentGroup, treeData, metrics);
+    addLinks(contentGroup, treeData, metrics, tooltip);
     addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
 
     const initialTransform = calculateInitialTransform(treeData);

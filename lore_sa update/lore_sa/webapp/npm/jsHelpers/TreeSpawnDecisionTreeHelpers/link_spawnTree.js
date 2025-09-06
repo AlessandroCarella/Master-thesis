@@ -2,6 +2,7 @@ import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
 import { spawnTreeState } from "../TreesCommon/state.js";
 import { getStrokeWidth } from "../TreesCommon/metrics.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
+import { handleLinkMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 
 function createSplitPath({ source, target }) {
     const { x: sourceX, y: sourceY } = source;
@@ -42,7 +43,7 @@ function determineLinkColor(sourceNodeId, targetNodeId) {
     return colorScheme.ui.linkStroke; // fallback
 }
 
-export function addLinks(contentGroup, treeData, metrics) {
+export function addLinks(contentGroup, treeData, metrics, tooltip) {
     const visibleLinks = treeData.links().filter(link => 
         !link.source.isHidden && !link.target.isHidden
     );
@@ -75,7 +76,28 @@ export function addLinks(contentGroup, treeData, metrics) {
         })
         .attr("d", (d) => createSplitPath(d))
         .style("fill", "none")
-        .style("opacity", colorScheme.opacity.default);
+        .style("opacity", colorScheme.opacity.default)
+        .on("mouseover", (event, d) => {
+            if (tooltip) {
+                handleLinkMouseOver(
+                    event, 
+                    d.source.data.node_id, 
+                    d.target.data.node_id, 
+                    tooltip, 
+                    TREES_SETTINGS.treeKindID.spawn
+                );
+            }
+        })
+        .on("mousemove", (event) => {
+            if (tooltip) {
+                handleMouseMove(event, tooltip);
+            }
+        })
+        .on("mouseout", () => {
+            if (tooltip) {
+                handleMouseOut(tooltip);
+            }
+        });
 }
 
 export function addInstancePathBackgroundDirect(treeSpawnVis, instancePath) {

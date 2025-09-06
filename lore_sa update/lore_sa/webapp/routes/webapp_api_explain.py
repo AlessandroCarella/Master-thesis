@@ -226,8 +226,7 @@ class ResponseBuilder:
 @router.post("/update-visualization")
 async def update_visualization(request: VisualizationRequest):
     """Update visualization technique without regenerating neighborhood."""
-    
-    # Generate decision tree visualization
+    # Generate decision tree visualization with neighborhood-specific target names
     tree_data = VisualizationGenerator.generate_decision_tree_data(
         webapp_state.dt_surrogate,
         webapp_state.encoded_feature_names,
@@ -282,8 +281,8 @@ async def explain_instance(request: InstanceRequest):
     # Create decision tree surrogate
     surrogate = get_lore_decision_tree_surrogate(neighborhood, webapp_state.neighb_encoded_predictions)
     StateManager.update_surrogate_model(surrogate)
-    
-    # Generate visualizations
+        
+    # Generate visualizations with neighborhood-specific target names
     tree_data = VisualizationGenerator.generate_decision_tree_data(
         surrogate, encoded_feature_names, webapp_state.target_names
     )
@@ -327,3 +326,4 @@ async def check_custom_data():
             "custom_data_loaded": False,
             "error": str(e)
         }
+    

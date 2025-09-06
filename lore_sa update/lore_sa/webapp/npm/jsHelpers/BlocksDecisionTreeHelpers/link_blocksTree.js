@@ -3,6 +3,7 @@ import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
 import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { blocksTreeState } from "../TreesCommon/state.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
+import { handleLinkMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 
 export function createLinks(allPaths, nodePositions) {
     const links = [];
@@ -55,7 +56,7 @@ function isLinkHighlighted(link, instancePath) {
     return sIdx !== -1 && tIdx !== -1 && Math.abs(sIdx - tIdx) === 1;
 }
 
-export function renderLinks(container, links, instancePath) {
+export function renderLinks(container, links, instancePath, tooltip) {
     return container
         .selectAll(".link")
         .data(links)
@@ -87,5 +88,26 @@ export function renderLinks(container, links, instancePath) {
         })
         .style("stroke", function(d) {
             return d3.select(this).attr("data-original-stroke-color");
+        })
+        .on("mouseover", (event, d) => {
+            if (tooltip) {
+                handleLinkMouseOver(
+                    event, 
+                    d.sourceId, 
+                    d.targetId, 
+                    tooltip, 
+                    TREES_SETTINGS.treeKindID.blocks
+                );
+            }
+        })
+        .on("mousemove", (event) => {
+            if (tooltip) {
+                handleMouseMove(event, tooltip);
+            }
+        })
+        .on("mouseout", () => {
+            if (tooltip) {
+                handleMouseOut(tooltip);
+            }
         });
 }

@@ -3,6 +3,7 @@ import { classicTreeState } from "../TreesCommon/state.js";
 import { getStrokeWidth } from "../TreesCommon/metrics.js";
 import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
+import { handleLinkMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 
 function createSplitPath({ source, target }) {
     const { x: sourceX, y: sourceY } = source;
@@ -38,7 +39,7 @@ function determineLinkColor(sourceNode, targetNodeId) {
     return colorScheme.ui.linkStroke; // fallback
 }
 
-export function addLinks(contentGroup, treeData, metrics) {
+export function addLinks(contentGroup, treeData, metrics, tooltip) {
     contentGroup
         .selectAll(".link")
         .data(treeData.links())
@@ -67,7 +68,28 @@ export function addLinks(contentGroup, treeData, metrics) {
             return d3.select(this).attr("data-original-stroke-color");
         })
         .attr("d", (d) => createSplitPath(d))
-        .style("fill", "none");
+        .style("fill", "none")
+        .on("mouseover", (event, d) => {
+            if (tooltip) {
+                handleLinkMouseOver(
+                    event, 
+                    d.source.data.node_id, 
+                    d.target.data.node_id, 
+                    tooltip, 
+                    TREES_SETTINGS.treeKindID.classic
+                );
+            }
+        })
+        .on("mousemove", (event) => {
+            if (tooltip) {
+                handleMouseMove(event, tooltip);
+            }
+        })
+        .on("mouseout", () => {
+            if (tooltip) {
+                handleMouseOut(tooltip);
+            }
+        });
 }
 
 export function highlightInstancePath(contentGroup, pathNodeIds) {
