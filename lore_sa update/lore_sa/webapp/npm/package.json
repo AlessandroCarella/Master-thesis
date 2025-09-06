@@ -1,5 +1,5 @@
 {
-    "name": "Master Thesis",
+    "name": "Lore-viz",
     "version": "1.0.0",
     "description": "Webapp for showing LORE_sa output in an interactive way",
     "main": "script.js",

@@ -2,6 +2,7 @@
 *.csv
 cache 
 webapp cache
+project-structure.txt
 
 #### Python ####
 # Byte-compiled / optimized / DLL files

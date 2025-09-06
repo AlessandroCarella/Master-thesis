@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from IPython.display import display, HTML
 import os
+import webbrowser
 
 from .routes.datasetDataInfo import router as dataset_router
 from .routes.model import router as model_router
@@ -10,7 +11,6 @@ from .routes.explain import router as explain_router
 from .routes.colors import router as colors_router
 from .logging_config import configure_logging
 from .portsUtil import (
-    cleanup_ports, find_available_port, 
     reconfigure_cors, wait_for_server, 
     start_server_thread, start_client 
 )
@@ -104,16 +104,27 @@ class Webapp:
         
         display(HTML(html_content))
     
-    def launch_demo(self, width='100%', height=1000, scale=0.7, title="Launching LORE_sa Demo Application"):
+    def _open_browser_at_localhost(self, port=8080):
+        """Open the default browser at localhost with specified port"""
+        url = f'http://localhost:{port}'
+        
+        try:
+            print(f"Opening {url} in your default browser...")
+            webbrowser.open(url)
+            print("Browser opened successfully!")
+        except Exception as e:
+            print(f"Error opening browser: {e}")
+            return False
+        
+        return True
+
+    def _launch_webapp (self, inJupyter, width, height, scale, title):
         print(title)
         print("=" * 50)
         
-        # Clean up existing processes on target ports
-        cleanup_ports([8000, 8080])
-        
         # Find available ports
-        self.api_port = find_available_port(8000)
-        self.client_port = find_available_port(8080)
+        self.api_port = 8000
+        self.client_port = 8080
         
         if self.api_port != 8000 or self.client_port != 8080:
             print(f"Found available ports - API: {self.api_port}, Client: {self.client_port}")
@@ -149,26 +160,49 @@ class Webapp:
         print("=" * 50)
         
         # Show the client in the notebook
-        self._show_localhost_content(actual_client_port, width, height, scale)
+        if inJupyter:
+            self._show_localhost_content(actual_client_port, width, height, scale)
+        else:
+            self._open_browser_at_localhost(actual_client_port)
+
+    def launch_demo(self, inJupyter=False, width='100%', height=1000, scale=0.7, title="Launching LORE_sa Demo Application"):
+        # Set environment flag for custom data
+        os.environ["CUSTOM_DATA_LOADED"] = "false"
+
+        # Update webapp state to match what training normally does
+        webapp_state.bbox = None
+        webapp_state.dataset = None
+        webapp_state.descriptor = None
+        webapp_state.feature_names = None
+        webapp_state.target_names = None
+        webapp_state.dataset_name = None
         
-        return actual_api_port, actual_client_port
-    
-    def interactive_explanation(self, bbox, dataset, target_column, width='100%', height=1000, scale=0.7):
+        # Launch the webapp with demo parameters
+        self._launch_webapp(
+            inJupyter=inJupyter,
+            width=width, 
+            height=height, 
+            scale=scale, 
+            title=title
+        )
+
+    def interactive_explanation(self, bbox, dataset, target_column, inJupyter=True, width='100%', height=1000, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "true"
 
         # Update webapp state to match what training normally does
         webapp_state.bbox = bbox
-        webapp_state.dataset = dataset.df  
+        webapp_state.dataset = dataset
         webapp_state.descriptor = dataset.descriptor
         webapp_state.feature_names = [kk for k, v in dataset.descriptor.items() if k != target_column for kk in v.keys()]
         webapp_state.target_names = sorted(dataset.df[target_column].unique().tolist())
         webapp_state.dataset_name = "Custom Dataset"
         
-        # Launch the demo with custom title
-        return self.launch_demo(
+        # Launch the webapp with custom title
+        self._launch_webapp(
+            inJupyter=inJupyter,
             width=width, 
             height=height, 
             scale=scale, 
-            title="Launching LORE_sa explanation viz webapp"
+            title=title
         )
