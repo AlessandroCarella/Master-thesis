@@ -12,9 +12,10 @@ class WebappState:
         self.encoded_feature_names = None
 
         self.neighborhood = None
-        self.neighb_train_X = None
-        self.neighb_train_y = None
-        self.neighb_train_yz = None
+        self.neighb_encoded_predictions = None
+
+        self.decoded_neighborhood = None
+        self.neighb_predictions = None
         self.dt_surrogate = None
 
 webapp_state = WebappState()

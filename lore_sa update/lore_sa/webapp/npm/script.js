@@ -29,7 +29,6 @@ import {
     fetchClassifierParameters,
     trainModel,
     fetchExplanation,
-    getSampleInstance,
 } from "./jsHelpers/API.js";
 
 import {

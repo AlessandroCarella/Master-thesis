@@ -199,8 +199,9 @@ class NeighborhoodGenerator:
         predictions = self.bbox.predict(decoded_neighborhood)
         encoded_predictions = encoder.encode_target_class(predictions.reshape(-1, 1)).squeeze()
         
-        return (neighborhood, decoded_neighborhood, predictions, 
-                encoded_predictions, self._get_encoded_feature_names())
+        return (neighborhood, encoded_predictions, 
+                decoded_neighborhood, predictions, 
+                self._get_encoded_feature_names())
     
     def _prepare_instance(self, instance):
         """Convert instance to properly ordered DataFrame."""
@@ -295,6 +296,6 @@ def create_neighbourhood_with_lore(instance, bbox, dataset, keepDuplicates, neig
     generator = NeighborhoodGenerator(dataset, bbox)
     return generator.generate_neighborhood(instance, keepDuplicates, neighbourhood_size)
 
-def get_lore_decision_tree_surrogate(neighbour, neighb_train_yz):
+def get_lore_decision_tree_surrogate(neighbour, encoded_predictions):
     """Main interface for creating decision tree surrogate."""
-    return create_decision_tree_surrogate(neighbour, neighb_train_yz)
+    return create_decision_tree_surrogate(neighbour, encoded_predictions)

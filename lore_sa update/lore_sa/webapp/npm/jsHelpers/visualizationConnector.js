@@ -41,6 +41,8 @@ let originalInstance = null;
 // ============================================
 
 export function setExplainedInstance(encodedInstance, originalInstance, featureMappingInfo) {
+    explainedInstance = encodedInstance;
+
     // Store both instances and feature mapping info
     window.currentEncodedInstance = encodedInstance;
     window.currentOriginalInstance = originalInstance; 

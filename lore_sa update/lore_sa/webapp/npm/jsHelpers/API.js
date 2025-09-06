@@ -90,24 +90,3 @@ export async function checkCustomData() {
         return { custom_data_loaded: false };
     }
 }
-
-// Function to get a sample instance from custom dataset
-export async function getSampleInstance() {
-    try {
-        const response = await fetch(`${API_BASE}/get-sample-instance`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error("Error getting sample instance:", error);
-        throw error;
-    }
-}

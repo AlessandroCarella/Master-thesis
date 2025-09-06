@@ -171,14 +171,19 @@ class StateManager:
     """Manages webapp state updates."""
     
     @staticmethod
-    def update_neighborhood_data(neighborhood, neighb_train_X, neighb_train_y, 
-                                neighb_train_yz, encoded_feature_names):
+    def update_neighborhood_data(neighborhood, encoded_predictions, 
+                                decoded_neighborhood, predictions,
+                                encoded_feature_names):
         """Update webapp state with neighborhood data."""
         webapp_state.neighborhood = neighborhood
-        webapp_state.neighb_train_X = neighb_train_X
-        webapp_state.neighb_train_y = neighb_train_y
-        webapp_state.neighb_train_yz = neighb_train_yz
+        webapp_state.neighb_encoded_predictions = encoded_predictions
+        webapp_state.decoded_neighborhood = decoded_neighborhood
+        webapp_state.neighb_predictions = predictions
         webapp_state.encoded_feature_names = encoded_feature_names
+
+        neighborhood, encoded_predictions, 
+        decoded_neighborhood, predictions,
+        encoded_feature_names
     
     @staticmethod
     def update_surrogate_model(surrogate):
@@ -232,12 +237,12 @@ async def update_visualization(request: VisualizationRequest):
     # Generate scatter plot visualization
     if request.includeOriginalDataset:
         scatter_data = DataProcessor.prepare_scatter_data_with_original(
-            request, webapp_state.neighborhood, webapp_state.neighb_train_y,
+            request, webapp_state.neighborhood, webapp_state.neighb_predictions,
             webapp_state.dt_surrogate, webapp_state.target_names
         )
     else:
         scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
-            request, webapp_state.neighborhood, webapp_state.neighb_train_y,
+            request, webapp_state.neighborhood, webapp_state.neighb_predictions,
             webapp_state.dt_surrogate, webapp_state.target_names
         )
     
@@ -254,8 +259,9 @@ async def explain_instance(request: InstanceRequest):
     instance_dict = InstanceProcessor.process_instance(request)
 
     # Generate neighborhood using LORE
-    (neighborhood, neighb_train_X, neighb_train_y, 
-     neighb_train_yz, encoded_feature_names) = create_neighbourhood_with_lore(
+    (neighborhood, encoded_predictions, 
+    decoded_neighborhood, predictions,
+     encoded_feature_names) = create_neighbourhood_with_lore(
         instance=instance_dict,
         bbox=webapp_state.bbox,
         dataset=webapp_state.dataset,
@@ -265,15 +271,16 @@ async def explain_instance(request: InstanceRequest):
     
     # Update webapp state
     StateManager.update_neighborhood_data(
-        neighborhood, neighb_train_X, neighb_train_y, 
-        neighb_train_yz, encoded_feature_names
+        neighborhood, encoded_predictions, 
+        decoded_neighborhood, predictions,
+        encoded_feature_names
     )
     
     # NOW encode the instance using the same encoder
     encoded_instance = InstanceProcessor.encode_instance(instance_dict)
     
     # Create decision tree surrogate
-    surrogate = get_lore_decision_tree_surrogate(neighborhood, neighb_train_yz)
+    surrogate = get_lore_decision_tree_surrogate(neighborhood, webapp_state.neighb_encoded_predictions)
     StateManager.update_surrogate_model(surrogate)
     
     # Generate visualizations
@@ -283,50 +290,16 @@ async def explain_instance(request: InstanceRequest):
     
     if request.includeOriginalDataset:
         scatter_data = DataProcessor.prepare_scatter_data_with_original(
-            request, neighborhood, neighb_train_y, surrogate, webapp_state.target_names
+            request, neighborhood, webapp_state.neighb_predictions, surrogate, webapp_state.target_names
         )
     else:
         scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
-            request, neighborhood, neighb_train_y, surrogate, webapp_state.target_names
+            request, neighborhood, webapp_state.neighb_predictions, surrogate, webapp_state.target_names
         )
     
     return ResponseBuilder.build_success_response(
         "Instance explained", tree_data, scatter_data, encoded_instance
     )
-
-
-@router.get("/get-sample-instance")
-async def get_sample_instance():
-    """Get a sample instance from the current dataset for custom data workflows."""
-    
-    try:
-        if not hasattr(webapp_state, 'dataset') or webapp_state.dataset is None:
-            raise HTTPException(status_code=400, detail="No dataset loaded")
-        
-        # Get feature names in the correct order
-        ordered_names = InstanceProcessor.get_ordered_feature_names()
-        
-        # Get a sample from the dataset (use first row)
-        if len(webapp_state.dataset.df) == 0:
-            raise HTTPException(status_code=400, detail="Dataset is empty")
-        
-        # Get the first row excluding the target column
-        sample_row = webapp_state.dataset.df.iloc[0]
-        
-        # Create instance dictionary with ordered feature names
-        instance = {}
-        for name in ordered_names:
-            if name in sample_row:
-                instance[name] = sample_row[name]
-        
-        return {
-            "status": "success",
-            "instance": instance,
-            "feature_names": ordered_names
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get sample instance: {str(e)}")
 
 
 @router.get("/check-custom-data")

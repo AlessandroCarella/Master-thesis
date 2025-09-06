@@ -201,8 +201,8 @@ async def get_colors(method):
     if len(webapp_state.target_names) > 10:
         # Compute centroids using the neighborhood data
         centroids = compute_centroids(
-            webapp_state.neighb_train_X,
-            webapp_state.neighb_train_y
+            webapp_state.decoded_neighborhood,
+            webapp_state.neighb_predictions
         )
             
         # Project centroids to 2D and map to CIELAB colors
