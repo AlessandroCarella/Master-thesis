@@ -5,7 +5,7 @@ import numpy as np
 from collections import OrderedDict
 import os
 
-from ..webapp_lore import create_neighbourhood_with_lore, get_lore_decision_tree_surrogate
+from ..webapp_lore import create_neighbourhood_with_lore, train_surrogate
 from ..webapp_generate_decision_tree_visualization_data import (
     extract_tree_structure,
     generate_decision_tree_visualization_data_raw
@@ -60,11 +60,9 @@ class InstanceProcessor:
     @staticmethod
     def encode_instance(instance_dict):
         """Encode instance using the same encoder as the dataset."""
-        from lore_sa.encoder_decoder import ColumnTransformerEnc
-        encoder = ColumnTransformerEnc(webapp_state.dataset.descriptor)
         # Convert OrderedDict to a single row for encoding
         instance_array = np.array([[instance_dict[name] for name in instance_dict.keys()]])
-        encoded_instance = encoder.encode(instance_array)[0]  # Get first (and only) row
+        encoded_instance = webapp_state.encoder.encode(instance_array)[0]  # Get first (and only) row
         
         # Convert back to dictionary with encoded feature names
         encoded_instance_dict = {}
@@ -106,11 +104,7 @@ class DataProcessor:
     @staticmethod
     def prepare_scatter_data_with_original(request, X, y, surrogate, class_names):
         """Prepare scatter plot data including original dataset."""
-        from lore_sa.encoder_decoder import ColumnTransformerEnc
-        
-        # Encode original training data
-        encoder = ColumnTransformerEnc(webapp_state.dataset.descriptor)
-        X_encoded = encoder.encode(webapp_state.X)
+        X_encoded = webapp_state.encoder.encode(webapp_state.X)
         
         # Generate scatter plot data
         scatter_data = VisualizationGenerator.generate_scatter_plot_data(
@@ -181,15 +175,11 @@ class StateManager:
         webapp_state.decoded_neighborhood = decoded_neighborhood
         webapp_state.neighb_predictions = predictions
         webapp_state.encoded_feature_names = encoded_feature_names
-
-        neighborhood, encoded_predictions, 
-        decoded_neighborhood, predictions,
-        encoded_feature_names
     
     @staticmethod
     def update_surrogate_model(surrogate):
         """Update webapp state with surrogate model."""
-        webapp_state.dt_surrogate = surrogate
+        webapp_state.surrogate = surrogate
 
 
 class ResponseBuilder:
@@ -229,7 +219,7 @@ async def update_visualization(request: VisualizationRequest):
     """Update visualization technique without regenerating neighborhood."""
     # Generate decision tree visualization with neighborhood-specific target names
     tree_data = VisualizationGenerator.generate_decision_tree_data(
-        webapp_state.dt_surrogate,
+        webapp_state.surrogate,
         webapp_state.encoded_feature_names,
         webapp_state.target_names
     )
@@ -238,12 +228,12 @@ async def update_visualization(request: VisualizationRequest):
     if request.includeOriginalDataset:
         scatter_data = DataProcessor.prepare_scatter_data_with_original(
             request, webapp_state.neighborhood, webapp_state.neighb_predictions,
-            webapp_state.dt_surrogate, webapp_state.target_names
+            webapp_state.surrogate, webapp_state.target_names
         )
     else:
         scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
             request, webapp_state.neighborhood, webapp_state.neighb_predictions,
-            webapp_state.dt_surrogate, webapp_state.target_names
+            webapp_state.surrogate, webapp_state.target_names
         )
     
     return safe_json_response(ResponseBuilder.build_success_response(
@@ -255,6 +245,13 @@ async def update_visualization(request: VisualizationRequest):
 async def explain_instance(request: InstanceRequest):
     """Generate local explanation for a given instance."""
     
+    # Check if in demo and initialize surrogate model, neighborhood generator and encoder
+    if webapp_state.surrogate == None and webapp_state.encoder == None:
+        from ...surrogate import DecisionTreeSurrogate
+        from ...encoder_decoder import ColumnTransformerEnc
+        webapp_state.surrogate = DecisionTreeSurrogate()
+        webapp_state.encoder = ColumnTransformerEnc(webapp_state.descriptor)
+
     # Process instance data (original features)
     instance_dict = InstanceProcessor.process_instance(request)
 
@@ -280,21 +277,21 @@ async def explain_instance(request: InstanceRequest):
     encoded_instance = InstanceProcessor.encode_instance(instance_dict)
     
     # Create decision tree surrogate
-    surrogate = get_lore_decision_tree_surrogate(neighborhood, webapp_state.neighb_encoded_predictions)
-    StateManager.update_surrogate_model(surrogate)
+    train_surrogate(neighborhood, webapp_state.neighb_encoded_predictions)
+    StateManager.update_surrogate_model(webapp_state.surrogate)
         
     # Generate visualizations with neighborhood-specific target names
     tree_data = VisualizationGenerator.generate_decision_tree_data(
-        surrogate, encoded_feature_names, webapp_state.target_names
+        webapp_state.surrogate, encoded_feature_names, webapp_state.target_names
     )
     
     if request.includeOriginalDataset:
         scatter_data = DataProcessor.prepare_scatter_data_with_original(
-            request, neighborhood, webapp_state.neighb_predictions, surrogate, webapp_state.target_names
+            request, neighborhood, webapp_state.neighb_predictions, webapp_state.surrogate, webapp_state.target_names
         )
     else:
         scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
-            request, neighborhood, webapp_state.neighb_predictions, surrogate, webapp_state.target_names
+            request, neighborhood, webapp_state.neighb_predictions, webapp_state.surrogate, webapp_state.target_names
         )
     
     return safe_json_response(ResponseBuilder.build_success_response(

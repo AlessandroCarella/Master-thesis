@@ -17,5 +17,15 @@ class WebappState:
         self.decoded_neighborhood = None
         self.neighb_predictions = None
         self.dt_surrogate = None
+        
+        self.encoder = None
+        self.generator = None
+        self.surrogate = None
+
+        self.provided_instance = None
+
+    def reset(self):
+        """Reset all state to initial values."""
+        self.__init__()
 
 webapp_state = WebappState()

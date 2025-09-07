@@ -156,7 +156,7 @@ class Webapp:
         self.client_port = actual_client_port
         
         print("Application started successfully!")
-        print(f"API: http://localhost:{actual_api_port}")
+        print(f"API: http://localhost:{actual_api_port}/docs#/")
         print(f"Client: http://localhost:{actual_client_port}")
         print("=" * 50)
         
@@ -177,7 +177,7 @@ class Webapp:
         webapp_state.feature_names = None
         webapp_state.target_names = None
         webapp_state.dataset_name = None
-        
+
         # Launch the webapp with demo parameters
         self._launch_webapp(
             inJupyter=inJupyter,
@@ -187,7 +187,7 @@ class Webapp:
             title=title
         )
 
-    def interactive_explanation(self, bbox, dataset, target_column, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
+    def interactive_explanation(self, bbox, dataset, target_column, encoder, generator, surrogate, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "true"
 
@@ -195,6 +195,9 @@ class Webapp:
         webapp_state.bbox = bbox
         webapp_state.dataset = dataset
         webapp_state.descriptor = dataset.descriptor
+        webapp_state.encoder = encoder
+        webapp_state.generator = generator
+        webapp_state.surrogate = surrogate
         webapp_state.feature_names = [kk for k, v in dataset.descriptor.items() if k != target_column for kk in v.keys()]
         webapp_state.target_names = sorted(dataset.df[target_column].unique().tolist())
         webapp_state.dataset_name = "Custom Dataset"

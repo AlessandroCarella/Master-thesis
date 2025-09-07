@@ -142,7 +142,7 @@ def extract_single_node(tree, node_id: int, feature_names: List[str], target_nam
 
 def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_names: List[str], target_names: List[str]) -> List[TreeNode]: 
     """Extract complete node information from a trained DecisionTreeClassifier"""
-    tree = tree_classifier.tree_
+    tree = tree_classifier.dt.tree_
     nodes = []
 
     for node_id in range(tree.node_count):

@@ -49,7 +49,7 @@ export const TREES_SETTINGS = {
 
         // Stroke widths
         strokeWidth: {
-            pathHighlightMultiplier: 2
+            pathHighlightMultiplier: 3
         },
     },
     treeKindID: {

@@ -3,8 +3,6 @@ import numpy as np
 import logging
 import os
 import joblib
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
@@ -169,22 +167,19 @@ class NeighborhoodGenerator:
 
     def generate_neighborhood(self, instance, keepDuplicates, neighborhood_size):
         """Generate neighborhood around instance using LORE."""
-        from lore_sa.encoder_decoder import ColumnTransformerEnc
-        from lore_sa.neighgen import GeneticGenerator
-        
-        # Initialize encoder
-        encoder = ColumnTransformerEnc(self.dataset.descriptor)
-
         # Prepare instance
         instance_df = self._prepare_instance(instance)
         original_dict = instance_df.iloc[0].to_dict()
         
         # Encode and generate neighborhood
-        encoded_instance = encoder.encode(instance_df)[0]
+        encoded_instance = webapp_state.encoder.encode(instance_df)[0]
 
-        generator = GeneticGenerator(self.bbox, self.dataset, encoder)
-        neighborhood = generator.generate(encoded_instance, neighborhood_size, 
-                                        self.dataset.descriptor, encoder)
+        if webapp_state.generator == None:
+            from ..neighgen.genetic import GeneticGenerator
+            webapp_state.generator = GeneticGenerator(webapp_state.bbox, webapp_state.dataset, webapp_state.encoder, 0.1)
+        
+        neighborhood = webapp_state.generator.generate(encoded_instance, neighborhood_size, 
+                                        self.dataset.descriptor, webapp_state.encoder)
         
         # Process neighborhood
         if not keepDuplicates:
@@ -192,12 +187,12 @@ class NeighborhoodGenerator:
         neighborhood = self._ensure_instance_at_end(encoded_instance, neighborhood)
         
         # Decode and get predictions
-        decoded_neighborhood = encoder.decode(neighborhood)  # neighborhood should already be numpy array
+        decoded_neighborhood = webapp_state.encoder.decode(neighborhood)  # neighborhood should already be numpy array
         decoded_neighborhood = self._to_dataframe(decoded_neighborhood)
         # decoded_neighborhood = self._preserve_original_instance(decoded_neighborhood, original_dict)
 
         predictions = self.bbox.predict(decoded_neighborhood)
-        encoded_predictions = encoder.encode_target_class(predictions.reshape(-1, 1)).squeeze()
+        encoded_predictions = webapp_state.encoder.encode_target_class(predictions.reshape(-1, 1)).squeeze()
         
         return (neighborhood, encoded_predictions, 
                 decoded_neighborhood, predictions, 
@@ -275,15 +270,6 @@ class NeighborhoodGenerator:
         
         return names
 
-# ---------------- Decision Tree Surrogate ---------------- #
-
-def create_decision_tree_surrogate(encoded_neighborhood, encoded_predictions):
-    """Create decision tree surrogate model."""
-    from lore_sa.surrogate import DecisionTreeSurrogate
-    surrogate = DecisionTreeSurrogate()
-    return surrogate.train(encoded_neighborhood, encoded_predictions)
-
-
 # ---------------- Main Interface Functions ---------------- #
 
 def load_cached_classifier(dataset_name, classifier=None, classifier_name=None):
@@ -296,6 +282,6 @@ def create_neighbourhood_with_lore(instance, bbox, dataset, keepDuplicates, neig
     generator = NeighborhoodGenerator(dataset, bbox)
     return generator.generate_neighborhood(instance, keepDuplicates, neighbourhood_size)
 
-def get_lore_decision_tree_surrogate(neighbour, encoded_predictions):
-    """Main interface for creating decision tree surrogate."""
-    return create_decision_tree_surrogate(neighbour, encoded_predictions)
+def train_surrogate(neighbour, encoded_predictions):
+    """Main interface for training decision tree surrogate."""
+    webapp_state.surrogate.train(neighbour, encoded_predictions)

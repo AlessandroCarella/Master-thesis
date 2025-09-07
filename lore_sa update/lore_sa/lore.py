@@ -103,10 +103,22 @@ class Lore(object):
             'feature_importances': self.feature_importances,
         }
 
-
-    # def webapp(self, width='100%', height=1000, scale=0.7):
-    #     setup_custom_explanation_system(self.bbox, self.dataset, list(self.dataset.descriptor["target"].keys())[0], width, height, scale)
-
+    def interactive_explanation(self, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
+        from lore_sa.webapp import Webapp
+        webapp = Webapp()
+        webapp.interactive_explanation(
+            self.bbox, 
+            self.dataset, 
+            self.class_name, 
+            self.encoder,
+            self.generator,
+            self.surrogate,
+            inJupyter=inJupyter,
+            width=width,
+            height=height,
+            scale=scale,
+            title=title
+        )
         
 
 class TabularRandomGeneratorLore(Lore):
@@ -129,8 +141,6 @@ class TabularRandomGeneratorLore(Lore):
     def explain_instance(self, x: np.array):
         return self.explain(x.values)
 
-    # def interact(self):
-    #     self.webapp()
 
 class TabularGeneticGeneratorLore(Lore):
 
@@ -153,9 +163,7 @@ class TabularGeneticGeneratorLore(Lore):
 
     def explain_instance(self, x: np.array):
         return self.explain(x.values)
-        
-    # def interact(self):
-    #     self.webapp()
+    
 
 class TabularRandGenGeneratorLore(Lore):
      
@@ -178,6 +186,3 @@ class TabularRandGenGeneratorLore(Lore):
 
     def explain_instance(self, x:np.array):
         return self.explain(x.values)
-    
-    # def interact(self):
-    #     self.webapp()
