@@ -34,6 +34,14 @@ class VisualizationRequest(BaseModel):
     scatterPlotMethod: str = "umap"
     includeOriginalDataset: bool
 
+class ProvidedInstanceRequest(BaseModel):
+    dataset_name: str
+    neighbourhood_size: int
+    scatterPlotStep: float
+    scatterPlotMethod: str = "umap"
+    includeOriginalDataset: bool
+    keepDuplicates: bool
+
 
 # ---------------- Core Processing Classes ---------------- #
 
@@ -56,6 +64,25 @@ class InstanceProcessor:
         """Convert instance request to ordered dictionary."""
         ordered_names = InstanceProcessor.get_ordered_feature_names()
         return OrderedDict((name, request.instance[name]) for name in ordered_names)
+    
+    @staticmethod
+    def process_provided_instance():
+        """Convert provided instance to ordered dictionary."""
+        if webapp_state.provided_instance is None:
+            raise ValueError("No provided instance available")
+        
+        ordered_names = InstanceProcessor.get_ordered_feature_names()
+        
+        # Convert provided instance to the expected format
+        if hasattr(webapp_state.provided_instance, 'to_dict'):
+            instance_dict = webapp_state.provided_instance.to_dict()
+        elif isinstance(webapp_state.provided_instance, dict):
+            instance_dict = webapp_state.provided_instance
+        else:
+            # Handle Series or DataFrame row
+            instance_dict = dict(webapp_state.provided_instance)
+        
+        return OrderedDict((name, instance_dict[name]) for name in ordered_names)
     
     @staticmethod
     def encode_instance(instance_dict):
@@ -246,7 +273,7 @@ async def explain_instance(request: InstanceRequest):
     """Generate local explanation for a given instance."""
     
     # Check if in demo and initialize surrogate model, neighborhood generator and encoder
-    if webapp_state.surrogate == None and webapp_state.encoder == None:
+    if webapp_state.surrogate == None:
         from ...surrogate import DecisionTreeSurrogate
         from ...encoder_decoder import ColumnTransformerEnc
         webapp_state.surrogate = DecisionTreeSurrogate()
@@ -299,6 +326,57 @@ async def explain_instance(request: InstanceRequest):
     ))
 
 
+@router.post("/explain-provided-instance")
+async def explain_provided_instance(request: ProvidedInstanceRequest):
+    """Generate local explanation for the pre-provided instance."""
+    
+    # Process the provided instance
+    instance_dict = InstanceProcessor.process_provided_instance()
+
+    # Generate neighborhood using LORE
+    (neighborhood, encoded_predictions, 
+    decoded_neighborhood, predictions,
+     encoded_feature_names) = create_neighbourhood_with_lore(
+        instance=instance_dict,
+        bbox=webapp_state.bbox,
+        dataset=webapp_state.dataset,
+        keepDuplicates=request.keepDuplicates,
+        neighbourhood_size=request.neighbourhood_size,
+    )
+    
+    # Update webapp state
+    StateManager.update_neighborhood_data(
+        neighborhood, encoded_predictions, 
+        decoded_neighborhood, predictions,
+        encoded_feature_names
+    )
+    
+    # Encode the instance using the same encoder
+    encoded_instance = InstanceProcessor.encode_instance(instance_dict)
+    
+    # Create decision tree surrogate
+    train_surrogate(neighborhood, webapp_state.neighb_encoded_predictions)
+    StateManager.update_surrogate_model(webapp_state.surrogate)
+        
+    # Generate visualizations with neighborhood-specific target names
+    tree_data = VisualizationGenerator.generate_decision_tree_data(
+        webapp_state.surrogate, encoded_feature_names, webapp_state.target_names
+    )
+    
+    if request.includeOriginalDataset:
+        scatter_data = DataProcessor.prepare_scatter_data_with_original(
+            request, neighborhood, webapp_state.neighb_predictions, webapp_state.surrogate, webapp_state.target_names
+        )
+    else:
+        scatter_data = DataProcessor.prepare_scatter_data_neighborhood_only(
+            request, neighborhood, webapp_state.neighb_predictions, webapp_state.surrogate, webapp_state.target_names
+        )
+    
+    return safe_json_response(ResponseBuilder.build_success_response(
+        "Provided instance explained", tree_data, scatter_data, encoded_instance
+    ))
+
+
 @router.get("/check-custom-data")
 async def check_custom_data():
     """Check if custom data is loaded and return dataset info."""
@@ -306,22 +384,40 @@ async def check_custom_data():
     try:
         # Check if custom data is loaded by looking for environment variable
         custom_data_loaded = os.environ.get("CUSTOM_DATA_LOADED", "false").lower() == "true"
+        instance_provided = os.environ.get("INSTANCE_PROVIDED", "false").lower() == "true"
         
         if custom_data_loaded and hasattr(webapp_state, 'dataset') and webapp_state.dataset is not None:
-            return safe_json_response({
+            response_data = {
                 "custom_data_loaded": True,
+                "instance_provided": instance_provided,
                 "dataset_name": getattr(webapp_state, 'dataset_name', 'Custom Dataset'),
                 "descriptor": webapp_state.dataset.descriptor,
                 "feature_names": getattr(webapp_state, 'feature_names', [])
-            })
+            }
+            
+            # If instance is provided, include it in the response
+            if instance_provided and webapp_state.provided_instance is not None:
+                # Convert provided instance to dict if necessary
+                if hasattr(webapp_state.provided_instance, 'to_dict'):
+                    instance_dict = webapp_state.provided_instance.to_dict()
+                elif isinstance(webapp_state.provided_instance, dict):
+                    instance_dict = webapp_state.provided_instance
+                else:
+                    instance_dict = dict(webapp_state.provided_instance)
+                
+                response_data["provided_instance"] = instance_dict
+            
+            return safe_json_response(response_data)
         else:
             return {
-                "custom_data_loaded": False
+                "custom_data_loaded": False,
+                "instance_provided": False
             }
             
     except Exception as e:
         return {
             "custom_data_loaded": False,
+            "instance_provided": False,
             "error": str(e)
         }
     

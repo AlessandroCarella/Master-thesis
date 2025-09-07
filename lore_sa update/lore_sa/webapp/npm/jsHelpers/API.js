@@ -1,4 +1,4 @@
-// Simplified API.js - No feature mapping complexity
+// Simplified API.js - Added provided instance handling
 export const API_BASE = "http://127.0.0.1:8000/api";
 
 export const fetchJSON = async (url, options = {}) => {
@@ -32,6 +32,16 @@ export const trainModel = async (trainingData) =>
 
 export const fetchExplanation = async (requestData) => {
     const response = await fetchJSON(`${API_BASE}/explain`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+    });
+    
+    return response;
+};
+
+export const fetchProvidedInstanceExplanation = async (requestData) => {
+    const response = await fetchJSON(`${API_BASE}/explain-provided-instance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
@@ -87,6 +97,6 @@ export async function checkCustomData() {
         return await response.json();
     } catch (error) {
         console.error("Error checking custom data:", error);
-        return { custom_data_loaded: false };
+        return { custom_data_loaded: false, instance_provided: false };
     }
 }

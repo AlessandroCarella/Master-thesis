@@ -169,6 +169,7 @@ class Webapp:
     def launch_demo(self, inJupyter=False, width='100%', height=1500, scale=0.7, title="Launching LORE_sa Demo Application"):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "false"
+        os.environ["INSTANCE_PROVIDED"] = "false"
 
         # Update webapp state to match what training normally does
         webapp_state.bbox = None
@@ -177,7 +178,8 @@ class Webapp:
         webapp_state.feature_names = None
         webapp_state.target_names = None
         webapp_state.dataset_name = None
-
+        webapp_state.provided_instance = None
+        
         # Launch the webapp with demo parameters
         self._launch_webapp(
             inJupyter=inJupyter,
@@ -187,9 +189,15 @@ class Webapp:
             title=title
         )
 
-    def interactive_explanation(self, bbox, dataset, target_column, encoder, generator, surrogate, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
+    def interactive_explanation(self, bbox, dataset, target_column, encoder, generator, surrogate, instance=None, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
         # Set environment flag for custom data
         os.environ["CUSTOM_DATA_LOADED"] = "true"
+        
+        # Set environment flag for provided instance
+        if instance is not None:
+            os.environ["INSTANCE_PROVIDED"] = "true"
+        else:
+            os.environ["INSTANCE_PROVIDED"] = "false"
 
         # Update webapp state to match what training normally does
         webapp_state.bbox = bbox
@@ -201,6 +209,7 @@ class Webapp:
         webapp_state.feature_names = [kk for k, v in dataset.descriptor.items() if k != target_column for kk in v.keys()]
         webapp_state.target_names = sorted(dataset.df[target_column].unique().tolist())
         webapp_state.dataset_name = "Custom Dataset"
+        webapp_state.provided_instance = instance
         
         # Launch the webapp with custom title
         self._launch_webapp(

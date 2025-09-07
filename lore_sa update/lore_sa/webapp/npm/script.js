@@ -18,7 +18,6 @@ import { initializeVisualizations } from "./jsHelpers/visualizations.js";
 import { updateParameter, loadingState } from "./jsHelpers/stateManagement.js";
 import {
     setExplainedInstance,
-    resetVisualizationState,
 } from "./jsHelpers/visualizationConnector.js";
 
 // Import helper functions
@@ -29,6 +28,7 @@ import {
     fetchClassifierParameters,
     trainModel,
     fetchExplanation,
+    fetchProvidedInstanceExplanation,
 } from "./jsHelpers/API.js";
 
 import {
@@ -54,6 +54,7 @@ import {
 import {
     showExplanationLoading,
     buildExplanationRequestData,
+    buildProvidedInstanceRequestData,
     updateVisualizationUI,
 } from "./jsHelpers/UIHelpers/explanation.js";
 
@@ -69,6 +70,8 @@ export const appState = {
     selectedClassifier: null,
     parameters: {},
     featureDescriptor: null,
+    instanceProvided: false,
+    providedInstance: null,
 };
 
 /********************************************
@@ -202,16 +205,21 @@ window.explainInstance = async () => {
     try {
         showExplanationLoading();
         
-        let instanceData = getFeatureValues();
-        
         const surrogateParams = getSurrogateParameters();
-        const requestData = buildExplanationRequestData(
-            instanceData,
-            surrogateParams,
-            appState
-        );
+        let requestData;
+        let result;
         
-        const result = await fetchExplanation(requestData);
+        // Check if we should use provided instance or user input
+        if (appState.instanceProvided && appState.providedInstance) {
+            // Use provided instance endpoint
+            requestData = buildProvidedInstanceRequestData(surrogateParams, appState);
+            result = await fetchProvidedInstanceExplanation(requestData);
+        } else {
+            // Use regular instance input endpoint
+            let instanceData = getFeatureValues();
+            requestData = buildExplanationRequestData(instanceData, surrogateParams, appState);
+            result = await fetchExplanation(requestData);
+        }
 
         // Get the current scatter plot method
         const methodElement = document.querySelector(
@@ -263,17 +271,19 @@ window.explainInstance = async () => {
         // Get the encoded instance from the backend response
         const encodedInstance = result.encodedInstance;
         
+        // For provided instance case, use the provided instance as original instance
+        const originalInstance = appState.instanceProvided ? appState.providedInstance : getFeatureValues();
+        
         // Store both original and encoded instances
-        // Original for display/reference, encoded for tree path tracing
         setExplainedInstance(
-            encodedInstance || instanceData,  // Use encoded for tree operations
-            instanceData,  // Store original as reference
+            encodedInstance || originalInstance,  // Use encoded for tree operations
+            originalInstance,  // Store original as reference
             result.featureMappingInfo,
         );
 
         // Store encoded instance globally for debugging/reference
         window.currentFeatureMappingInfo = result.featureMappingInfo;
-        window.currentOriginalInstance = instanceData;
+        window.currentOriginalInstance = originalInstance;
         window.currentEncodedInstance = encodedInstance;
 
         // Initialize visualizations with proper data structure
@@ -281,7 +291,7 @@ window.explainInstance = async () => {
             decisionTreeVisualizationData: result.decisionTreeVisualizationData,
             scatterPlotVisualizationData: result.scatterPlotVisualizationData,
             encodedInstance: encodedInstance,  // Pass encoded instance
-            originalInstance: instanceData,    // Also pass original for reference
+            originalInstance: originalInstance,    // Also pass original for reference
             featureMappingInfo: result.featureMappingInfo  // Include feature mapping info
         });
 
@@ -326,6 +336,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Update app state with custom data info
             appState.dataset_name = customDataCheck.dataset_name;
             appState.featureDescriptor = customDataCheck.descriptor;
+            appState.instanceProvided = customDataCheck.instance_provided || false;
+            appState.providedInstance = customDataCheck.provided_instance || null;
             
             // CRITICAL FIX: Set the state in ui.js so getFeatureValues() works correctly
             setState(appState);
@@ -339,19 +351,49 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (classifierSection) classifierSection.style.display = "none";
             if (parameterSection) parameterSection.style.display = "none";
             
-            // Show feature inputs directly
-            createFeatureInputs(customDataCheck.descriptor);
-            const featureButtonContainer = document.getElementById("featureButtonContainer");
-            if (featureButtonContainer) {
-                featureButtonContainer.style.display = "block";
+            // Check if instance was provided
+            if (appState.instanceProvided) {
+                // Instance provided - skip feature inputs, show only surrogate parameters
+                console.log("Instance provided, skipping feature inputs");
                 
-                // Populate surrogate parameters form
-                const surrogateContainer = document.getElementById("surrogateContainer");
-                if (surrogateContainer) {
-                    populateSurrogateForm(surrogateContainer);
+                const featureButtonContainer = document.getElementById("featureButtonContainer");
+                if (featureButtonContainer) {
+                    // Clear and setup container for surrogate params only
+                    featureButtonContainer.innerHTML = `
+                        <div class="provided-instance-info">
+                            <h3>Instance Provided</h3>
+                            <p>An instance has been pre-provided for explanation. Configure the surrogate model parameters below and click "Explain!" to generate the explanation.</p>
+                        </div>
+                        <div id="surrogateContainer"></div>
+                        <div class="button-group">
+                            <button class="submit-btn btn" onclick="explainInstance()">Explain!</button>
+                        </div>
+                    `;
+                    featureButtonContainer.style.display = "block";
+                    
+                    // Populate surrogate parameters form
+                    const surrogateContainer = document.getElementById("surrogateContainer");
+                    if (surrogateContainer) {
+                        populateSurrogateForm(surrogateContainer);
+                    }
+                    
+                    scrollToElement(featureButtonContainer);
                 }
-                
-                scrollToElement(featureButtonContainer);
+            } else {
+                // No instance provided - show feature inputs normally
+                createFeatureInputs(customDataCheck.descriptor);
+                const featureButtonContainer = document.getElementById("featureButtonContainer");
+                if (featureButtonContainer) {
+                    featureButtonContainer.style.display = "block";
+                    
+                    // Populate surrogate parameters form
+                    const surrogateContainer = document.getElementById("surrogateContainer");
+                    if (surrogateContainer) {
+                        populateSurrogateForm(surrogateContainer);
+                    }
+                    
+                    scrollToElement(featureButtonContainer);
+                }
             }
             
         } else {

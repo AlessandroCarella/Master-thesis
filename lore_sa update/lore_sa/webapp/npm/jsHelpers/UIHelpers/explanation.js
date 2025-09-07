@@ -36,6 +36,28 @@ export function buildExplanationRequestData(
     };
 }
 
+export function buildProvidedInstanceRequestData(
+    surrogateParams,
+    appState
+) {
+    // Get the currently selected scatter plot method
+    const methodElement = document.querySelector(
+        'input[name="scatterPlotMethod"]:checked'
+    );
+
+    // Default to "umap" if no method is selected
+    const scatterPlotMethod = methodElement ? methodElement.value : "umap";
+
+    return {
+        dataset_name: appState.dataset_name,
+        neighbourhood_size: surrogateParams.neighbourhood_size,
+        scatterPlotStep: surrogateParams.scatterPlotStep,
+        scatterPlotMethod: scatterPlotMethod,
+        includeOriginalDataset: surrogateParams.includeOriginalDataset,
+        keepDuplicates: surrogateParams.keepDuplicates,
+    };
+}
+
 export const updateVisualizationUI = () => {
     const svgContainer = document.querySelector(".svg-container");
     const vizSettings = getVisualizationSettings();

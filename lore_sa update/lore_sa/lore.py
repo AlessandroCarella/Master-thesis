@@ -103,16 +103,18 @@ class Lore(object):
             'feature_importances': self.feature_importances,
         }
 
-    def interactive_explanation(self, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
+
+    def interactive_explanation(self, instance=None, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
         from lore_sa.webapp import Webapp
         webapp = Webapp()
         webapp.interactive_explanation(
-            self.bbox, 
-            self.dataset, 
-            self.class_name, 
-            self.encoder,
-            self.generator,
-            self.surrogate,
+            bbox=self.bbox, 
+            dataset=self.dataset, 
+            target_column=self.class_name, 
+            encoder=self.encoder,
+            generator=self.generator,
+            surrogate=self.surrogate,
+            instance=instance,
             inJupyter=inJupyter,
             width=width,
             height=height,
