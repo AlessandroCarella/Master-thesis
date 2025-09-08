@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Link creation and rendering for blocks-style decision tree visualization.
+ * Handles straight-line connections between rectangular nodes with decision branch coloring and interactive tooltips.
+ * @author Generated documentation
+ * @module LinkBlocksTree
+ */
+
 import { getStrokeWidth } from "../TreesCommon/metrics.js";
 import { colorScheme } from "../visualizationConnectorHelpers/colors.js";
 import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
@@ -5,6 +12,45 @@ import { blocksTreeState } from "../TreesCommon/state.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { handleLinkMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
 
+/**
+ * @typedef {Object} LinkConnection
+ * @property {Object} source - Source node position data
+ * @property {number} source.x - Source X coordinate
+ * @property {number} source.y - Source Y coordinate
+ * @property {Object} target - Target node position data
+ * @property {number} target.x - Target X coordinate
+ * @property {number} target.y - Target Y coordinate
+ * @property {number} sourceId - Source node ID
+ * @property {number} targetId - Target node ID
+ */
+
+/**
+ * @typedef {Object} NodePosition
+ * @property {number} id - Node identifier
+ * @property {number} x - X coordinate
+ * @property {number} y - Y coordinate
+ * @property {string} label - Node display label
+ */
+
+/**
+ * Creates link connections from tree paths and node positions.
+ * Generates unique links between consecutive nodes in all tree paths.
+ * 
+ * @param {Array<Array<number>>} allPaths - All root-to-leaf paths in the tree
+ * @param {Object<number, NodePosition>} nodePositions - Mapping of node IDs to positions
+ * @returns {Array<LinkConnection>} Array of link connection objects
+ * @example
+ * const links = createLinks(
+ *   [[0, 1, 3], [0, 1, 4], [0, 2, 5]],
+ *   { 0: {x: 100, y: 50}, 1: {x: 200, y: 100}, ... }
+ * );
+ * // Returns: [{source: pos0, target: pos1, sourceId: 0, targetId: 1}, ...]
+ * 
+ * @example
+ * // Avoids duplicate links
+ * const uniqueLinks = createLinks(paths, positions);
+ * // Each unique parent-child relationship appears only once
+ */
 export function createLinks(allPaths, nodePositions) {
     const links = [];
     const added = new Set();
@@ -29,6 +75,25 @@ export function createLinks(allPaths, nodePositions) {
     return links;
 }
 
+/**
+ * Determines link color based on decision tree logic.
+ * Uses different colors for true/false decision branches with fallback for edge cases.
+ * 
+ * @param {number} sourceId - Source node ID
+ * @param {number} targetId - Target node ID
+ * @returns {string} CSS color value for the link
+ * @example
+ * const color = determineLinkColor(5, 10);
+ * // Returns '#A50026' (red) for false branch or '#006837' (green) for true branch
+ * 
+ * @example
+ * const leafColor = determineLinkColor(leafNodeId, childId);
+ * // Returns default link color for leaf nodes
+ * 
+ * @see colorScheme.ui.falseLink
+ * @see colorScheme.ui.trueLink
+ * @see colorScheme.ui.linkStroke
+ */
 function determineLinkColor(sourceId, targetId) {
     if (!blocksTreeState.treeData) {
         return colorScheme.ui.linkStroke;
@@ -40,22 +105,65 @@ function determineLinkColor(sourceId, targetId) {
         return colorScheme.ui.linkStroke;
     }
     
-    // Determine if link goes to left (false) or right (true) child
     if (targetId === sourceNode.left_child) {
-        return colorScheme.ui.falseLink; // Red for false path
+        return colorScheme.ui.falseLink;
     } else if (targetId === sourceNode.right_child) {
-        return colorScheme.ui.trueLink; // Green for true path
+        return colorScheme.ui.trueLink;
     }
     
-    return colorScheme.ui.linkStroke; // fallback
+    return colorScheme.ui.linkStroke; //fallback
 }
 
+/**
+ * Checks if a link is part of the instance path.
+ * Determines if link connects consecutive nodes in the instance traversal path.
+ * 
+ * @param {LinkConnection} link - Link object with source and target IDs
+ * @param {Array<number>} instancePath - Array of node IDs in instance path
+ * @returns {boolean} True if link is part of instance path
+ * @example
+ * const highlighted = isLinkHighlighted(
+ *   { sourceId: 1, targetId: 3 },
+ *   [0, 1, 3, 7]
+ * );
+ * // Returns: true (1->3 is consecutive in path)
+ * 
+ * @example
+ * const notHighlighted = isLinkHighlighted(
+ *   { sourceId: 1, targetId: 4 },
+ *   [0, 1, 3, 7]
+ * );
+ * // Returns: false (1->4 not in path)
+ */
 function isLinkHighlighted(link, instancePath) {
     const sIdx = instancePath.indexOf(link.sourceId);
     const tIdx = instancePath.indexOf(link.targetId);
     return sIdx !== -1 && tIdx !== -1 && Math.abs(sIdx - tIdx) === 1;
 }
 
+/**
+ * Renders interactive links in the blocks tree visualization.
+ * Creates SVG line elements with appropriate styling, tooltips, and decision branch coloring.
+ * 
+ * @param {d3.Selection} container - D3 container selection for link elements
+ * @param {Array<LinkConnection>} links - Array of link connections to render
+ * @param {Array<number>} instancePath - Instance path for highlighting
+ * @param {Object} tooltip - Tooltip object for hover interactions
+ * @returns {d3.Selection} D3 selection of rendered link elements
+ * @example
+ * const linkElements = renderLinks(container, linkConnections, [0, 1, 3], tooltip);
+ * // Creates all links with proper styling and interactions
+ * 
+ * @example
+ * // Links with instance path highlighting
+ * renderLinks(svgContainer, links, instancePath, tooltipInstance);
+ * // Instance path links get highlighted class
+ * 
+ * @see createLinks
+ * @see determineLinkColor
+ * @see getStrokeWidth
+ * @see isLinkHighlighted
+ */
 export function renderLinks(container, links, instancePath, tooltip) {
     return container
         .selectAll(".link")

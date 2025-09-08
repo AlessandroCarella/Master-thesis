@@ -1,31 +1,110 @@
-// HighlightingCoordinator.js - Central coordination for all highlighting
+/**
+ * @fileoverview Central coordination system for highlighting across all visualization types.
+ * Manages cross-visualization interactions, instance path highlighting, and synchronized node selection.
+ * @author Generated documentation
+ * @module HighlightingCoordinator
+ */
+
 import { TreeHandlerFactory } from "./TreeHandlers.js";
 import { ScatterPlotHighlighter } from "./ScatterPlotHighlighter.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
+/**
+ * @typedef {Object} VisualizationHandler
+ * @property {string} treeKind - Type of tree visualization
+ * @property {Function} findPath - Finds path through tree for given features
+ * @property {Function} highlightPath - Highlights path in visualization
+ * @property {Function} highlightNode - Highlights single node
+ * @property {Function} highlightDescendants - Highlights node descendants
+ * @property {Function} resetHighlights - Clears all highlights
+ * @property {Function} highlightInstancePath - Highlights instance path
+ */
+
+/**
+ * Central coordinator for highlighting interactions across all visualizations.
+ * Manages synchronized highlighting between trees and scatter plots, handles instance path coordination.
+ * 
+ * @class
+ * @example
+ * const coordinator = new HighlightingCoordinator();
+ * coordinator.registerTreeHandler('classic', classicTreeViz);
+ * coordinator.coordinateHighlighting(nodeId, true);
+ */
 class HighlightingCoordinator {
+    /**
+     * Creates a new highlighting coordinator instance.
+     * Initializes empty handler collections and state tracking.
+     */
     constructor() {
+        /**
+         * Map of registered tree handlers by tree kind
+         * @type {Map<string, VisualizationHandler>}
+         * @private
+         */
         this.treeHandlers = new Map();
+        
+        /**
+         * Scatter plot highlighter instance
+         * @type {ScatterPlotHighlighter|null}
+         * @private
+         */
         this.scatterPlotHighlighter = null;
+        
+        /**
+         * Currently selected node ID
+         * @type {string|number|null}
+         * @private
+         */
         this.selectedNode = null;
+        
+        /**
+         * Currently explained instance data
+         * @type {Object|null}
+         * @private
+         */
         this.explainedInstance = null;
     }
     
+    /**
+     * Registers a tree handler for coordinated highlighting.
+     * Automatically applies instance path highlighting if an explained instance exists.
+     * 
+     * @param {string} treeKind - Type of tree visualization
+     * @param {Object} visualization - Visualization object to register
+     * @example
+     * coordinator.registerTreeHandler('classic', {
+     *   contentGroup: d3Selection,
+     *   treeData: hierarchyData,
+     *   metrics: layoutMetrics
+     * });
+     * 
+     * @see TreeHandlerFactory.create
+     */
     registerTreeHandler(treeKind, visualization) {
         const handler = TreeHandlerFactory.create(treeKind, visualization);
         this.treeHandlers.set(treeKind, handler);
         
-        // Automatically apply instance path highlighting if explained instance exists
         const explainedInstance = this.getExplainedInstance();
         if (explainedInstance) {
             this._applyInstancePathHighlighting(handler, explainedInstance);
         }
     }
     
+    /**
+     * Sets the explained instance and applies path highlighting to all registered trees.
+     * 
+     * @param {Object} instance - Instance data for path highlighting
+     * @example
+     * coordinator.setExplainedInstance({
+     *   feature1_encoded: 1.0,
+     *   feature2_cat_A: 1
+     * });
+     * 
+     * @see _applyInstancePathHighlighting
+     */
     setExplainedInstance(instance) {
         this.explainedInstance = instance;
         
-        // Apply instance path highlighting to all registered trees
         if (instance) {
             this.treeHandlers.forEach(handler => {
                 this._applyInstancePathHighlighting(handler, instance);
@@ -33,10 +112,30 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Gets the currently explained instance data.
+     * 
+     * @returns {Object|null} Current explained instance or null
+     * @example
+     * const instance = coordinator.getExplainedInstance();
+     * if (instance) {
+     *   console.log('Current instance features:', Object.keys(instance));
+     * }
+     */
     getExplainedInstance() {
         return this.explainedInstance;
     }
     
+    /**
+     * Applies instance path highlighting to a specific handler.
+     * 
+     * @param {VisualizationHandler} handler - Tree handler to apply highlighting to
+     * @param {Object} instance - Instance data for path calculation
+     * @private
+     * @example
+     * // Internal usage only
+     * this._applyInstancePathHighlighting(classicHandler, instanceData);
+     */
     _applyInstancePathHighlighting(handler, instance) {
         try {
             const path = handler.findPath(instance);
@@ -48,33 +147,74 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Registers scatter plot highlighter for coordinated interactions.
+     * 
+     * @param {Object} scatterPlotVisualization - Scatter plot visualization object
+     * @example
+     * coordinator.registerScatterPlotHighlighter({
+     *   data: scatterData,
+     *   points: d3Selection
+     * });
+     * 
+     * @see ScatterPlotHighlighter
+     */
     registerScatterPlotHighlighter(scatterPlotVisualization) {
         this.scatterPlotHighlighter = new ScatterPlotHighlighter(scatterPlotVisualization);
     }
     
+    /**
+     * Sets the boolean array for original points neighborhood filtering.
+     * 
+     * @param {Array<boolean>} array - Boolean array indicating neighborhood membership
+     * @example
+     * coordinator.setOriginalPointsNeighPointsBoolArray([true, false, true, true]);
+     */
     setOriginalPointsNeighPointsBoolArray(array) {
         if (this.scatterPlotHighlighter) {
             this.scatterPlotHighlighter.setOriginalPointsNeighPointsBoolArray(array);
         }
     }
     
+    /**
+     * Gets neighborhood membership status for a specific point index.
+     * 
+     * @param {number} index - Point index to check
+     * @returns {boolean} True if point is in neighborhood, false otherwise
+     * @example
+     * const isInNeighborhood = coordinator.getOriginalPointsNeighPointsBoolArrayValAti(5);
+     */
     getOriginalPointsNeighPointsBoolArrayValAti(index) {
         return this.scatterPlotHighlighter?.getOriginalPointsNeighPointsBoolArrayValAti(index) ?? true;
     }
     
+    /**
+     * Coordinates highlighting across all registered visualizations.
+     * Handles node selection, deselection, and synchronized highlighting.
+     * 
+     * @param {string|number} nodeId - ID of node to highlight
+     * @param {boolean} isLeaf - Whether the node is a leaf node
+     * @param {string} [sourceTreeType=null] - Type of tree that initiated the highlighting
+     * @example
+     * // Highlight leaf node across all visualizations
+     * coordinator.coordinateHighlighting(15, true, 'classic');
+     * 
+     * // Highlight split node and its descendants
+     * coordinator.coordinateHighlighting(8, false, 'blocks');
+     * 
+     * @see _highlightLeafAcrossAllTrees
+     * @see _highlightSplitNodeAcrossAllTrees
+     */
     coordinateHighlighting(nodeId, isLeaf, sourceTreeType = null) {
-        // Deselect if clicking the already selected node
         if (this.selectedNode === nodeId) {
             this.resetAllHighlights();
             this.selectedNode = null;
             return;
         }
 
-        // Reset all highlights and select new node
         this.resetAllHighlights();
         this.selectedNode = nodeId;
 
-        // Highlight in all available trees
         if (isLeaf) {
             this._highlightLeafAcrossAllTrees(nodeId);
         } else {
@@ -82,15 +222,21 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Resets all interactive highlights while preserving instance path highlights.
+     * Automatically reapplies instance path highlighting after reset.
+     * 
+     * @example
+     * coordinator.resetAllHighlights();
+     * // All interactive highlights cleared, instance paths preserved
+     */
     resetAllHighlights() {
-        // Reset interactive highlights but preserve instance path highlights
         this.treeHandlers.forEach(handler => {
             handler.resetHighlights();
         });
         this.scatterPlotHighlighter?.resetHighlights();
         this.selectedNode = null;
         
-        // Reapply instance path highlighting if explained instance exists
         if (this.explainedInstance) {
             this.treeHandlers.forEach(handler => {
                 this._applyInstancePathHighlighting(handler, this.explainedInstance);
@@ -98,18 +244,23 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Clears instance path highlighting from all trees.
+     * Removes persistent background highlights for instance paths.
+     * 
+     * @example
+     * coordinator.clearInstancePathHighlighting();
+     * // All instance path highlights removed
+     */
     clearInstancePathHighlighting() {
         this.treeHandlers.forEach(handler => {
             try {
-                // Remove instance path highlights from each tree
                 if (handler.visualization?.contentGroup) {
-                    // Classic tree
                     handler.visualization.contentGroup.selectAll(".link-highlight").remove();
                     handler.visualization.contentGroup
                         .selectAll(".link.instance-path")
                         .classed("instance-path", false);
                 } else if (handler.visualization?.container) {
-                    // Blocks and Spawn trees
                     handler.visualization.container.selectAll(".link-highlight").remove();
                     handler.visualization.container.selectAll(".instance-path-background").remove();
                     handler.visualization.container
@@ -122,6 +273,14 @@ class HighlightingCoordinator {
         });
     }
     
+    /**
+     * Refreshes instance path highlighting for all trees.
+     * Clears existing highlights and reapplies them with current instance.
+     * 
+     * @example
+     * coordinator.refreshInstancePathHighlighting();
+     * // Instance paths cleared and reapplied
+     */
     refreshInstancePathHighlighting() {
         if (this.explainedInstance) {
             this.clearInstancePathHighlighting();
@@ -131,6 +290,16 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Highlights instance paths across all registered trees.
+     * 
+     * @param {Object} instance - Instance data for path calculation
+     * @example
+     * coordinator.highlightInstancePaths({
+     *   feature1: 1.0,
+     *   feature2_encoded: 0.5
+     * });
+     */
     highlightInstancePaths(instance) {
         if (!instance) return;
         
@@ -146,8 +315,16 @@ class HighlightingCoordinator {
         });
     }
     
+    /**
+     * Highlights a leaf node across all tree visualizations.
+     * 
+     * @param {string|number} nodeId - ID of leaf node to highlight
+     * @private
+     * @example
+     * // Internal usage only
+     * this._highlightLeafAcrossAllTrees(15);
+     */
     _highlightLeafAcrossAllTrees(nodeId) {
-        // Highlight in all tree handlers
         this.treeHandlers.forEach(handler => {
             try {
                 const pathToNode = this._getPathToNode(nodeId, handler);
@@ -161,7 +338,6 @@ class HighlightingCoordinator {
             }
         });
         
-        // Highlight scatter plot points
         if (this.scatterPlotHighlighter) {
             const rawTreeData = this._getRawTreeData();
             if (rawTreeData) {
@@ -170,8 +346,16 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Highlights a split node and its descendants across all tree visualizations.
+     * 
+     * @param {string|number} nodeId - ID of split node to highlight
+     * @private
+     * @example
+     * // Internal usage only
+     * this._highlightSplitNodeAcrossAllTrees(8);
+     */
     _highlightSplitNodeAcrossAllTrees(nodeId) {
-        // Highlight in all tree handlers
         this.treeHandlers.forEach(handler => {
             try {
                 const pathToNode = this._getPathToNode(nodeId, handler);
@@ -184,7 +368,6 @@ class HighlightingCoordinator {
             }
         });
         
-        // Highlight scatter plot points for descendants
         if (this.scatterPlotHighlighter) {
             const rawTreeData = this._getRawTreeData();
             if (rawTreeData) {
@@ -193,8 +376,18 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Gets the path from root to a specific node for a given handler.
+     * 
+     * @param {string|number} nodeId - Target node ID
+     * @param {VisualizationHandler} handler - Tree handler to search
+     * @returns {Array} Path from root to node
+     * @private
+     * @example
+     * // Internal usage only
+     * const path = this._getPathToNode(15, classicHandler);
+     */
     _getPathToNode(nodeId, handler) {
-        // Try to get path to node (different for each tree type)
         try {
             if (handler.treeKind === TREES_SETTINGS.treeKindID.classic) {
                 return this._getClassicTreePathToNode(nodeId, handler);
@@ -209,6 +402,14 @@ class HighlightingCoordinator {
         return [];
     }
     
+    /**
+     * Gets path to node in classic tree structure.
+     * 
+     * @param {string|number} nodeId - Target node ID
+     * @param {VisualizationHandler} handler - Classic tree handler
+     * @returns {Array} Path from root to node
+     * @private
+     */
     _getClassicTreePathToNode(nodeId, handler) {
         const node = handler.getNodeById(nodeId);
         if (!node) return [];
@@ -222,8 +423,15 @@ class HighlightingCoordinator {
         return path;
     }
     
+    /**
+     * Gets path to node in blocks tree structure.
+     * 
+     * @param {string|number} nodeId - Target node ID
+     * @param {VisualizationHandler} handler - Blocks tree handler
+     * @returns {Array} Path from root to node
+     * @private
+     */
     _getBlocksTreePathToNode(nodeId, handler) {
-        // Use the blocks tree specific path finding
         const allPaths = handler.visualization?.allPaths || [];
         
         for (const path of allPaths) {
@@ -236,14 +444,20 @@ class HighlightingCoordinator {
         return [];
     }
     
+    /**
+     * Gets path to node in spawn tree structure.
+     * 
+     * @param {string|number} nodeId - Target node ID
+     * @param {VisualizationHandler} handler - Spawn tree handler
+     * @returns {Array} Path from root to node
+     * @private
+     */
     _getSpawnTreePathToNode(nodeId, handler) {
-        // For spawn tree, use the instance path if available
         if (handler.state.instancePath?.includes(nodeId)) {
             const nodeIndex = handler.state.instancePath.indexOf(nodeId);
             return handler.state.instancePath.slice(0, nodeIndex + 1);
         }
         
-        // Fallback to raw tree data path finding
         if (!handler.state.treeData) return [];
 
         const nodesById = {};
@@ -251,7 +465,6 @@ class HighlightingCoordinator {
             nodesById[node.node_id] = node;
         });
         
-        // Find path from root (node_id = 0) to target node
         function findPath(currentNodeId, targetNodeId, path = []) {
             const newPath = [...path, currentNodeId];
             
@@ -264,13 +477,11 @@ class HighlightingCoordinator {
                 return null;
             }
             
-            // Try left child
             if (currentNode.left_child !== null) {
                 const leftPath = findPath(currentNode.left_child, targetNodeId, newPath);
                 if (leftPath) return leftPath;
             }
             
-            // Try right child  
             if (currentNode.right_child !== null) {
                 const rightPath = findPath(currentNode.right_child, targetNodeId, newPath);
                 if (rightPath) return rightPath;
@@ -282,8 +493,16 @@ class HighlightingCoordinator {
         return findPath(0, nodeId) || [];
     }
     
+    /**
+     * Gets raw tree data from any available handler.
+     * 
+     * @returns {Array|null} Raw tree data or null if not available
+     * @private
+     * @example
+     * // Internal usage only
+     * const rawData = this._getRawTreeData();
+     */
     _getRawTreeData() {
-        // Get raw tree data from any available handler
         for (const [treeKind, handler] of this.treeHandlers) {
             if (handler.visualization?.rawTreeData) {
                 return handler.visualization.rawTreeData;
@@ -295,10 +514,17 @@ class HighlightingCoordinator {
         return null;
     }
     
-    // Legacy compatibility methods
+    /**
+     * Legacy compatibility method for highlighting points for a leaf node.
+     * 
+     * @param {Object} leafNode - Legacy leaf node object
+     * @param {Object} scatterPlotVis - Scatter plot visualization
+     * @deprecated Use coordinateHighlighting instead
+     * @example
+     * coordinator.highlightPointsForLeaf(leafNode, scatterViz);
+     */
     highlightPointsForLeaf(leafNode, scatterPlotVis) {
         if (this.scatterPlotHighlighter && scatterPlotVis) {
-            // Extract node ID from legacy leafNode structure
             const nodeId = leafNode?.data?.node_id;
             if (nodeId) {
                 const rawTreeData = this._getRawTreeData();
@@ -309,6 +535,15 @@ class HighlightingCoordinator {
         }
     }
     
+    /**
+     * Legacy compatibility method for highlighting points for descendants.
+     * 
+     * @param {Object} node - Legacy node object
+     * @param {Object} scatterPlotVis - Scatter plot visualization
+     * @deprecated Use coordinateHighlighting instead
+     * @example
+     * coordinator.highlightPointsForDescendants(node, scatterViz);
+     */
     highlightPointsForDescendants(node, scatterPlotVis) {
         if (this.scatterPlotHighlighter && scatterPlotVis) {
             const nodeId = node?.data?.node_id;
@@ -322,35 +557,111 @@ class HighlightingCoordinator {
     }
 }
 
-// Create singleton instance
+/**
+ * Singleton instance of the highlighting coordinator
+ * @type {HighlightingCoordinator}
+ */
 export const highlightingCoordinator = new HighlightingCoordinator();
 
-// Export convenience functions for backward compatibility
+/**
+ * Convenience function for coordinating highlighting across all trees.
+ * 
+ * @param {string|number} nodeId - Node ID to highlight
+ * @param {boolean} isLeaf - Whether node is a leaf
+ * @param {string} sourceTreeType - Type of source tree
+ * @example
+ * coordinateHighlightingAcrossAllTrees(15, true, 'classic');
+ * 
+ * @see highlightingCoordinator.coordinateHighlighting
+ */
 export function coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, sourceTreeType) {
     highlightingCoordinator.coordinateHighlighting(nodeId, isLeaf, sourceTreeType);
 }
 
+/**
+ * Sets the neighborhood boolean array for scatter plot filtering.
+ * 
+ * @param {Array<boolean>} array - Boolean array for neighborhood filtering
+ * @example
+ * setOriginalPointsNeighPointsBoolArray([true, false, true]);
+ * 
+ * @see highlightingCoordinator.setOriginalPointsNeighPointsBoolArray
+ */
 export function setOriginalPointsNeighPointsBoolArray(array) {
     highlightingCoordinator.setOriginalPointsNeighPointsBoolArray(array);
 }
 
-// Tree registration functions
+/**
+ * Registers a classic tree visualization with the coordinator.
+ * 
+ * @param {Object} visualization - Classic tree visualization object
+ * @example
+ * registerClassicTree({
+ *   contentGroup: d3Selection,
+ *   treeData: hierarchyData,
+ *   metrics: layoutMetrics
+ * });
+ * 
+ * @see highlightingCoordinator.registerTreeHandler
+ */
 export function registerClassicTree(visualization) {
     highlightingCoordinator.registerTreeHandler(TREES_SETTINGS.treeKindID.classic, visualization);
 }
 
+/**
+ * Registers a blocks tree visualization with the coordinator.
+ * 
+ * @param {Object} visualization - Blocks tree visualization object
+ * @example
+ * registerBlocksTree(blocksTreeVisualization);
+ * 
+ * @see highlightingCoordinator.registerTreeHandler
+ */
 export function registerBlocksTree(visualization) {
     highlightingCoordinator.registerTreeHandler(TREES_SETTINGS.treeKindID.blocks, visualization);
 }
 
+/**
+ * Registers a spawn tree visualization with the coordinator.
+ * 
+ * @param {Object} visualization - Spawn tree visualization object
+ * @example
+ * registerSpawnTree(spawnTreeVisualization);
+ * 
+ * @see highlightingCoordinator.registerTreeHandler
+ */
 export function registerSpawnTree(visualization) {
     highlightingCoordinator.registerTreeHandler(TREES_SETTINGS.treeKindID.spawn, visualization);
 }
 
+/**
+ * Registers a scatter plot visualization with the coordinator.
+ * 
+ * @param {Object} visualization - Scatter plot visualization object
+ * @example
+ * registerScatterPlot({
+ *   data: scatterData,
+ *   points: d3Selection
+ * });
+ * 
+ * @see highlightingCoordinator.registerScatterPlotHighlighter
+ */
 export function registerScatterPlot(visualization) {
     highlightingCoordinator.registerScatterPlotHighlighter(visualization);
 }
 
+/**
+ * Highlights instance paths for all registered trees.
+ * 
+ * @param {Object} instance - Instance data for path highlighting
+ * @example
+ * highlightInstancePathsForAllTrees({
+ *   feature1_encoded: 1.0,
+ *   feature2_cat_A: 1
+ * });
+ * 
+ * @see highlightingCoordinator.setExplainedInstance
+ */
 export function highlightInstancePathsForAllTrees(instance) {
     highlightingCoordinator.setExplainedInstance(instance);
 }

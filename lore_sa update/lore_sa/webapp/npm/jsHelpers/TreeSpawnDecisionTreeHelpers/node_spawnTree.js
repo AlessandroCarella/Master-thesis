@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Node rendering and interaction for TreeSpawn decision tree visualization.
+ * Handles dual node styling (rectangles for path, circles for off-path), feature decoding, and interactive highlighting.
+ * @author Generated documentation
+ * @module NodeSpawnTree
+ */
+
 import {
     colorScheme,
     getNodeColor,
@@ -10,10 +17,47 @@ import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeD
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
 
+/**
+ * @typedef {Object} SpawnNodeData
+ * @property {Object} data - Node data object
+ * @property {number} data.node_id - Unique node identifier
+ * @property {boolean} data.is_leaf - Whether node is a leaf
+ * @property {string} [data.feature_name] - Encoded feature name for split nodes
+ * @property {number} [data.threshold] - Split threshold value
+ * @property {number|string} [data.class_label] - Class label for leaf nodes
+ * @property {boolean} [hasHiddenChildren] - Whether node has collapsed children
+ * @property {boolean} [isExpanded] - Whether node subtree is expanded
+ * @property {number} x - X coordinate position
+ * @property {number} y - Y coordinate position
+ */
+
+/**
+ * Generates human-readable text lines for spawn tree nodes.
+ * Uses feature decoder to convert encoded features to original format for display.
+ * 
+ * @param {Object} nodeData - Node data (direct or wrapped in d3 hierarchy)
+ * @param {Object} [featureMappingInfo=null] - Feature mapping information for decoding
+ * @returns {Array<string>} Array of text lines for node display
+ * @example
+ * const lines = getSpawnNodeTextLines({
+ *   is_leaf: false,
+ *   feature_name: 'sepal_length_encoded',
+ *   threshold: 5.5
+ * }, mappingInfo);
+ * // Returns: ['sepal_length ≤ 5.5']
+ * 
+ * @example
+ * const leafLines = getSpawnNodeTextLines({
+ *   is_leaf: true,
+ *   class_label: 'setosa'
+ * });
+ * // Returns: ['setosa']
+ * 
+ * @see FeatureDecoder.decodeTreeSplitCondition
+ */
 function getSpawnNodeTextLines(nodeData, featureMappingInfo = null) {
     if (!nodeData) return ['Unknown Node'];
 
-    // Handle both direct data and d3 hierarchy structure
     const data = nodeData.data || nodeData;
 
     if (data.is_leaf) {
@@ -27,35 +71,77 @@ function getSpawnNodeTextLines(nodeData, featureMappingInfo = null) {
         return ['Internal Node'];
     }
     
-    // Create decoder for split condition
     const originalInstance = window.currentOriginalInstance || {};
     const decoder = new FeatureDecoder(featureMappingInfo, originalInstance);
     
     try {
-        // Use decoder to create human-readable split condition
         const decodedCondition = decoder.decodeTreeSplitCondition(encodedFeatureName, threshold, true);
         return [decodedCondition];
         
     } catch (error) {
         console.warn("Error decoding node text for spawn tree:", error);
         
-        // Fallback to encoded display
         const thresholdStr = Number.isFinite(threshold) ? threshold.toFixed(1) : threshold;
         return [`${encodedFeatureName} ≤ ${thresholdStr}`];
     }
 }
 
+/**
+ * Gets node text lines using current global feature mapping information.
+ * Convenience wrapper that uses global feature mapping state.
+ * 
+ * @param {Object} nodeData - Node data object
+ * @returns {Array<string>} Array of text lines for display
+ * @example
+ * const lines = getNodeTextLines(nodeData);
+ * // Uses window.currentFeatureMappingInfo automatically
+ */
 function getNodeTextLines(nodeData) {
     const featureMappingInfo = window.currentFeatureMappingInfo || null;
     return getSpawnNodeTextLines(nodeData, featureMappingInfo);
 }
 
-// Helper function to check if node is in path using new processor
+/**
+ * Checks if node is in the instance path using tree data processor.
+ * Uses the centralized tree processor for consistent path checking logic.
+ * 
+ * @param {number} nodeId - Node ID to check
+ * @param {Array<number>} instancePath - Path of node IDs
+ * @returns {boolean} True if node is in the instance path
+ * @example
+ * const inPath = isNodeInPath(5, [0, 1, 5, 12]);
+ * // Returns: true (node 5 is in the path)
+ * 
+ * @see TreeDataProcessorFactory.create
+ */
 function isNodeInPath(nodeId, instancePath) {
     const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.spawn);
     return processor.isNodeInPath(nodeId, instancePath);
 }
 
+/**
+ * Adds interactive nodes to the TreeSpawn visualization.
+ * Creates dual styling (rectangles for path nodes, circles for off-path) with tooltips and context menus.
+ * 
+ * @param {d3.Selection} contentGroup - D3 container selection for node elements
+ * @param {Object} treeData - Tree hierarchy data with node information
+ * @param {Object} metrics - Layout metrics for sizing and positioning
+ * @param {Object} tooltip - Tooltip object for hover interactions
+ * @param {Object} colorMap - Color mapping for consistent node styling
+ * @returns {d3.Selection} D3 selection of created node groups
+ * @example
+ * const nodes = addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
+ * // Creates all visible nodes with appropriate styling and interactions
+ * 
+ * @example
+ * // Nodes with path styling
+ * addNodes(svgGroup, hierarchyData, layoutMetrics, tooltipInstance, colors);
+ * // Path nodes get rectangles, off-path nodes get circles
+ * 
+ * @see createContextMenu
+ * @see handleNodeClick
+ * @see getNodeTextLines
+ */
 export function addNodes(
     contentGroup,
     treeData,
@@ -63,11 +149,9 @@ export function addNodes(
     tooltip,
     colorMap
 ) {
-    // Get instance path from spawnTreeState
     const instancePath = spawnTreeState.instancePath || [];
     const instanceData = spawnTreeState.instanceData;
     
-    // Get feature mapping info for tooltip
     const featureMappingInfo = window.currentFeatureMappingInfo || null;
     
     const visibleNodes = treeData.descendants().filter(d => !d.isHidden);
@@ -79,16 +163,13 @@ export function addNodes(
         .attr("class", "node")
         .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    // Add different shapes based on whether node is in path
     nodes.each(function(d) {
         const isInPath = isNodeInPath(d.data.node_id, instancePath);
         const element = d3.select(this);
         
-        // Clear any existing shapes
         element.selectAll('*').remove();
         
         if (isInPath) {
-            // Rectangle for path nodes
             element.append("rect")
                 .attr("x", -TREES_SETTINGS.visual.rectWidth / 2)
                 .attr("y", -TREES_SETTINGS.visual.rectHeight / 2)
@@ -101,7 +182,6 @@ export function addNodes(
                 .style("stroke", colorScheme.ui.nodeStroke)
                 .style("opacity", colorScheme.opacity.default);
 
-            // Add text for path nodes using simplified text generation
             const textLines = getNodeTextLines(d);
             const fontSize = calculateFontSize(textLines);
             const lineHeight = fontSize * 1.2;
@@ -121,7 +201,6 @@ export function addNodes(
                     .text(line);
             });
         } else {
-            // Circle for non-path nodes
             element.append("circle")
                 .attr("r", metrics.nodeRadius)
                 .style("fill", getNodeColor(d, colorMap))
@@ -129,7 +208,6 @@ export function addNodes(
                 .style("stroke", colorScheme.ui.nodeStroke)
                 .style("opacity", colorScheme.opacity.default);
             
-            // Add indicator if node has hidden children
             if (d.hasHiddenChildren) {
                 element.append("text")
                     .attr("x", 0)
@@ -165,13 +243,24 @@ export function addNodes(
     return nodes;
 }
 
-// Updated click handler using new coordination system
+/**
+ * Handles node click events for highlighting coordination.
+ * Integrates with the central highlighting system to coordinate across all visualizations.
+ * 
+ * @param {MouseEvent} event - Click event object
+ * @param {SpawnNodeData} spawnNodeData - Spawn tree node data
+ * @example
+ * // Called automatically from node click handlers
+ * handleNodeClick(clickEvent, nodeData);
+ * // Triggers highlighting across all tree and scatter plot visualizations
+ * 
+ * @see coordinateHighlightingAcrossAllTrees
+ */
 function handleNodeClick(event, spawnNodeData) {
     event.stopPropagation();
 
     const nodeId = spawnNodeData.data.node_id;
     const isLeaf = spawnNodeData.data.is_leaf;
 
-    // Use the central highlighting coordination function
     coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'spawn');
 }

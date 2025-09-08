@@ -1,6 +1,18 @@
-// Updated tooltip.js for 2DScatterPlotHelpers
+/**
+ * @fileoverview Tooltip utilities for 2D scatter plot point interactions and feature display
+ * @module tooltipScatterPlot
+ * @author Generated documentation
+ */
+
 import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
 
+/**
+ * Creates a tooltip element for scatter plot point interactions
+ * @description Generates a D3-managed tooltip div with appropriate CSS class
+ * @returns {d3.Selection} D3 selection of the created tooltip element
+ * @example
+ * const tooltip = createTooltip();
+ */
 export function createTooltip() {
     return d3
         .select("body")
@@ -8,25 +20,37 @@ export function createTooltip() {
         .attr("class", "scatter-plot-tooltip");
 }
 
+/**
+ * Shows tooltip with decoded feature information for a scatter plot point
+ * @description Displays point features, decoding encoded values back to original feature names and values
+ * @param {Event} event - Mouse event object containing position coordinates
+ * @param {Object} data - Complete scatter plot data object
+ * @param {Array<Object>} data.originalData - Original feature data for each point
+ * @param {Array<string|number>} data.targets - Target class labels for each point
+ * @param {d3.Selection} tooltip - D3 selection of tooltip element to show
+ * @param {number} index - Index of the point to show tooltip for
+ * @param {Object} featureMappingInfo - Feature mapping information for decoding
+ * @param {string[]} [featureMappingInfo.encodedFeatureNames] - Names of encoded features
+ * @returns {void}
+ * @throws {Error} Logs warning and falls back to encoded features if decoding fails
+ * @example
+ * showTooltip(mouseEvent, scatterData, tooltipElement, 5, mappingInfo);
+ */
 export function showTooltip(event, data, tooltip, index, featureMappingInfo) {
-    // Get the original data for this point using the provided index
     const encodedData = data.originalData[index];
     const target = data.targets[index];
     
     let content = `<div class="tooltip-content">`;
     
-    // Create feature decoder with original instance data
     const originalInstance = window.currentOriginalInstance || {};
     const decoder = new FeatureDecoder(featureMappingInfo, originalInstance);
     
     if (encodedData && typeof encodedData === 'object') {
         try {
-            // Decode the encoded features to show original feature names and values
             const decodedData = decoder.decodeScatterPointData(encodedData);
             content += "<strong>Features:</strong>";
             content += `<div class="tooltip-features">`;
             
-            // Show decoded features
             Object.entries(decodedData).forEach(([originalFeatureName, decodedValue]) => {
                 let displayValue;
                 
@@ -44,12 +68,10 @@ export function showTooltip(event, data, tooltip, index, featureMappingInfo) {
         } catch (error) {
             console.warn("Error decoding features for tooltip:", error);
             
-            // Fallback to encoded features if decoding fails
             content += "<strong>Encoded features:</strong>";
             content += `<div class="tooltip-features">`;
             
             if (Array.isArray(encodedData)) {
-                // Handle array format (fallback)
                 const featureNames = featureMappingInfo?.encodedFeatureNames || 
                     encodedData.map((_, i) => `Feature ${i}`);
                 
@@ -61,7 +83,6 @@ export function showTooltip(event, data, tooltip, index, featureMappingInfo) {
                     content += `<div class="tooltip-feature">${featureName}: ${displayValue}</div>`;
                 });
             } else {
-                // Handle dictionary format - show encoded features
                 Object.entries(encodedData).forEach(([featureName, value]) => {
                     let displayValue;
                     if (typeof value === 'number') {
@@ -89,12 +110,29 @@ export function showTooltip(event, data, tooltip, index, featureMappingInfo) {
         .style("opacity", 1);
 }
 
+/**
+ * Updates tooltip position to follow mouse movement
+ * @description Moves tooltip to track with mouse cursor during hover
+ * @param {Event} event - Mouse move event containing new position coordinates
+ * @param {d3.Selection} tooltip - D3 selection of tooltip element to reposition
+ * @returns {void}
+ * @example
+ * element.on("mousemove", (event) => handleMouseMove(event, tooltip));
+ */
 export function handleMouseMove(event, tooltip) {
     tooltip
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 10 + "px");
 }
 
+/**
+ * Hides the tooltip by setting visibility to hidden
+ * @description Conceals tooltip when mouse leaves point area
+ * @param {d3.Selection} tooltip - D3 selection of tooltip element to hide
+ * @returns {void}
+ * @example
+ * element.on("mouseout", () => hideTooltip(tooltip));
+ */
 export function hideTooltip(tooltip) {
     tooltip.style("visibility", "hidden");
 }

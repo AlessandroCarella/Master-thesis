@@ -1,17 +1,37 @@
+/**
+ * @fileoverview Context menu utilities for TreeSpawn visualization allowing dynamic subtree expansion and collapse
+ * @module contextMenu_spawnTree
+ * @author Generated documentation
+ */
+
 import { expandSubtree, collapseSubtree } from "./subtrees_spawnTree.js";
 import { addNodes } from "./node_spawnTree.js";
 import { addLinks } from "./link_spawnTree.js";
 
-// Create and show context menu
+/**
+ * Creates and displays a context menu for TreeSpawn node interactions
+ * @description Generates a context menu with expand/collapse options based on node state and handles menu positioning
+ * @param {Event} event - Right-click mouse event object containing position and target information
+ * @param {Object} d - Tree node data object with expansion state
+ * @param {boolean} [d.hasHiddenChildren] - Whether the node has collapsed child nodes
+ * @param {boolean} [d.isExpanded] - Whether the node's subtree is currently expanded
+ * @param {d3.Selection} contentGroup - D3 selection of the content group for tree rendering
+ * @param {Object} treeData - Complete tree data structure for visualization updates
+ * @param {Object} metrics - Layout metrics for tree positioning and sizing
+ * @param {d3.Selection} tooltip - D3 selection of tooltip element (may be affected by updates)
+ * @param {Object} colorMap - Mapping from target classes to color values for node styling
+ * @returns {void}
+ * @example
+ * nodeElement.on("contextmenu", (event, d) => 
+ *   createContextMenu(event, d, contentGroup, treeData, metrics, tooltip, colorMap)
+ * );
+ */
 export function createContextMenu(event, d, contentGroup, treeData, metrics, tooltip, colorMap) {
-    // Remove any existing context menu
     d3.select('.context-menu').remove();
     
-    // Prevent default context menu
     event.preventDefault();
     event.stopPropagation();
     
-    // Only show context menu for nodes that have hidden children
     if (!d.hasHiddenChildren && !d.isExpanded) {
         return;
     }
@@ -69,25 +89,33 @@ export function createContextMenu(event, d, contentGroup, treeData, metrics, too
             });
     }
     
-    // Add click listener to document to close menu
     const closeMenu = () => {
         d3.select('.context-menu').remove();
         d3.select('body').on('click.context-menu', null);
     };
     
-    // Use a small delay to prevent immediate closing
     setTimeout(() => {
         d3.select('body').on('click.context-menu', closeMenu);
     }, 10);
 }
 
+/**
+ * Updates tree visualization after subtree expansion or collapse operations
+ * @description Completely redraws nodes and links to reflect changes in tree structure visibility
+ * @param {d3.Selection} contentGroup - D3 selection of the content group containing tree elements
+ * @param {Object} treeData - Updated tree data structure with new visibility states
+ * @param {Object} metrics - Layout metrics for positioning calculations
+ * @param {d3.Selection} tooltip - D3 selection of tooltip element for interaction setup
+ * @param {Object} colorMap - Color mapping for consistent node styling after updates
+ * @returns {void}
+ * @example
+ * updateNodesAndLinks(contentGroup, updatedTreeData, layoutMetrics, tooltipElement, colorMapping);
+ * @private
+ */
 function updateNodesAndLinks(contentGroup, treeData, metrics, tooltip, colorMap) {
-    // Completely recreate nodes to handle newly visible ones
-    // Remove all existing nodes first
     contentGroup.selectAll(".node").remove();
     contentGroup.selectAll(".link").remove();
     
-    // Recreate all visible nodes and links
     addLinks(contentGroup, treeData, metrics);
     addNodes(contentGroup, treeData, metrics, tooltip, colorMap);
 }

@@ -1,28 +1,172 @@
-// TreeHandlers.js - Updated to use encoded features only
+/**
+ * @fileoverview Tree-specific highlighting handlers using strategy pattern.
+ * Provides specialized highlighting logic for different tree visualization types with encoded feature support.
+ * @author Generated documentation
+ * @module TreeHandlers
+ */
+
 import { colorScheme } from "./colors.js";
 import { getTreeState } from "../TreesCommon/state.js";
 import { TREES_SETTINGS } from "../TreesCommon/settings.js";
 
-// Base class for all tree handlers
+/**
+ * @typedef {Object} VisualizationObject
+ * @property {d3.Selection} [contentGroup] - D3 selection for classic trees
+ * @property {d3.Selection} [container] - D3 selection for blocks/spawn trees
+ * @property {d3.HierarchyNode} [treeData] - Tree hierarchy data
+ * @property {Object} [metrics] - Layout metrics and dimensions
+ * @property {Array} [rawTreeData] - Raw tree data structure
+ * @property {Array} [allPaths] - All root-to-leaf paths
+ */
+
+/**
+ * @typedef {Object} TreeState
+ * @property {Array} treeData - Raw tree node data
+ * @property {Object} instanceData - Instance data for path tracing
+ * @property {Object} hierarchyRoot - Processed hierarchy root
+ * @property {Array} [instancePath] - Cached instance path
+ */
+
+/**
+ * Base handler class for tree visualization highlighting operations.
+ * Defines common interface that all tree handlers must implement.
+ * 
+ * @abstract
+ * @class
+ * @example
+ * // Extended by specific tree handlers
+ * class MyTreeHandler extends BaseTreeHandler {
+ *   highlightNode(nodeId) { }
+ * }
+ */
 class BaseTreeHandler {
+    /**
+     * Creates a new base tree handler.
+     * 
+     * @param {VisualizationObject} visualization - Visualization object with D3 elements
+     * @param {string} treeKind - Type of tree ('classic', 'blocks', 'spawn')
+     * @example
+     * const handler = new BaseTreeHandler(visualization, 'classic');
+     */
     constructor(visualization, treeKind) {
+        /**
+         * Visualization object containing D3 elements
+         * @type {VisualizationObject}
+         */
         this.visualization = visualization;
+        
+        /**
+         * Type of tree visualization
+         * @type {string}
+         */
         this.treeKind = treeKind;
+        
+        /**
+         * Tree state for this handler
+         * @type {TreeState}
+         */
         this.state = getTreeState(treeKind);
     }
 
-    // Abstract methods
-    highlightNode(nodeId) { throw new Error('Must implement highlightNode'); }
-    highlightPath(pathNodeIds) { throw new Error('Must implement highlightPath'); }
-    highlightDescendants(nodeId) { throw new Error('Must implement highlightDescendants'); }
-    resetHighlights() { throw new Error('Must implement resetHighlights'); }
-    findPath(features) { throw new Error('Must implement findPath'); }
-    getNodeById(nodeId) { throw new Error('Must implement getNodeById'); }
-    highlightInstancePath(instancePath) { throw new Error('Must implement highlightInstancePath'); }
+    /**
+     * Highlights a specific node in the visualization.
+     * 
+     * @abstract
+     * @param {string|number} nodeId - ID of node to highlight
+     * @throws {Error} Must be implemented by subclasses
+     */
+    highlightNode(nodeId) { 
+        throw new Error('Must implement highlightNode'); 
+    }
+    
+    /**
+     * Highlights a path of nodes in the visualization.
+     * 
+     * @abstract
+     * @param {Array<number>} pathNodeIds - Array of node IDs forming a path
+     * @throws {Error} Must be implemented by subclasses
+     */
+    highlightPath(pathNodeIds) { 
+        throw new Error('Must implement highlightPath'); 
+    }
+    
+    /**
+     * Highlights all descendants of a node.
+     * 
+     * @abstract
+     * @param {string|number} nodeId - ID of parent node
+     * @throws {Error} Must be implemented by subclasses
+     */
+    highlightDescendants(nodeId) { 
+        throw new Error('Must implement highlightDescendants'); 
+    }
+    
+    /**
+     * Resets all highlights in the visualization.
+     * 
+     * @abstract
+     * @throws {Error} Must be implemented by subclasses
+     */
+    resetHighlights() { 
+        throw new Error('Must implement resetHighlights'); 
+    }
+    
+    /**
+     * Finds path through tree for given encoded features.
+     * 
+     * @abstract
+     * @param {Object} features - Encoded feature values
+     * @returns {Array<number>} Path of node IDs
+     * @throws {Error} Must be implemented by subclasses
+     */
+    findPath(features) { 
+        throw new Error('Must implement findPath'); 
+    }
+    
+    /**
+     * Gets node by ID from visualization structure.
+     * 
+     * @abstract
+     * @param {string|number} nodeId - Node ID to find
+     * @returns {Object|null} Found node or null
+     * @throws {Error} Must be implemented by subclasses
+     */
+    getNodeById(nodeId) { 
+        throw new Error('Must implement getNodeById'); 
+    }
+    
+    /**
+     * Highlights instance path with persistent background.
+     * 
+     * @abstract
+     * @param {Array<number>} instancePath - Path to highlight
+     * @throws {Error} Must be implemented by subclasses
+     */
+    highlightInstancePath(instancePath) { 
+        throw new Error('Must implement highlightInstancePath'); 
+    }
 }
 
-// Classic tree handler
+/**
+ * Handler for classic tree visualization highlighting.
+ * Manages node and link highlighting with D3 selections and tree hierarchy.
+ * 
+ * @class
+ * @extends BaseTreeHandler
+ * @example
+ * const handler = new ClassicTreeHandler(visualization, 'classic');
+ * handler.highlightNode(5);
+ * handler.highlightPath([0, 1, 5]);
+ */
 export class ClassicTreeHandler extends BaseTreeHandler {
+    /**
+     * Highlights a single node by applying highlight styling.
+     * 
+     * @param {string|number} nodeId - ID of node to highlight
+     * @example
+     * handler.highlightNode(5);
+     * // Node 5 gets highlighted border
+     */
     highlightNode(nodeId) {
         if (!this.visualization?.contentGroup) return;
         
@@ -34,18 +178,32 @@ export class ClassicTreeHandler extends BaseTreeHandler {
             .style("stroke-width", `${this.visualization.metrics.nodeBorderStrokeWidth}px`);
     }
     
+    /**
+     * Highlights a path of nodes and connecting links.
+     * 
+     * @param {Array<number>} pathNodeIds - Array of node IDs forming the path
+     * @example
+     * handler.highlightPath([0, 1, 3, 7]);
+     * // Highlights nodes and links in sequence
+     */
     highlightPath(pathNodeIds) {
         if (!pathNodeIds || pathNodeIds.length < 2) return;
         
-        // Highlight nodes
         pathNodeIds.forEach(nodeId => this.highlightNode(nodeId));
         
-        // Highlight links
         for (let i = 0; i < pathNodeIds.length - 1; i++) {
             this._highlightLink(pathNodeIds[i], pathNodeIds[i + 1]);
         }
     }
     
+    /**
+     * Highlights a node and all its descendants recursively.
+     * 
+     * @param {string|number} nodeId - ID of parent node
+     * @example
+     * handler.highlightDescendants(3);
+     * // Highlights node 3 and all its children/grandchildren
+     */
     highlightDescendants(nodeId) {
         const node = this.getNodeById(nodeId);
         if (!node) return;
@@ -53,35 +211,41 @@ export class ClassicTreeHandler extends BaseTreeHandler {
         this._highlightDescendantsRecursive(node);
     }
     
+    /**
+     * Recursively highlights descendants of a node.
+     * 
+     * @param {Object} node - Tree node with D3 hierarchy structure
+     * @private
+     */
     _highlightDescendantsRecursive(node) {
-        // Highlight the current node
         this.highlightNode(node.data.node_id);
         
-        // If has children, highlight links to children and recurse
         if (node.children && node.children.length > 0) {
             node.children.forEach(child => {
-                // Highlight the link between parent and child
                 this._highlightLink(node.data.node_id, child.data.node_id);
-                // Recursively highlight descendants
                 this._highlightDescendantsRecursive(child);
             });
         }
     }
     
+    /**
+     * Resets all highlighting to original styling.
+     * 
+     * @example
+     * handler.resetHighlights();
+     * // All nodes and links return to default styling
+     */
     resetHighlights() {
         if (!this.visualization?.contentGroup) return;
         
-        // Reset node highlights
         this.visualization.contentGroup
             .selectAll(".node circle")
             .style("stroke", colorScheme.ui.nodeStroke)
             .style("stroke-width", `${this.visualization.metrics.nodeBorderStrokeWidth}px`);
         
-        // Reset link highlights - restore original colors and stroke widths
         this.visualization.contentGroup
             .selectAll(".link")
             .style("stroke", function(d) {
-                // Restore original color from data attribute
                 return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
             })
             .style("stroke-width", function(d) {
@@ -89,6 +253,19 @@ export class ClassicTreeHandler extends BaseTreeHandler {
             });
     }
     
+    /**
+     * Finds path through tree using encoded feature values.
+     * Traverses tree following decision splits based on feature thresholds.
+     * 
+     * @param {Object} features - Encoded feature values
+     * @returns {Array<number>} Path of node IDs from root to leaf
+     * @example
+     * const path = handler.findPath({
+     *   feature1_encoded: 1.0,
+     *   feature2_cat_A: 1
+     * });
+     * // Returns: [0, 1, 3] (root -> internal -> leaf)
+     */
     findPath(features) {
         if (!this.visualization?.treeData) return [];
         
@@ -121,12 +298,30 @@ export class ClassicTreeHandler extends BaseTreeHandler {
         return path;
     }
     
+    /**
+     * Gets node by ID from tree hierarchy.
+     * 
+     * @param {string|number} nodeId - Node ID to find
+     * @returns {Object|null} D3 hierarchy node or null
+     * @example
+     * const node = handler.getNodeById(5);
+     * if (node) {
+     *   console.log('Node data:', node.data);
+     * }
+     */
     getNodeById(nodeId) {
         if (!this.visualization?.treeData) return null;
         
         return this.visualization.treeData.descendants().find(d => d.data.node_id === nodeId);
     }
     
+    /**
+     * Highlights a link between two nodes.
+     * 
+     * @param {string|number} sourceId - Source node ID
+     * @param {string|number} targetId - Target node ID
+     * @private
+     */
     _highlightLink(sourceId, targetId) {
         if (!this.visualization?.contentGroup) return;
         
@@ -140,24 +335,30 @@ export class ClassicTreeHandler extends BaseTreeHandler {
             });
     }
     
+    /**
+     * Highlights instance path with persistent background highlighting.
+     * Creates permanent visual indicators for the explained instance's path through the tree.
+     * 
+     * @param {Array<number>} instancePath - Path of node IDs to highlight
+     * @example
+     * handler.highlightInstancePath([0, 1, 3, 7]);
+     * // Creates persistent background highlights for instance path
+     */
     highlightInstancePath(instancePath) {
         if (!this.visualization?.contentGroup || !instancePath || instancePath.length < 2) return;
 
         const { contentGroup } = this.visualization;
         
-        // Reset any existing instance path highlights
         contentGroup
             .selectAll(".link.instance-path")
             .classed("instance-path", false);
         contentGroup.selectAll(".link-highlight").remove();
 
-        // Create an array of link identifiers (source-target pairs)
         const linkPairs = instancePath.slice(0, -1).map((source, i) => ({
             source,
             target: instancePath[i + 1],
         }));
 
-        // Add permanent instance path highlights
         contentGroup
             .selectAll(".link")
             .filter((d) => {
@@ -170,7 +371,6 @@ export class ClassicTreeHandler extends BaseTreeHandler {
                 const pathD = originalPath.attr("d");
                 const baseStrokeWidth = parseFloat(originalPath.attr("data-original-stroke-width"));
 
-                // Add permanent background highlight for instance path using standard D3 approach
                 contentGroup
                     .append("path")
                     .attr("class", "link-highlight instance-path-highlight")
@@ -179,15 +379,32 @@ export class ClassicTreeHandler extends BaseTreeHandler {
                     .style("stroke-width", `${baseStrokeWidth * TREES_SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`)
                     .style("fill", "none")
                     .style("opacity", colorScheme.opacity.originalInstancePath)
-                    .lower(); // Put behind normal links
+                    .lower();
 
                 originalPath.classed("instance-path", true);
             });
     }
 }
 
-// Blocks tree handler
+/**
+ * Handler for blocks tree visualization highlighting.
+ * Manages rectangular node layout highlighting and link coordination.
+ * 
+ * @class
+ * @extends BaseTreeHandler
+ * @example
+ * const handler = new BlocksTreeHandler(visualization, 'blocks');
+ * handler.highlightNode(8);
+ */
 export class BlocksTreeHandler extends BaseTreeHandler {
+    /**
+     * Highlights a single block node.
+     * 
+     * @param {string|number} nodeId - ID of node to highlight
+     * @example
+     * handler.highlightNode(8);
+     * // Block node 8 gets highlighted border
+     */
     highlightNode(nodeId) {
         if (!this.visualization?.container) return;
         
@@ -197,6 +414,14 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             .style("stroke", colorScheme.ui.highlight);
     }
     
+    /**
+     * Highlights a path of block nodes and connections.
+     * 
+     * @param {Array<number>} pathNodeIds - Array of node IDs forming the path
+     * @example
+     * handler.highlightPath([0, 2, 5]);
+     * // Highlights blocks and connecting lines
+     */
     highlightPath(pathNodeIds) {
         if (!pathNodeIds || pathNodeIds.length < 2) return;
         
@@ -207,29 +432,45 @@ export class BlocksTreeHandler extends BaseTreeHandler {
         }
     }
     
+    /**
+     * Highlights descendants using hierarchy structure.
+     * 
+     * @param {string|number} nodeId - ID of parent node
+     * @example
+     * handler.highlightDescendants(2);
+     * // Highlights block 2 and all its descendant blocks
+     */
     highlightDescendants(nodeId) {
-        // For blocks tree, we need to use the hierarchy structure
         const hierarchyNode = this._findHierarchyNode(nodeId);
         if (!hierarchyNode) return;
         
         this._highlightDescendantsRecursive(hierarchyNode);
     }
     
+    /**
+     * Recursively highlights descendants in hierarchy.
+     * 
+     * @param {Object} hierarchyNode - D3 hierarchy node
+     * @private
+     */
     _highlightDescendantsRecursive(hierarchyNode) {
-        // Highlight the current node
         this.highlightNode(hierarchyNode.data.node_id);
         
-        // If has children, highlight links to children and recurse
         if (hierarchyNode.children && hierarchyNode.children.length > 0) {
             hierarchyNode.children.forEach(child => {
-                // Highlight the link between parent and child
                 this._highlightLink(hierarchyNode.data.node_id, child.data.node_id);
-                // Recursively highlight descendants
                 this._highlightDescendantsRecursive(child);
             });
         }
     }
     
+    /**
+     * Finds hierarchy node by ID.
+     * 
+     * @param {string|number} nodeId - Node ID to find
+     * @returns {Object|null} Hierarchy node or null
+     * @private
+     */
     _findHierarchyNode(nodeId) {
         const root = this.state.hierarchyRoot;
         if (!root) return null;
@@ -247,6 +488,13 @@ export class BlocksTreeHandler extends BaseTreeHandler {
         return search(root);
     }
     
+    /**
+     * Resets all block highlighting.
+     * 
+     * @example
+     * handler.resetHighlights();
+     * // All blocks return to default styling
+     */
     resetHighlights() {
         if (!this.visualization?.container) return;
         
@@ -254,11 +502,9 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             .selectAll(".node")
             .style("stroke", colorScheme.ui.nodeStroke);
         
-        // Reset link colors to original colors
         this.visualization.container
             .selectAll(".link")
             .style("stroke", function(d) {
-                // Restore original color from data attribute
                 return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
             })
             .style("stroke-width", function(d) {
@@ -266,6 +512,14 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             });
     }
     
+    /**
+     * Finds path through blocks tree using encoded features.
+     * 
+     * @param {Object} features - Encoded feature values
+     * @returns {Array<number>} Path of node IDs
+     * @example
+     * const path = handler.findPath(encodedFeatures);
+     */
     findPath(features) {
         const root = this.state.hierarchyRoot;
         if (!root) return [];
@@ -300,6 +554,12 @@ export class BlocksTreeHandler extends BaseTreeHandler {
         return path;
     }
     
+    /**
+     * Gets node data by ID from hierarchy.
+     * 
+     * @param {string|number} nodeId - Node ID to find
+     * @returns {Object|null} Node data or null
+     */
     getNodeById(nodeId) {
         const root = this.state.hierarchyRoot;
         if (!root) return null;
@@ -317,6 +577,13 @@ export class BlocksTreeHandler extends BaseTreeHandler {
         return search(root);
     }
     
+    /**
+     * Highlights link between two blocks.
+     * 
+     * @param {string|number} sourceId - Source node ID
+     * @param {string|number} targetId - Target node ID
+     * @private
+     */
     _highlightLink(sourceId, targetId) {
         if (!this.visualization?.container) return;
         
@@ -331,12 +598,18 @@ export class BlocksTreeHandler extends BaseTreeHandler {
             });
     }
     
+    /**
+     * Highlights instance path for blocks tree.
+     * 
+     * @param {Array<number>} instancePath - Path to highlight
+     * @example
+     * handler.highlightInstancePath([0, 2, 5, 10]);
+     */
     highlightInstancePath(instancePath) {
         if (!this.visualization?.container || !instancePath || instancePath.length < 2) return;
 
         const { container } = this.visualization;
         
-        // Reset any existing path highlights
         container
             .selectAll(".link.instance-path")
             .classed("instance-path", false);
@@ -380,8 +653,25 @@ export class BlocksTreeHandler extends BaseTreeHandler {
     }
 }
 
-// TreeSpawn handler
+/**
+ * Handler for TreeSpawn visualization highlighting.
+ * Manages spawn-style tree layout with advanced path finding capabilities.
+ * 
+ * @class
+ * @extends BaseTreeHandler
+ * @example
+ * const handler = new TreeSpawnHandler(visualization, 'spawn');
+ * handler.highlightDescendants(4);
+ */
 export class TreeSpawnHandler extends BaseTreeHandler {
+    /**
+     * Highlights a single spawn tree node.
+     * 
+     * @param {string|number} nodeId - ID of node to highlight
+     * @example
+     * handler.highlightNode(12);
+     * // Spawn node 12 gets highlighted styling
+     */
     highlightNode(nodeId) {
         if (!this.visualization?.container) return;
         
@@ -392,6 +682,13 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .style("stroke", colorScheme.ui.highlight);
     }
     
+    /**
+     * Highlights path in spawn tree.
+     * 
+     * @param {Array<number>} pathNodeIds - Array of node IDs forming the path
+     * @example
+     * handler.highlightPath([0, 3, 8, 15]);
+     */
     highlightPath(pathNodeIds) {
         if (!pathNodeIds || pathNodeIds.length < 2) return;
         
@@ -402,8 +699,15 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         }
     }
     
+    /**
+     * Highlights descendants using tree data structure or raw data fallback.
+     * 
+     * @param {string|number} nodeId - ID of parent node
+     * @example
+     * handler.highlightDescendants(4);
+     * // Highlights node 4 and all spawned descendants
+     */
     highlightDescendants(nodeId) {
-        // For spawn tree, we can use the tree data structure
         if (this.visualization?.treeData) {
             const treeNode = this._findTreeDataNode(nodeId);
             if (treeNode) {
@@ -412,33 +716,38 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             }
         }
         
-        // Fallback: use raw data structure
         const rawNode = this.getNodeById(nodeId);
         if (rawNode) {
             this._highlightDescendantsFromRawData(rawNode);
         }
     }
     
+    /**
+     * Recursively highlights descendants from tree data.
+     * 
+     * @param {Object} treeNode - Tree node with hierarchy structure
+     * @private
+     */
     _highlightDescendantsRecursive(treeNode) {
-        // Highlight the current node
         this.highlightNode(treeNode.data.node_id);
         
-        // If has children, highlight links to children and recurse
         if (treeNode.children && treeNode.children.length > 0) {
             treeNode.children.forEach(child => {
-                // Highlight the link between parent and child
                 this._highlightLink(treeNode.data.node_id, child.data.node_id);
-                // Recursively highlight descendants
                 this._highlightDescendantsRecursive(child);
             });
         }
     }
     
+    /**
+     * Highlights descendants using raw data structure.
+     * 
+     * @param {Object} rawNode - Raw tree node data
+     * @private
+     */
     _highlightDescendantsFromRawData(rawNode) {
-        // Highlight the current node
         this.highlightNode(rawNode.node_id);
         
-        // Find and highlight children from raw data
         if (!rawNode.is_leaf && this.state.treeData) {
             const children = this.state.treeData.filter(node => 
                 node.node_id === rawNode.left_child || node.node_id === rawNode.right_child
@@ -451,6 +760,13 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         }
     }
     
+    /**
+     * Finds tree data node by ID.
+     * 
+     * @param {string|number} nodeId - Node ID to find
+     * @returns {Object|null} Tree data node or null
+     * @private
+     */
     _findTreeDataNode(nodeId) {
         if (!this.visualization?.treeData) return null;
         
@@ -465,11 +781,17 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             return null;
         }
         
-        // Find root node
         const root = this.visualization.treeData.descendants().find(d => d.depth === 0);
         return root ? search(root) : null;
     }
     
+    /**
+     * Resets all spawn tree highlighting.
+     * 
+     * @example
+     * handler.resetHighlights();
+     * // All spawn nodes return to default styling
+     */
     resetHighlights() {
         if (!this.visualization?.container) return;
         
@@ -478,18 +800,27 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .selectAll("circle, rect")
             .style("stroke", colorScheme.ui.nodeStroke);
         
-        // Reset link colors to original colors
         this.visualization.container
             .selectAll(".link")
             .style("stroke", function(d) {
-                // Restore original color from data attribute
                 return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
             });
     }
     
-    // More robust findPath method using encoded features only
+    /**
+     * Finds path through spawn tree with multiple fallback methods.
+     * Uses raw data traversal, hierarchy, or cached instance path.
+     * 
+     * @param {Object} features - Encoded feature values
+     * @returns {Array<number>} Path of node IDs
+     * @example
+     * const path = handler.findPath({
+     *   feature1_encoded: 0.8,
+     *   feature2_cat_B: 1
+     * });
+     * // Returns most reliable path found
+     */
     findPath(features) {
-        // Method 1: Try using raw data traversal (most reliable)
         if (this.state.treeData && Array.isArray(this.state.treeData)) {
             const path = this._traverseFromRawData(features);
             if (path.length > 0) {
@@ -497,7 +828,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             }
         }
         
-        // Method 2: Try using hierarchy if available
         if (this.state.hierarchyRoot) {
             const path = this._traverseFromHierarchy(features);
             if (path.length > 0) {
@@ -505,7 +835,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             }
         }
         
-        // Method 3: Use existing instance path as fallback (least reliable for new features)
         if (this.state.instancePath?.length > 0) {
             return [...this.state.instancePath];
         }
@@ -514,7 +843,13 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         return [];
     }
     
-    // Enhanced raw data traversal using encoded features only
+    /**
+     * Enhanced raw data traversal using encoded features.
+     * 
+     * @param {Object} features - Encoded feature values
+     * @returns {Array<number>} Path of node IDs
+     * @private
+     */
     _traverseFromRawData(features) {
         if (!this.state.treeData || !Array.isArray(this.state.treeData)) {
             console.warn("TreeSpawnHandler: No raw tree data available");
@@ -527,7 +862,7 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         });
         
         const path = [];
-        let currentNode = nodesById[0]; // Start at root
+        let currentNode = nodesById[0];
         
         while (currentNode && !currentNode.is_leaf) {
             path.push(currentNode.node_id);
@@ -551,7 +886,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             }
         }
         
-        // Add the final leaf node
         if (currentNode?.is_leaf) {
             path.push(currentNode.node_id);
         }
@@ -559,14 +893,19 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         return path;
     }
     
-    // Hierarchy traversal method using encoded features only
+    /**
+     * Hierarchy traversal method using encoded features.
+     * 
+     * @param {Object} features - Encoded feature values
+     * @returns {Array<number>} Path of node IDs
+     * @private
+     */
     _traverseFromHierarchy(features) {
         if (!this.state.hierarchyRoot) return [];
         
         const path = [];
         let currentNode = this.state.hierarchyRoot;
         
-        // If hierarchyRoot is a d3.hierarchy object, get the root node
         if (currentNode.descendants) {
             currentNode = currentNode.descendants().find(d => d.depth === 0);
         }
@@ -598,11 +937,24 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         return path;
     }
     
+    /**
+     * Gets node by ID from raw tree data.
+     * 
+     * @param {string|number} nodeId - Node ID to find
+     * @returns {Object|null} Raw node data or null
+     */
     getNodeById(nodeId) {
         if (!this.state.treeData) return null;
         return this.state.treeData.find(node => node.node_id === nodeId);
     }
     
+    /**
+     * Highlights link between spawn tree nodes.
+     * 
+     * @param {string|number} sourceId - Source node ID
+     * @param {string|number} targetId - Target node ID
+     * @private
+     */
     _highlightLink(sourceId, targetId) {
         if (!this.visualization?.container) return;
         
@@ -617,15 +969,26 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             });
     }
     
+    /**
+     * Highlights instance path with persistent background for spawn tree.
+     * 
+     * @param {Array<number>} instancePath - Path to highlight
+     * @example
+     * handler.highlightInstancePath([0, 3, 7, 14]);
+     */
     highlightInstancePath(instancePath) {
         if (!this.visualization || !instancePath || instancePath.length === 0) return;
 
-        // Add persistent background highlights for the instance path
         this._addInstancePathBackgroundDirect(instancePath);
     }
 
+    /**
+     * Adds persistent background highlights for spawn tree instance path.
+     * 
+     * @param {Array<number>} instancePath - Path to highlight
+     * @private
+     */
     _addInstancePathBackgroundDirect(instancePath) {
-        // Add validation for required properties
         if (!this.visualization.container || !this.visualization.treeData || !this.visualization.metrics) {
             console.warn("TreeSpawn visualization not properly initialized, cannot add instance path background");
             return;
@@ -633,7 +996,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         
         const { container, treeData, metrics } = this.visualization;
         
-        // Remove existing background highlights first
         container.selectAll(".instance-path-background").remove();
         
         if (!instancePath || instancePath.length === 0) return;
@@ -646,7 +1008,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             const sourceId = link.source.data.node_id;
             const targetId = link.target.data.node_id;
             
-            // Check if both source and target are consecutive in the path
             for (let i = 0; i < instancePath.length - 1; i++) {
                 if (instancePath[i] === sourceId && instancePath[i + 1] === targetId) {
                     return true;
@@ -655,7 +1016,6 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             return false;
         });
         
-        // Create permanent instance path highlights
         container
             .selectAll(".instance-path-background")
             .data(instancePathLinks)
@@ -664,18 +1024,15 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .attr("data-source-id", (d) => d.source.data.node_id)
             .attr("data-target-id", (d) => d.target.data.node_id)
             .each(function(d) {
-                // Calculate original stroke width
                 const ratio = (d.target.data.weighted_n_samples || d.target.data.n_samples) / treeData.data.n_samples;
                 const originalStrokeWidth = ratio * 3 * metrics.linkStrokeWidth;
                 d3.select(this).attr("data-original-stroke-width", originalStrokeWidth);
             })
             .style("stroke-width", function(d) {
-                // Use larger stroke width for background highlight
                 const originalWidth = d3.select(this).attr("data-original-stroke-width");
                 return `${originalWidth * TREES_SETTINGS.visual.strokeWidth.pathHighlightMultiplier}px`;
             })
             .attr("d", (d) => {
-                // Create path using same logic as normal links
                 const { x: sourceX, y: sourceY } = d.source;
                 const { x: targetX, y: targetY } = d.target;
                 return `M${sourceX},${sourceY} L${targetX},${targetY}`;
@@ -683,12 +1040,33 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .style("fill", "none")
             .style("stroke", colorScheme.ui.instancePathHighlight)
             .style("opacity", colorScheme.opacity.originalInstancePath)
-            .lower(); // Put behind normal links
+            .lower();
     }
 }
 
-// Factory for creating handlers
+/**
+ * Factory class for creating tree handlers.
+ * Uses factory pattern to instantiate appropriate handler for tree type.
+ * 
+ * @class
+ * @example
+ * const handler = TreeHandlerFactory.create('classic', visualization);
+ * handler.highlightNode(5);
+ */
 export class TreeHandlerFactory {
+    /**
+     * Creates appropriate handler for the specified tree kind.
+     * 
+     * @static
+     * @param {string} treeKind - Type of tree ('classic', 'blocks', 'spawn')
+     * @param {VisualizationObject} visualization - Visualization object
+     * @returns {BaseTreeHandler} Appropriate tree handler instance
+     * @throws {Error} When unknown tree kind is provided
+     * @example
+     * const classicHandler = TreeHandlerFactory.create('classic', classicViz);
+     * const blocksHandler = TreeHandlerFactory.create('blocks', blocksViz);
+     * const spawnHandler = TreeHandlerFactory.create('spawn', spawnViz);
+     */
     static create(treeKind, visualization) {
         switch (treeKind) {
             case TREES_SETTINGS.treeKindID.classic:

@@ -1,4 +1,10 @@
-// scatterPlot.js
+/**
+ * @fileoverview Creates 2D scatter plot visualization with interaction capabilities.
+ * Supports PCA and UMAP dimensionality reduction methods with Voronoi diagrams and point highlighting.
+ * @author Generated documentation
+ * @module ScatterPlot2D
+ */
+
 import { createTooltip } from "./2DScatterPlotHelpers/tooltipScatterPlot.js";
 import { createZoom } from "./2DScatterPlotHelpers/zoom.js";
 import { drawVoronoi } from "./2DScatterPlotHelpers/voronoi.js";
@@ -6,7 +12,44 @@ import { createPoints } from "./2DScatterPlotHelpers/points.js";
 import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { registerScatterPlot } from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
 
-// Main function to create the scatter plot
+/**
+ * @typedef {Object} ScatterPlotData
+ * @property {Array<Array<number>>} transformedData - Dimensionally reduced coordinates
+ * @property {Array<number>} targets - Class labels for each point
+ * @property {Array<Object>} originalData - Original data points before transformation
+ * @property {Object} decisionBoundary - Boundary information with x/y ranges
+ * @property {string} method - Dimensionality reduction method used
+ */
+
+/**
+ * @typedef {Object} ScatterPlotVisualization
+ * @property {ScatterPlotData} data - Visualization data
+ * @property {d3.Selection} points - D3 selection of scatter plot points
+ */
+
+/**
+ * Creates a 2D scatter plot visualization with zoom, tooltips, and highlighting capabilities.
+ * Registers the visualization with the highlighting coordinator for cross-visualization interaction.
+ * 
+ * @param {ScatterPlotData} data - Complete scatter plot data including transformed coordinates
+ * @param {Object} [treeVis] - Optional tree visualization for interaction
+ * @param {string} container - CSS selector for the container element
+ * @returns {ScatterPlotVisualization} Complete visualization object
+ * @throws {Error} When data structure is invalid or container not found
+ * @example
+ * const scatterViz = createScatterPlot({
+ *   transformedData: [[1.2, 0.8], [2.1, 1.5]],
+ *   targets: [0, 1],
+ *   originalData: [{ feature1: 1.0 }, { feature1: 2.0 }],
+ *   decisionBoundary: { xRange: [0, 3], yRange: [0, 2] },
+ *   method: 'PCA'
+ * }, treeVis, '#scatter-plot');
+ * 
+ * @see createTooltip
+ * @see createZoom
+ * @see createPoints
+ * @see registerScatterPlot
+ */
 export function createScatterPlot(data, treeVis, container) {
     if (!data || !data.transformedData || !data.targets || !data.originalData) {
         console.error("Invalid scatter plot data structure:", data);
@@ -34,7 +77,6 @@ export function createScatterPlot(data, treeVis, container) {
     const g = svg.append("g");
     createZoom(svg, g, margin, width, height);
 
-    // Use consistent color scheme
     const colorMap = getGlobalColorMap();
 
     const x = d3
@@ -47,7 +89,6 @@ export function createScatterPlot(data, treeVis, container) {
         .domain(data.decisionBoundary.yRange)
         .range([height - margin.bottom, margin.top]);
 
-    // Only draw Voronoi regions for PCA
     if (data.method.toUpperCase() === "PCA") {
         drawVoronoi(g, data, x, y, colorMap);
     }

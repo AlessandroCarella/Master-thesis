@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Creates classic hierarchical decision tree visualization with traditional tree layout.
+ * Provides interactive tree visualization with zoom, pan, and instance path highlighting capabilities.
+ * @author Generated documentation
+ * @module ClassicDecisionTree
+ */
+
 import { calculateMetrics, createTreeLayout, calculateInitialTransform } from "./TreesCommon/metrics.js";
 import {
     clearExistingSVG,
@@ -16,8 +23,35 @@ import { registerClassicTree } from "./visualizationConnectorHelpers/Highlightin
 import { TreeDataProcessorFactory } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
 import { highlightInstancePathInTree } from "./visualizationConnector.js";
 
+/**
+ * @typedef {Object} ClassicTreeVisualization
+ * @property {d3.Selection} contentGroup - Main content group for tree elements
+ * @property {d3.HierarchyNode} treeData - D3 hierarchy data structure
+ * @property {Object} metrics - Tree layout metrics and dimensions
+ */
+
+/**
+ * Creates a classic hierarchical decision tree visualization.
+ * Uses D3's tree layout algorithm for traditional parent-child positioning with zoom and pan support.
+ * 
+ * @param {Array<Object>} rawTreeData - Raw tree node data from backend
+ * @param {Object} instance - Instance data for path highlighting (encoded features)
+ * @param {string} container - CSS selector for the container element
+ * @returns {ClassicTreeVisualization} Tree visualization object
+ * @throws {Error} When container element is not found or data is invalid
+ * @example
+ * createTreeVisualization(treeData, {
+ *   feature1: 1.0,
+ *   feature2_encoded: 0.5
+ * }, '#classic-tree-plot');
+ * // Creates interactive tree with highlighted instance path
+ * 
+ * @see calculateMetrics
+ * @see createTreeLayout
+ * @see addNodes
+ * @see addLinks
+ */
 export function createTreeVisualization(rawTreeData, instance, container) {    
-    // Store data in global classicTreeState
     classicTreeState.treeData = rawTreeData;
     classicTreeState.instanceData = instance;
     const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.classic);
@@ -42,7 +76,6 @@ export function createTreeVisualization(rawTreeData, instance, container) {
 
     const initialTransform = calculateInitialTransform(treeData);
     
-    // Pass the initial scale to initializeZoom to fix zoom constraints
     const zoom = initializeZoom(
         svg,
         contentGroup,

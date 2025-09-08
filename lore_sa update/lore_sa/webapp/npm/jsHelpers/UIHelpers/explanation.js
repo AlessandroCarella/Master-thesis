@@ -1,6 +1,19 @@
+/**
+ * @fileoverview Explanation generation utilities for building request data and managing visualization UI
+ * @module explanation
+ * @author Generated documentation
+ */
+
 import { setupScatterPlotMethodListeners } from "../visualizations.js";
 import { getVisualizationSettings } from "./featureManagement.js";
 
+/**
+ * Shows loading state while explanation is being generated
+ * @description Displays a loading spinner in the SVG container during explanation processing
+ * @returns {void}
+ * @example
+ * showExplanationLoading();
+ */
 export const showExplanationLoading = () => {
     const svgContainer = document.querySelector(".svg-container");
     svgContainer.style.display = "block";
@@ -12,17 +25,34 @@ export const showExplanationLoading = () => {
     `;
 };
 
+/**
+ * Builds request data object for instance-based explanation generation
+ * @description Creates a complete request payload including instance data, dataset info, and visualization parameters
+ * @param {Object} instanceData - The data instance to explain
+ * @param {Object} surrogateParams - Parameters for surrogate model generation
+ * @param {number} surrogateParams.neighbourhood_size - Size of the neighborhood to generate
+ * @param {number} surrogateParams.scatterPlotStep - Step size for scatter plot decision boundaries
+ * @param {boolean} surrogateParams.includeOriginalDataset - Whether to include original dataset points
+ * @param {boolean} surrogateParams.keepDuplicates - Whether to keep duplicate points in neighborhood
+ * @param {Object} appState - Current application state
+ * @param {string} appState.dataset_name - Name of the currently selected dataset
+ * @returns {Object} Complete request data object for explanation API
+ * @example
+ * const requestData = buildExplanationRequestData(
+ *   { feature1: 1.5, feature2: 2.0 },
+ *   { neighbourhood_size: 500, scatterPlotStep: 0.1, includeOriginalDataset: false, keepDuplicates: false },
+ *   { dataset_name: "iris" }
+ * );
+ */
 export function buildExplanationRequestData(
     instanceData,
     surrogateParams,
     appState
 ) {
-    // Get the currently selected scatter plot method
     const methodElement = document.querySelector(
         'input[name="scatterPlotMethod"]:checked'
     );
 
-    // Default to "umap" if no method is selected
     const scatterPlotMethod = methodElement ? methodElement.value : "umap";
 
     return {
@@ -36,16 +66,31 @@ export function buildExplanationRequestData(
     };
 }
 
+/**
+ * Builds request data object for provided instance explanation generation
+ * @description Creates request payload for explanations using predefined instances (no custom instance data)
+ * @param {Object} surrogateParams - Parameters for surrogate model generation
+ * @param {number} surrogateParams.neighbourhood_size - Size of the neighborhood to generate
+ * @param {number} surrogateParams.scatterPlotStep - Step size for scatter plot decision boundaries
+ * @param {boolean} surrogateParams.includeOriginalDataset - Whether to include original dataset points
+ * @param {boolean} surrogateParams.keepDuplicates - Whether to keep duplicate points in neighborhood
+ * @param {Object} appState - Current application state
+ * @param {string} appState.dataset_name - Name of the currently selected dataset
+ * @returns {Object} Request data object for provided instance explanation API
+ * @example
+ * const requestData = buildProvidedInstanceRequestData(
+ *   { neighbourhood_size: 500, scatterPlotStep: 0.1, includeOriginalDataset: true, keepDuplicates: false },
+ *   { dataset_name: "wine" }
+ * );
+ */
 export function buildProvidedInstanceRequestData(
     surrogateParams,
     appState
 ) {
-    // Get the currently selected scatter plot method
     const methodElement = document.querySelector(
         'input[name="scatterPlotMethod"]:checked'
     );
 
-    // Default to "umap" if no method is selected
     const scatterPlotMethod = methodElement ? methodElement.value : "umap";
 
     return {
@@ -58,13 +103,20 @@ export function buildProvidedInstanceRequestData(
     };
 }
 
+/**
+ * Updates the visualization UI based on selected visualization settings
+ * @description Dynamically creates HTML layout for selected visualizations and sets up event listeners
+ * @returns {void}
+ * @example
+ * updateVisualizationUI();
+ * @see {@link getVisualizationSettings} for getting current visualization selections
+ */
 export const updateVisualizationUI = () => {
     const svgContainer = document.querySelector(".svg-container");
     const vizSettings = getVisualizationSettings();
     
     svgContainer.style.display = "block";
     
-    // Create array of selected visualizations with their HTML
     const selectedVisualizations = [];
     
     if (vizSettings.scatterPlot) {
@@ -144,22 +196,18 @@ export const updateVisualizationUI = () => {
         });
     }
     
-    // Build HTML based on number of selected visualizations
     let htmlContent = '';
     
     if (selectedVisualizations.length === 1) {
-        // Single visualization - center it
         htmlContent += '<div class="svg-side-by-side">';
         htmlContent += selectedVisualizations[0].html;
         htmlContent += '</div>';
     } else if (selectedVisualizations.length === 2) {
-        // Two visualizations - put them side by side
         htmlContent += '<div class="svg-side-by-side">';
         htmlContent += selectedVisualizations[0].html;
         htmlContent += selectedVisualizations[1].html;
         htmlContent += '</div>';
     } else if (selectedVisualizations.length === 3) {
-        // Three visualizations - first two on top row, third on bottom
         htmlContent += '<div class="svg-side-by-side">';
         htmlContent += selectedVisualizations[0].html;
         htmlContent += selectedVisualizations[1].html;
@@ -168,7 +216,6 @@ export const updateVisualizationUI = () => {
         htmlContent += selectedVisualizations[2].html;
         htmlContent += '</div>';
     } else if (selectedVisualizations.length === 4) {
-        // Four visualizations - two rows of two
         htmlContent += '<div class="svg-side-by-side">';
         htmlContent += selectedVisualizations[0].html;
         htmlContent += selectedVisualizations[1].html;
@@ -181,7 +228,6 @@ export const updateVisualizationUI = () => {
 
     svgContainer.innerHTML = htmlContent;
 
-    // Only setup scatter plot listeners if scatter plot is enabled
     if (vizSettings.scatterPlot) {
         setupScatterPlotMethodListeners();
     }

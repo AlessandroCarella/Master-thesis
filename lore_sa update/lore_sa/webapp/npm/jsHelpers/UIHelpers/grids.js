@@ -1,5 +1,20 @@
+/**
+ * @fileoverview Grid population utilities for datasets, classifiers, parameters, and surrogate model forms
+ * @module grids
+ * @author Generated documentation
+ */
+
 import { createSection, createSurrogateInput, createVisualizationToggle } from "./inputs.js";
 
+/**
+ * Populates the dataset grid with available datasets as clickable cards
+ * @description Creates a carousel-style grid of dataset cards with selection functionality
+ * @param {Object} data - Data object containing dataset information
+ * @param {string[]} data.datasets - Array of dataset names to display
+ * @returns {void}
+ * @example
+ * populateDatasetGrid({ datasets: ["iris", "wine", "breast_cancer"] });
+ */
 export function populateDatasetGrid(data) {
     const container = document.getElementById("datasetGrid");
     container.className = "carousel-container";
@@ -13,11 +28,9 @@ export function populateDatasetGrid(data) {
         card.className = "carousel-card";
         card.innerHTML = `<h3>${dataset}</h3>`;
         card.onclick = () => {
-            // Remove selected class from all cards
             grid.querySelectorAll(".carousel-card").forEach((card) => {
                 card.classList.remove("selected");
             });
-            // Add selected class to clicked card
             card.classList.add("selected");
             selectDataset(dataset);
         };
@@ -27,6 +40,20 @@ export function populateDatasetGrid(data) {
     container.appendChild(grid);
 }
 
+/**
+ * Populates the classifier grid with available classifiers as clickable cards
+ * @description Creates a carousel-style grid of classifier cards with selection functionality
+ * @param {Object} data - Data object containing classifier information
+ * @param {Object} data.classifiers - Object mapping classifier names to their configurations
+ * @returns {void}
+ * @example
+ * populateClassifierGrid({ 
+ *   classifiers: { 
+ *     "RandomForest": { n_estimators: 100 }, 
+ *     "SVM": { C: 1.0 } 
+ *   } 
+ * });
+ */
 export function populateClassifierGrid(data) {
     const container = document.getElementById("classifierGrid");
     container.className = "carousel-container";
@@ -40,11 +67,9 @@ export function populateClassifierGrid(data) {
         card.className = "carousel-card";
         card.innerHTML = `<h3>${classifier}</h3>`;
         card.onclick = () => {
-            // Remove selected class from all cards
             grid.querySelectorAll(".carousel-card").forEach((card) => {
                 card.classList.remove("selected");
             });
-            // Add selected class to clicked card
             card.classList.add("selected");
             selectClassifier(classifier);
         };
@@ -54,6 +79,18 @@ export function populateClassifierGrid(data) {
     container.appendChild(grid);
 }
 
+/**
+ * Populates a parameter form with input fields for classifier parameters
+ * @description Creates input fields for each parameter with current values and change handlers
+ * @param {Object} parameters - Object mapping parameter names to their default values
+ * @returns {void}
+ * @example
+ * populateParameterForm({ 
+ *   "n_estimators": 100, 
+ *   "max_depth": 10, 
+ *   "random_state": 42 
+ * });
+ */
 export function populateParameterForm(parameters) {
     const form = document.getElementById("parameterForm");
     form.className = "parameter-form";
@@ -61,7 +98,7 @@ export function populateParameterForm(parameters) {
 
     Object.entries(parameters).forEach(([param, defaultValue]) => {
         const input = document.createElement("div");
-        input.className = "parameter-input"; // Changed from 'parameter-input' to match our CSS
+        input.className = "parameter-input";
         input.innerHTML = `
             <label for="${param}">${param}:</label>
             <input type="text" id="${param}" value="${defaultValue}" 
@@ -71,6 +108,15 @@ export function populateParameterForm(parameters) {
     });
 }
 
+/**
+ * Populates the surrogate model parameter form and visualization toggles
+ * @description Creates comprehensive form sections for surrogate model configuration and visualization selection
+ * @param {HTMLElement} container - DOM container element to populate with form sections
+ * @returns {void}
+ * @example
+ * const container = document.getElementById("surrogateContainer");
+ * populateSurrogateForm(container);
+ */
 export function populateSurrogateForm(container) {
     const surrogateParameters = {
         neighbourhood_size: {
@@ -130,14 +176,12 @@ export function populateSurrogateForm(container) {
         createSurrogateInput(section, param, details);
     });
 
-    // Add visualization toggles section
     const visualizationSection = createSection(
         "Visualization Selection",
         "visualization-toggles"
     );
     container.appendChild(visualizationSection);
 
-    // Add instruction text
     const instructionText = document.createElement("p");
     instructionText.className = "visualization-instruction";
     instructionText.textContent = "Select which visualizations to display (at least one must be selected):";

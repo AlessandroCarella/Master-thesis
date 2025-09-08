@@ -1,14 +1,29 @@
+/**
+ * @fileoverview UI reset utilities for cleaning up interface state during workflow transitions
+ * @module reset
+ * @author Generated documentation
+ */
+
 import { setGlobalColorMap } from "../visualizationConnectorHelpers/colors.js";
 import { resetVisualizationState } from "../visualizationConnector.js";
 
+/**
+ * Resets UI to initial state when a new dataset is selected
+ * @description Hides and clears classifier selection, parameters, features, and visualizations
+ * @param {Object} appState - Application state object to reset
+ * @param {string|null} appState.selectedClassifier - Currently selected classifier (will be set to null)
+ * @param {Object} appState.parameters - Classifier parameters (will be cleared)
+ * @param {Object|null} appState.featureDescriptor - Feature descriptor (will be set to null)
+ * @returns {void}
+ * @example
+ * resetUIDatasetSelection(appState);
+ */
 export const resetUIDatasetSelection = (appState) => {
-    // Hide classifier section
     const classifierSection = document.getElementById("classifierSection");
     if (classifierSection) {
         classifierSection.style.display = "none";
     }
 
-    // Hide and reset parameter section
     const parameterSection = document.getElementById("parameterSection");
     if (parameterSection) {
         parameterSection.style.display = "none";
@@ -18,7 +33,6 @@ export const resetUIDatasetSelection = (appState) => {
         parameterForm.innerHTML = "";
     }
 
-    // Hide and reset feature inputs
     const featureContainer = document.getElementById("featureButtonContainer");
     if (featureContainer) {
         featureContainer.style.display = "none";
@@ -28,53 +42,36 @@ export const resetUIDatasetSelection = (appState) => {
         featureCarousel.innerHTML = "";
     }
 
-    // Clear surrogate parameters container
     const surrogateContainer = document.getElementById("surrogateContainer");
     if (surrogateContainer) {
         surrogateContainer.innerHTML = "";
     }
 
-    // Hide visualization container and reset visualizations
     const svgContainer = document.querySelector(".svg-container");
     if (svgContainer) {
         svgContainer.style.display = "none";
     }
     
-    // Clear visualization containers with null checks
-    const scatterPlot = document.getElementById("scatter-plot");
-    if (scatterPlot) {
-        scatterPlot.innerHTML = "";
-    }
-    
-    const blocksTreePlot = document.getElementById("blocks-tree-plot");
-    if (blocksTreePlot) {
-        blocksTreePlot.innerHTML = "";
-    }
-    
-    const classicTreePlot = document.getElementById("classic-tree-plot");
-    if (classicTreePlot) {
-        classicTreePlot.innerHTML = "";
-    }
-    
-    const treespawnTreePlot = document.getElementById("treespawn-tree-plot");
-    if (treespawnTreePlot) {
-        treespawnTreePlot.innerHTML = "";
-    }
+    clearVisualizationContainers();
 
-    // Reset state values
     appState.selectedClassifier = null;
     appState.parameters = {};
     appState.featureDescriptor = null;
 
-    // Reset the global color map
     setGlobalColorMap(null);
-    
-    // Reset visualization state tracking
     resetVisualizationState();
 };
 
+/**
+ * Resets UI elements when a new classifier is selected
+ * @description Clears feature inputs, surrogate parameters, and visualizations while preserving classifier selection
+ * @param {Object} appState - Application state object to partially reset
+ * @param {Object|null} appState.featureDescriptor - Feature descriptor (will be set to null)
+ * @returns {void}
+ * @example
+ * resetUISelectClassifier(appState);
+ */
 export const resetUISelectClassifier = (appState) => {
-    // Hide and reset feature inputs
     const featureContainer = document.getElementById("featureButtonContainer");
     if (featureContainer) {
         featureContainer.style.display = "none";
@@ -84,48 +81,30 @@ export const resetUISelectClassifier = (appState) => {
         featureCarousel.innerHTML = "";
     }
 
-    // Clear surrogate parameters container
     const surrogateContainer = document.getElementById("surrogateContainer");
     if (surrogateContainer) {
         surrogateContainer.innerHTML = "";
     }
 
-    // Hide visualization container and reset visualizations
     const svgContainer = document.querySelector(".svg-container");
     if (svgContainer) {
         svgContainer.style.display = "none";
     }
     
-    // Clear visualization containers with null checks
-    const scatterPlot = document.getElementById("scatter-plot");
-    if (scatterPlot) {
-        scatterPlot.innerHTML = "";
-    }
-    
-    const blocksTreePlot = document.getElementById("blocks-tree-plot");
-    if (blocksTreePlot) {
-        blocksTreePlot.innerHTML = "";
-    }
-    
-    const classicTreePlot = document.getElementById("classic-tree-plot");
-    if (classicTreePlot) {
-        classicTreePlot.innerHTML = "";
-    }
-    
-    const treespawnTreePlot = document.getElementById("treespawn-tree-plot");
-    if (treespawnTreePlot) {
-        treespawnTreePlot.innerHTML = "";
-    }
+    clearVisualizationContainers();
 
-    // Reset feature descriptor in the state
     appState.featureDescriptor = null;
-    
-    // Reset visualization state tracking
     resetVisualizationState();
 };
 
+/**
+ * Resets UI elements when training starts
+ * @description Clears surrogate parameters and visualization containers during training process
+ * @returns {void}
+ * @example
+ * resetUIstartTraining();
+ */
 export const resetUIstartTraining = () => {
-    // Clear surrogate parameters container and visualization container
     const surrogateContainer = document.getElementById("surrogateContainer");
     if (surrogateContainer) {
         surrogateContainer.innerHTML = "";
@@ -136,27 +115,28 @@ export const resetUIstartTraining = () => {
         svgContainer.style.display = "none";
     }
     
-    // Clear visualization containers with null checks
-    const scatterPlot = document.getElementById("scatter-plot");
-    if (scatterPlot) {
-        scatterPlot.innerHTML = "";
-    }
-    
-    const blocksTreePlot = document.getElementById("blocks-tree-plot");
-    if (blocksTreePlot) {
-        blocksTreePlot.innerHTML = "";
-    }
-    
-    const classicTreePlot = document.getElementById("classic-tree-plot");
-    if (classicTreePlot) {
-        classicTreePlot.innerHTML = "";
-    }
-    
-    const treespawnTreePlot = document.getElementById("treespawn-tree-plot");
-    if (treespawnTreePlot) {
-        treespawnTreePlot.innerHTML = "";
-    }
-    
-    // Reset visualization state tracking
+    clearVisualizationContainers();
     resetVisualizationState();
 };
+
+/**
+ * Clears all visualization containers with null safety checks
+ * @description Helper function to safely clear all visualization DOM containers
+ * @returns {void}
+ * @private
+ */
+function clearVisualizationContainers() {
+    const visualizationIds = [
+        "scatter-plot",
+        "blocks-tree-plot", 
+        "classic-tree-plot",
+        "treespawn-tree-plot"
+    ];
+    
+    visualizationIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.innerHTML = "";
+        }
+    });
+}

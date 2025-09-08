@@ -1,6 +1,36 @@
+/**
+ * @fileoverview Feature management utilities for rendering feature inputs, getting values, and handling parameters
+ * @module featureManagement
+ * @author Generated documentation
+ */
+
 import { getState } from "../ui.js";
 import { createNumericInput, createCategoricalInput, createOrdinalInput } from "./inputs.js";
 
+/**
+ * Renders feature input sections based on feature descriptor types
+ * @description Creates appropriate input controls for numeric, categorical, and ordinal features
+ * @param {Object} descriptor - Feature descriptor containing feature type definitions
+ * @param {Object} descriptor.numeric - Numeric features with their properties
+ * @param {Object} descriptor.categorical - Categorical features with their properties  
+ * @param {Object} descriptor.ordinal - Ordinal features with their properties
+ * @param {Object} sections - DOM section containers for different feature types
+ * @param {HTMLElement} sections.numeric - Container for numeric feature inputs
+ * @param {HTMLElement} sections.categorical - Container for categorical feature inputs
+ * @param {HTMLElement} sections.ordinal - Container for ordinal feature inputs
+ * @returns {void}
+ * @example
+ * const descriptor = {
+ *   numeric: { "age": { min: 18, max: 100, median: 35 } },
+ *   categorical: { "gender": { distinct_values: ["M", "F"] } }
+ * };
+ * const sections = {
+ *   numeric: document.getElementById("numericSection"),
+ *   categorical: document.getElementById("categoricalSection"),
+ *   ordinal: document.getElementById("ordinalSection")
+ * };
+ * renderFeatureSections(descriptor, sections);
+ */
 export function renderFeatureSections(descriptor, sections) {
     if (descriptor.numeric && Object.keys(descriptor.numeric).length > 0) {
         Object.entries(descriptor.numeric).forEach(([featureName, details]) => {
@@ -36,6 +66,16 @@ export function renderFeatureSections(descriptor, sections) {
     }
 }
 
+/**
+ * Calculates the mode (most frequent value) from an array of values
+ * @description Finds the most frequently occurring value in the array
+ * @param {Array} values - Array of values to analyze
+ * @returns {*} The most frequently occurring value
+ * @example
+ * getMode([1, 2, 2, 3, 2]); // Returns 2
+ * getMode(["A", "B", "A", "C"]); // Returns "A"
+ * @private
+ */
 function getMode(values) {
     const counts = values.reduce((acc, value) => {
         acc[value] = (acc[value] || 0) + 1;
@@ -48,6 +88,20 @@ function getMode(values) {
     return modes[0];
 }
 
+/**
+ * Sets default values for all feature inputs based on statistical measures
+ * @description Sets median for numeric features and mode for categorical/ordinal features
+ * @param {Object} descriptor - Feature descriptor containing feature definitions and statistics
+ * @param {Object} descriptor.numeric - Numeric features with median values
+ * @param {Object} descriptor.categorical - Categorical features with distinct values
+ * @param {Object} descriptor.ordinal - Ordinal features with ordered values
+ * @returns {void}
+ * @example
+ * setDefaultFeatureValues({
+ *   numeric: { "age": { median: 35.5 } },
+ *   categorical: { "gender": { distinct_values: ["M", "F", "M", "M"] } }
+ * });
+ */
 export function setDefaultFeatureValues(descriptor) {
     if (descriptor.numeric) {
         Object.entries(descriptor.numeric).forEach(([feature, details]) => {
@@ -83,6 +137,14 @@ export function setDefaultFeatureValues(descriptor) {
     }
 }
 
+/**
+ * Retrieves current values from all feature input controls
+ * @description Collects values from numeric, categorical, and ordinal feature inputs
+ * @returns {Object} Object mapping feature names to their current values
+ * @example
+ * const values = getFeatureValues();
+ * // Returns: { "age": 35.5, "gender": "M", "education": "Bachelor" }
+ */
 export function getFeatureValues() {
     const state = getState();
     if (!state?.featureDescriptor) return {};
@@ -114,6 +176,13 @@ export function getFeatureValues() {
     return values;
 }
 
+/**
+ * Resets all feature inputs to their default values
+ * @description Restores feature inputs to their statistical defaults (median/mode)
+ * @returns {void}
+ * @example
+ * resetFeatures();
+ */
 export function resetFeatures() {
     const state = getState();
     if (!state?.featureDescriptor) return;
@@ -121,6 +190,18 @@ export function resetFeatures() {
     setDefaultFeatureValues(state.featureDescriptor);
 }
 
+/**
+ * Retrieves current surrogate model parameters from UI controls
+ * @description Collects neighborhood size, scatter plot step, and boolean options
+ * @returns {Object} Object containing surrogate model configuration
+ * @returns {number} returns.neighbourhood_size - Size of the generated neighborhood
+ * @returns {number} returns.scatterPlotStep - Step size for decision boundary visualization
+ * @returns {boolean} returns.includeOriginalDataset - Whether to include original dataset points
+ * @returns {boolean} returns.keepDuplicates - Whether to retain duplicate points
+ * @example
+ * const params = getSurrogateParameters();
+ * // Returns: { neighbourhood_size: 500, scatterPlotStep: 0.1, includeOriginalDataset: false, keepDuplicates: false }
+ */
 export function getSurrogateParameters() {
     return {
         neighbourhood_size: parseFloat(
@@ -134,6 +215,18 @@ export function getSurrogateParameters() {
     };
 }
 
+/**
+ * Gets current visualization toggle settings from UI checkboxes
+ * @description Reads which visualizations are currently enabled for display
+ * @returns {Object} Object containing boolean flags for each visualization type
+ * @returns {boolean} returns.scatterPlot - Whether 2D scatter plot is enabled
+ * @returns {boolean} returns.blocksTree - Whether blocks decision tree is enabled
+ * @returns {boolean} returns.classicTree - Whether classic decision tree is enabled
+ * @returns {boolean} returns.treeSpawn - Whether TreeSpawn decision tree is enabled
+ * @example
+ * const settings = getVisualizationSettings();
+ * // Returns: { scatterPlot: true, blocksTree: false, classicTree: true, treeSpawn: false }
+ */
 export function getVisualizationSettings() {
     return {
         scatterPlot: document.getElementById("viz-scatterPlot")?.checked || false,

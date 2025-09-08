@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Node rendering and interaction for blocks-style decision tree visualization.
+ * Creates rectangular nodes with feature decoding, multi-line labels, and coordinated highlighting across visualizations.
+ * @author Generated documentation
+ * @module NodeBlocksTree
+ */
+
 import { coordinateHighlightingAcrossAllTrees } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 import { colorScheme, getGlobalColorMap, getNodeColor } from "../visualizationConnectorHelpers/colors.js";
 import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon/tooltipTrees.js";
@@ -5,6 +12,32 @@ import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeD
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
 
+/**
+ * @typedef {Object} BlocksNodeData
+ * @property {number} id - Node identifier
+ * @property {number} x - X coordinate position
+ * @property {number} y - Y coordinate position
+ * @property {string} label - Node display label
+ */
+
+/**
+ * Generates human-readable label lines for blocks tree nodes.
+ * Uses feature decoder to convert encoded features back to original format for display.
+ * 
+ * @param {number} nodeId - Node ID to generate labels for
+ * @param {Object} [featureMappingInfo=null] - Feature mapping information for decoding
+ * @returns {Array<string>} Array of label lines for node display
+ * @example
+ * const lines = getBlocksNodeLabelLines(5, mappingInfo);
+ * // Returns: ['species = setosa'] for categorical feature
+ * 
+ * @example
+ * const leafLines = getBlocksNodeLabelLines(leafNodeId);
+ * // Returns: ['class_0'] for leaf node
+ * 
+ * @see FeatureDecoder.decodeTreeSplitCondition
+ * @see TreeDataProcessorFactory.create
+ */
 function getBlocksNodeLabelLines(nodeId, featureMappingInfo = null) {
     const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.blocks);
     const node = processor.getNodeById(nodeId);
@@ -15,7 +48,6 @@ function getBlocksNodeLabelLines(nodeId, featureMappingInfo = null) {
         return [node.class_label];
     }
     
-    // Create decoder for split condition
     const originalInstance = window.currentOriginalInstance || {};
     const decoder = new FeatureDecoder(featureMappingInfo, originalInstance);
     
@@ -23,48 +55,91 @@ function getBlocksNodeLabelLines(nodeId, featureMappingInfo = null) {
         const encodedFeatureName = node.feature_name;
         const threshold = Number(node.threshold) ?? 0;
         
-        // Use decoder to create human-readable split condition
         const decodedCondition = decoder.decodeTreeSplitCondition(encodedFeatureName, threshold, true);
         return [decodedCondition];
         
     } catch (error) {
         console.warn("Error decoding node label for blocks tree:", error);
         
-        // Fallback to encoded feature display
         const threshold = Number(node.threshold) ?? 0;
         const thresholdStr = Number.isFinite(threshold) ? threshold.toFixed(1) : threshold;
         return [`${node.feature_name} ≤ ${thresholdStr}`];
     }
 }
 
+/**
+ * Gets node label lines using current global feature mapping information.
+ * Convenience wrapper that uses global feature mapping state.
+ * 
+ * @param {number} nodeId - Node ID to generate labels for
+ * @returns {Array<string>} Array of label lines for display
+ * @example
+ * const lines = getNodeLabelLines(nodeId);
+ * // Uses window.currentFeatureMappingInfo automatically
+ */
 export function getNodeLabelLines(nodeId) {
     const featureMappingInfo = window.currentFeatureMappingInfo || null;
     return getBlocksNodeLabelLines(nodeId, featureMappingInfo);
 }
 
-// Helper function to get node color using global color management
+/**
+ * Gets appropriate color for blocks tree nodes using global color management.
+ * Integrates with global color scheme for consistent visualization styling.
+ * 
+ * @param {number} nodeId - Node ID to get color for
+ * @returns {string} CSS color value for the node
+ * @example
+ * const color = getBlocksNodeColor(leafNodeId);
+ * // Returns appropriate class color for leaf nodes
+ * 
+ * @example
+ * const splitColor = getBlocksNodeColor(splitNodeId);
+ * // Returns default color for decision nodes
+ * 
+ * @see getGlobalColorMap
+ * @see getNodeColor
+ * @see TreeDataProcessorFactory.create
+ */
 function getBlocksNodeColor(nodeId) {
     const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.blocks);
     const nodeData = processor.getNodeById(nodeId);
     if (!nodeData) return colorScheme.ui.nodeStroke;
     
-    // Get the global color map
     const globalColorMap = getGlobalColorMap();
     if (!globalColorMap) return colorScheme.ui.nodeStroke;
     
-    // Create a node object that matches the global getNodeColor function interface
     const nodeForColorFunction = {
         data: nodeData
     };
     
-    // Use the global getNodeColor function
     return getNodeColor(nodeForColorFunction, globalColorMap);
 }
 
+/**
+ * Renders interactive rectangular nodes for blocks tree visualization.
+ * Creates nodes with appropriate sizing, coloring, tooltips, and click handlers.
+ * 
+ * @param {d3.Selection} container - D3 container selection for node elements
+ * @param {Object<number, BlocksNodeData>} nodePositions - Mapping of node IDs to position data
+ * @param {Array<number>} instancePath - Instance path for highlighting
+ * @param {Object} tooltip - Tooltip object for hover interactions
+ * @returns {d3.Selection} D3 selection of rendered node elements
+ * @example
+ * const nodeElements = renderNodes(container, nodePositions, [0, 1, 3], tooltip);
+ * // Creates all nodes with proper styling and interactions
+ * 
+ * @example
+ * // Nodes with instance path highlighting
+ * renderNodes(svgContainer, positions, instancePath, tooltipInstance);
+ * // Instance path nodes get highlighted class
+ * 
+ * @see getBlocksNodeColor
+ * @see handleNodeClick
+ * @see TREES_SETTINGS.node
+ */
 export function renderNodes(container, nodePositions, instancePath, tooltip) {
     const nodes = Object.values(nodePositions);
     
-    // Get feature mapping info for tooltip
     const featureMappingInfo = window.currentFeatureMappingInfo || null;
 
     const nodeElements = container
@@ -101,6 +176,24 @@ export function renderNodes(container, nodePositions, instancePath, tooltip) {
     return nodeElements;
 }
 
+/**
+ * Renders multi-line text labels for blocks tree nodes.
+ * Creates properly positioned and sized text with optimal font sizing for readability.
+ * 
+ * @param {d3.Selection} container - D3 container selection for label elements
+ * @param {Object<number, BlocksNodeData>} nodePositions - Mapping of node IDs to position data
+ * @example
+ * renderLabels(container, nodePositions);
+ * // Creates text labels for all nodes with optimal sizing
+ * 
+ * @example
+ * // Multi-line labels with proper spacing
+ * renderLabels(svgContainer, positions);
+ * // Each line positioned correctly within node bounds
+ * 
+ * @see getNodeLabelLines
+ * @see calculateFontSize
+ */
 export function renderLabels(container, nodePositions) {
     const nodes = Object.values(nodePositions);
 
@@ -131,17 +224,28 @@ export function renderLabels(container, nodePositions) {
         });
 }
 
-// Updated click handler using new coordination system
+/**
+ * Handles node click events for highlighting coordination.
+ * Integrates with the central highlighting system to coordinate across all visualizations.
+ * 
+ * @param {MouseEvent} event - Click event object
+ * @param {BlocksNodeData} blocksNodeData - Blocks tree node data
+ * @example
+ * // Called automatically from node click handlers
+ * handleNodeClick(clickEvent, nodeData);
+ * // Triggers highlighting across all tree and scatter plot visualizations
+ * 
+ * @see coordinateHighlightingAcrossAllTrees
+ * @see TreeDataProcessorFactory.create
+ */
 function handleNodeClick(event, blocksNodeData) {
     event.stopPropagation();
 
     const nodeId = blocksNodeData.id;
     
-    // Get node data to determine if it's a leaf using new processor
     const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.blocks);
     const nodeData = processor.getNodeById(nodeId);
     const isLeaf = nodeData ? nodeData.is_leaf : false;
 
-    // Use the central highlighting coordination function
     coordinateHighlightingAcrossAllTrees(nodeId, isLeaf, 'blocks');
 }
