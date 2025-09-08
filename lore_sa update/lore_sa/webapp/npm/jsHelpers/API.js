@@ -1,4 +1,4 @@
-// Simplified API.js - Added provided instance handling
+// Simplified API.js - Unified explanation endpoint
 export const API_BASE = "http://127.0.0.1:8000/api";
 
 export const fetchJSON = async (url, options = {}) => {
@@ -40,16 +40,6 @@ export const fetchExplanation = async (requestData) => {
     return response;
 };
 
-export const fetchProvidedInstanceExplanation = async (requestData) => {
-    const response = await fetchJSON(`${API_BASE}/explain-provided-instance`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-    });
-    
-    return response;
-};
-
 export const fetchClassColors = (method = 'umap') =>
     fetchJSON(`${API_BASE}/get-classes-colors?method=${method}`);
 
@@ -78,7 +68,6 @@ export async function fetchVisualizationUpdate(requestData) {
         throw error;
     }
 }
-
 
 // Function to check if custom data is loaded
 export async function checkCustomData() {

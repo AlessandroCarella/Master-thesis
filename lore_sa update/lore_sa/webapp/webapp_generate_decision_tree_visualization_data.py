@@ -1,73 +1,144 @@
-from sklearn.tree import DecisionTreeClassifier
-from dataclasses import dataclass
-from typing import List, Optional
-from dataclasses import asdict
+from typing import List, Optional, Dict, Any, Tuple
+from dataclasses import dataclass, asdict
 import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+
 
 @dataclass
 class TreeNode:
-    """Class to store complete decision tree node information"""
-    # Unique identifier for the node in the tree
+    """
+    Structured representation of a decision tree node.
+    
+    Attributes
+    ----------
+    node_id : int
+        Unique identifier for the node in the tree.
+    feature_name : str
+        Name of the feature used for decision at this node.
+        None for leaf nodes.
+    feature_index : int
+        Index of the feature used for the decision.
+        None for leaf nodes.
+    threshold : float
+        Threshold value for feature-based splitting.
+        None for leaf nodes.
+    left_child : int
+        Node ID of the left child node.
+        None for leaf nodes.
+    right_child : int
+        Node ID of the right child node.
+        None for leaf nodes.
+    is_leaf : bool
+        Indicates whether this node is a leaf (True) or internal (False).
+    class_label : str
+        Predicted class label for leaf nodes.
+        None for internal nodes.
+    impurity : float
+        Impurity value at the node (Gini, entropy, or MSE).
+    n_samples : int
+        Number of samples that reached this node during training.
+    weighted_n_samples : float
+        Weighted number of samples reaching this node.
+    value : np.ndarray
+        Sample distribution across classes (classification) or predicted value (regression).
+    """
+    
     node_id: int
-    
-    # The name of the feature used for the decision at this node. 
-    # If the node is a leaf, this will be `None`.
-    feature_name: Optional[str]
-    
-    # The index of the feature used for the decision (original sklearn value)
-    feature_index: Optional[int]
-    
-    # The threshold value for the feature used to split the data at this node. 
-    # If the node is a leaf, this will be `None`.
-    threshold: Optional[float]
-    
-    # The node ID of the left child node. If the node is a leaf, this will be `None`.
-    left_child: Optional[int]
-    
-    # The node ID of the right child node. If the node is a leaf, this will be `None`.
-    right_child: Optional[int]
-    
-    # Indicates whether this node is a leaf node (`True` if leaf, `False` if internal).
+    feature_name: str
+    feature_index: int
+    threshold: float
+    left_child: int
+    right_child: int
     is_leaf: bool
-    
-    # The class label predicted by the leaf node. 
-    # Only set if the node is a leaf; otherwise, it is `None`.
-    class_label: Optional[str]
-    
-    # The impurity value at the node (Gini, entropy, or MSE depending on criterion)
+    class_label: str
     impurity: float
-    
-    # The number of samples (data points) that reached this node during training.
     n_samples: int
-    
-    # Weighted number of samples reaching this node
     weighted_n_samples: float
-    
-    # Full distribution of samples across all classes (for classification)
-    # or the predicted value (for regression)
     value: np.ndarray
 
-# ---------------- Node Information Extraction ---------------- #
 
 def validate_feature_index(feature_index: int, feature_names: List[str]) -> None:
-    """Validate that feature index is within valid range."""
+    """
+    Validate that feature index is within bounds of feature names.
+    
+    Parameters
+    ----------
+    feature_index : int
+        Index to validate.
+    feature_names : List[str]
+        List of available feature names.
+        
+    Raises
+    ------
+    ValueError
+        If feature index is out of range.
+    """
     if feature_index >= len(feature_names):
         raise ValueError(f"Feature index {feature_index} out of range for feature_names of length {len(feature_names)}")
 
+
 def validate_class_index(class_label_index: int, target_names: List[str]) -> None:
-    """Validate that class label index is within valid range."""
+    """
+    Validate that class label index is within bounds of target names.
+    
+    Parameters
+    ----------
+    class_label_index : int
+        Index to validate.
+    target_names : List[str]
+        List of available target names.
+        
+    Raises
+    ------
+    ValueError
+        If class label index is out of range.
+    """
     if class_label_index >= len(target_names):
         raise ValueError(f"Class label index {class_label_index} out of range for target_names of length {len(target_names)}")
 
-def extract_leaf_node_info(tree, node_id: int, target_names: List[str]) -> tuple:
-    """Extract information specific to leaf nodes."""
+
+def extract_leaf_node_info(tree: Any, node_id: int, target_names: List[str]) -> str:
+    """
+    Extract class label information from a leaf node.
+    
+    Parameters
+    ----------
+    tree : Any
+        Sklearn decision tree structure.
+    node_id : int
+        ID of the leaf node.
+    target_names : List[str]
+        Names of the target classes.
+        
+    Returns
+    -------
+    str
+        Class label name for the leaf node prediction.
+    """
     class_label_index = int(tree.value[node_id].argmax())
     validate_class_index(class_label_index, target_names)
     class_label = target_names[class_label_index]
     return class_label
 
-def extract_internal_node_info(tree, node_id: int, feature_names: List[str]) -> tuple:
-    """Extract information specific to internal (non-leaf) nodes."""
+
+def extract_internal_node_info(tree: Any, node_id: int, feature_names: List[str]) -> Tuple[str, int, float, int, int]:
+    """
+    Extract decision information from an internal tree node.
+    
+    Parameters
+    ----------
+    tree : Any
+        Sklearn decision tree structure.
+    node_id : int
+        ID of the internal node.
+    feature_names : List[str]
+        Names of the features.
+        
+    Returns
+    -------
+    Tuple[str, int, float, int, int]
+        Feature name, feature index, threshold, left child ID, right child ID.
+    """
     feature_index = int(tree.feature[node_id])
     validate_feature_index(feature_index, feature_names)
     
@@ -78,8 +149,23 @@ def extract_internal_node_info(tree, node_id: int, feature_names: List[str]) -> 
     
     return feature_name, feature_index, threshold, left_child, right_child
 
-def extract_common_node_info(tree, node_id: int) -> tuple:
-    """Extract information common to all node types."""
+
+def extract_common_node_info(tree: Any, node_id: int) -> Tuple[float, int, float, np.ndarray]:
+    """
+    Extract common information present in both leaf and internal nodes.
+    
+    Parameters
+    ----------
+    tree : Any
+        Sklearn decision tree structure.
+    node_id : int
+        ID of the node.
+        
+    Returns
+    -------
+    Tuple[float, int, float, np.ndarray]
+        Impurity, sample count, weighted sample count, and value array.
+    """
     impurity = tree.impurity[node_id]
     n_samples = int(tree.n_node_samples[node_id])
     weighted_n_samples = float(tree.weighted_n_node_samples[node_id])
@@ -87,8 +173,25 @@ def extract_common_node_info(tree, node_id: int) -> tuple:
     
     return impurity, n_samples, weighted_n_samples, value
 
-def create_leaf_node(node_id: int, tree, target_names: List[str]) -> TreeNode:
-    """Create a TreeNode object for a leaf node."""
+
+def create_leaf_node(node_id: int, tree: Any, target_names: List[str]) -> TreeNode:
+    """
+    Create TreeNode object for a leaf node.
+    
+    Parameters
+    ----------
+    node_id : int
+        ID of the leaf node.
+    tree : Any
+        Sklearn decision tree structure.
+    target_names : List[str]
+        Names of the target classes.
+        
+    Returns
+    -------
+    TreeNode
+        Structured representation of the leaf node.
+    """
     class_label = extract_leaf_node_info(tree, node_id, target_names)
     impurity, n_samples, weighted_n_samples, value = extract_common_node_info(tree, node_id)
     
@@ -107,8 +210,25 @@ def create_leaf_node(node_id: int, tree, target_names: List[str]) -> TreeNode:
         value=value
     )
 
-def create_internal_node(node_id: int, tree, feature_names: List[str]) -> TreeNode:
-    """Create a TreeNode object for an internal node."""
+
+def create_internal_node(node_id: int, tree: Any, feature_names: List[str]) -> TreeNode:
+    """
+    Create TreeNode object for an internal node.
+    
+    Parameters
+    ----------
+    node_id : int
+        ID of the internal node.
+    tree : Any
+        Sklearn decision tree structure.
+    feature_names : List[str]
+        Names of the features.
+        
+    Returns
+    -------
+    TreeNode
+        Structured representation of the internal node.
+    """
     feature_name, feature_index, threshold, left_child, right_child = extract_internal_node_info(tree, node_id, feature_names)
     impurity, n_samples, weighted_n_samples, value = extract_common_node_info(tree, node_id)
     
@@ -127,21 +247,80 @@ def create_internal_node(node_id: int, tree, feature_names: List[str]) -> TreeNo
         value=value
     )
 
-def is_leaf_node(tree, node_id: int) -> bool:
-    """Check if a node is a leaf node."""
+
+def is_leaf_node(tree: Any, node_id: int) -> bool:
+    """
+    Check if a node is a leaf node.
+    
+    Parameters
+    ----------
+    tree : Any
+        Sklearn decision tree structure.
+    node_id : int
+        ID of the node to check.
+        
+    Returns
+    -------
+    bool
+        True if the node is a leaf, False otherwise.
+        
+    Notes
+    -----
+    In sklearn decision trees, leaf nodes have children_left[node_id] == -1.
+    """
     return tree.children_left[node_id] == -1
 
-def extract_single_node(tree, node_id: int, feature_names: List[str], target_names: List[str]) -> TreeNode:
-    """Extract information for a single tree node."""
+
+def extract_single_node(tree: Any, node_id: int, feature_names: List[str], target_names: List[str]) -> TreeNode:
+    """
+    Extract structured information for a single tree node.
+    
+    Parameters
+    ----------
+    tree : Any
+        Sklearn decision tree structure.
+    node_id : int
+        ID of the node to extract.
+    feature_names : List[str]
+        Names of the features.
+    target_names : List[str]
+        Names of the target classes.
+        
+    Returns
+    -------
+    TreeNode
+        Structured representation of the node.
+    """
     if is_leaf_node(tree, node_id):
         return create_leaf_node(node_id, tree, target_names)
     else:
         return create_internal_node(node_id, tree, feature_names)
 
-# ---------------- Tree Structure Extraction ---------------- #
 
-def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_names: List[str], target_names: List[str]) -> List[TreeNode]: 
-    """Extract complete node information from a trained DecisionTreeClassifier"""
+def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_names: List[str], 
+                         target_names: List[str]) -> List[TreeNode]:
+    """
+    Extract complete tree structure from sklearn DecisionTreeClassifier.
+    
+    Parameters
+    ----------
+    tree_classifier : DecisionTreeClassifier
+        Trained sklearn decision tree classifier.
+    feature_names : List[str]
+        Names of the features used in the tree.
+    target_names : List[str]
+        Names of the target classes.
+        
+    Returns
+    -------
+    List[TreeNode]
+        List of structured tree nodes representing the complete tree.
+        
+    Notes
+    -----
+    Extracts all nodes from the sklearn tree structure and converts them
+    to structured TreeNode objects for easier manipulation and visualization.
+    """
     tree = tree_classifier.dt.tree_
     nodes = []
 
@@ -151,26 +330,69 @@ def extract_tree_structure(tree_classifier: DecisionTreeClassifier, feature_name
 
     return nodes
 
-# ---------------- Node Dictionary Processing ---------------- #
 
-def convert_numpy_arrays_to_lists(node_dict: dict) -> None:
-    """Convert numpy arrays in node dictionary to lists for JSON serialization."""
+def convert_numpy_arrays_to_lists(node_dict: Dict[str, Any]) -> None:
+    """
+    Convert NumPy arrays in node dictionary to lists for JSON serialization.
+    
+    Parameters
+    ----------
+    node_dict : Dict[str, Any]
+        Node dictionary that may contain NumPy arrays.
+        
+    Notes
+    -----
+    Modifies the dictionary in-place by converting 'value' field from
+    NumPy array to Python list for JSON compatibility.
+    """
     if isinstance(node_dict['value'], np.ndarray):
         node_dict['value'] = node_dict['value'].tolist()
 
-def process_single_node_for_visualization(node: TreeNode) -> dict:
-    """Process a single TreeNode for visualization."""
+
+def process_single_node_for_visualization(node: TreeNode) -> Dict[str, Any]:
+    """
+    Process a TreeNode for frontend visualization.
+    
+    Parameters
+    ----------
+    node : TreeNode
+        TreeNode object to process.
+        
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary representation suitable for JSON serialization.
+        
+    Notes
+    -----
+    Converts dataclass to dictionary and ensures all NumPy arrays
+    are converted to lists for JSON compatibility.
+    """
     node_dict = asdict(node)
-    
-    # Convert numpy arrays to lists for JSON serialization
     convert_numpy_arrays_to_lists(node_dict)
-    
     return node_dict
 
-# ---------------- Main Visualization Functions ---------------- #
 
-def generate_decision_tree_visualization_data_raw(nodes):
-    """Prepare tree structure for visualization. Frontend handles feature mapping using dataset descriptor."""
+def generate_decision_tree_visualization_data_raw(nodes: List[TreeNode]) -> List[Dict[str, Any]]:
+    """
+    Generate visualization data for decision tree from structured nodes.
+    
+    Parameters
+    ----------
+    nodes : List[TreeNode]
+        List of structured tree nodes.
+        
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of node dictionaries ready for frontend visualization.
+        
+    Notes
+    -----
+    Main interface function that converts structured tree representation
+    to JSON-serializable format for frontend decision tree visualization.
+    Handles NumPy type conversion and ensures proper data formatting.
+    """
     nodes_dict = []
     
     for node in nodes:

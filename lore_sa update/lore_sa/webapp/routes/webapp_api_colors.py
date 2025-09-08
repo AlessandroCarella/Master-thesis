@@ -1,40 +1,38 @@
-from fastapi import APIRouter
-
+from typing import Dict, List, Tuple
 import numpy as np
-# from matplotlib.colors import rgb2hex
-from skimage import color
 import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
+from fastapi import APIRouter
+from skimage import color
 import umap
 
 from .webapp_api_state import webapp_state
 from .webapp_api_utils import safe_json_response
 
+
 DEFAULT_COLORS = [
-    "#8dd3c7",
-    "#ffffb3",
-    "#bebada",
-    "#fb8072",
-    "#80b1d3",
-    "#fdb462",
-    "#b3de69",
-    "#fccde5",
-    "#d9d9d9",
-    "#bc80bd",
+    "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
+    "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
 ]
 
 router = APIRouter(prefix="/api")
 
-def compute_centroids(X, y):
+
+def compute_centroids(X: np.ndarray, y: np.ndarray) -> Dict[int, np.ndarray]:
     """
-    Compute centroids for each class in the dataset.
+    Calculate class centroids from feature data and labels.
     
-    Parameters:
-    - X: feature matrix
-    - y: target values
-    
-    Returns:
-    - Dictionary mapping class labels to centroids
+    Parameters
+    ----------
+    X : np.ndarray
+        Feature matrix with shape (n_samples, n_features).
+    y : np.ndarray
+        Class labels with shape (n_samples,).
+        
+    Returns
+    -------
+    Dict[int, np.ndarray]
+        Mapping from class labels to centroid coordinates.
     """
     unique_classes = np.unique(y)
     centroids = {}
@@ -45,21 +43,34 @@ def compute_centroids(X, y):
     
     return centroids
 
-def project_to_rgb(centroids, method, random_state=42):
+
+def project_to_rgb(centroids: Dict[int, np.ndarray], method: str, 
+                  random_state: int = 42) -> Dict[int, np.ndarray]:
     """
-    Project centroids to RGB color space using specified dimensionality reduction method.
+    Project high-dimensional centroids to RGB color space.
     
-    Parameters:
-    - centroids: Dictionary mapping class labels to centroids
-    - method: Dimensionality reduction method to use ('pca', 'umap', 'tsne', or 'mds')
-    
-    Returns:
-    - Dictionary mapping class labels to RGB colors
+    Parameters
+    ----------
+    centroids : Dict[int, np.ndarray]
+        Class centroids in original feature space.
+    method : str
+        Dimensionality reduction method ('pca', 'tsne', 'umap', 'mds').
+    random_state : int, default=42
+        Random seed for reproducible results.
+        
+    Returns
+    -------
+    Dict[int, np.ndarray]
+        Mapping from class labels to RGB color values [0, 1].
+        
+    Notes
+    -----
+    Reduces centroids to 3D space then maps to RGB color channels.
+    Uses MinMaxScaler to ensure valid RGB ranges.
     """
     labels = list(centroids.keys())
     centroid_matrix = np.array([centroids[label] for label in labels])
     
-    # Use the specified method to reduce to 3 dimensions if necessary
     if centroid_matrix.shape[1] > 3:
         method = method.lower()
 
@@ -67,9 +78,7 @@ def project_to_rgb(centroids, method, random_state=42):
             from sklearn.decomposition import PCA
             reducer = PCA(n_components=3)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         elif method == "tsne":
-            # For t-SNE, perplexity should be smaller than n_samples - 1
             from sklearn.manifold import TSNE
             tsne_params = {
                 'perplexity': min(5, len(centroid_matrix)-1),
@@ -80,42 +89,51 @@ def project_to_rgb(centroids, method, random_state=42):
             }
             reducer = TSNE(n_components=2, random_state=random_state, **tsne_params)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         elif method == "umap":
-            # Set min_dist to a small value for better spread in the embedding
-            # Set n_neighbors small for this small dataset
             reducer = umap.UMAP(n_components=3, random_state=random_state)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         elif method == "mds":
             from sklearn.manifold import MDS
             reducer = MDS(n_components=3, random_state=random_state)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         else:
-            # Default to PCA if an invalid method is specified
             from sklearn.decomposition import PCA
             reducer = PCA(n_components=3)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
     else:
         reduced_centroids = centroid_matrix
     
-    # Scale to [0, 1] range for RGB
     from sklearn.preprocessing import MinMaxScaler
     scaler = MinMaxScaler(feature_range=(0, 1))
     rgb_values = scaler.fit_transform(reduced_centroids)
-    
-    # Extra safety: clip values to ensure they're in [0, 1]
     rgb_values = np.clip(rgb_values, 0, 1)
     
-    # Create dictionary mapping labels to RGB colors
     colors = {label: rgb_values[i] for i, label in enumerate(labels)}
     return colors
 
-def cielab_hex_from_xy(x, y, L=70):
+
+def cielab_hex_from_xy(x: float, y: float, L: int = 70) -> str:
     """
-    Map x, y (0 to 1) to a*, b* (scaled to typical Lab range)
-    and return hex color code.
+    Convert 2D coordinates to hex color using CIELAB color space.
+    
+    Parameters
+    ----------
+    x : float
+        X coordinate in [0, 1] range.
+    y : float  
+        Y coordinate in [0, 1] range.
+    L : int, default=70
+        Lightness value for CIELAB conversion.
+        
+    Returns
+    -------
+    str
+        Hex color string in format "#RRGGBB".
+        
+    Notes
+    -----
+    Maps 2D coordinates to perceptually uniform CIELAB color space,
+    then converts to RGB hex representation.
     """
     a = ((x-0.5)*2) * 128  
     b = ((y-0.5)*2) * 128
@@ -124,30 +142,43 @@ def cielab_hex_from_xy(x, y, L=70):
     rgb = np.clip(rgb, 0, 1)
     return "#{:02x}{:02x}{:02x}".format(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
 
-def project_to_cielab(centroids, method, random_state=42):
+
+def project_to_cielab(centroids: Dict[int, np.ndarray], method: str, 
+                     random_state: int = 42) -> List[str]:
     """
-    Project centroids to 2D and then map to CIELAB color space.
+    Project centroids to 2D space and generate CIELAB-based hex colors.
     
-    Parameters:
-    - centroids: Dictionary mapping class labels to centroids
-    - method: Dimensionality reduction method to use ('pca', 'umap', 'tsne', or 'mds')
-    
-    Returns:
-    - List of hex color codes
+    Parameters
+    ----------
+    centroids : Dict[int, np.ndarray]
+        Class centroids in original feature space.
+    method : str
+        Dimensionality reduction method ('pca', 'tsne', 'umap', 'mds').
+    random_state : int, default=42
+        Random seed for reproducible results.
+        
+    Returns
+    -------
+    List[str]
+        List of hex color strings for each class.
+        
+    Notes
+    -----
+    Designed for datasets with many classes (>10) to generate
+    perceptually distinct colors using CIELAB color space.
     """
     labels = list(centroids.keys())
     centroid_matrix = np.array([centroids[label] for label in labels])
     
-    # Use the specified method to reduce to 2 dimensions if necessary
     if centroid_matrix.shape[1] > 2:
         method = method.lower()
 
         if method == "pca":
+            from sklearn.decomposition import PCA
             reducer = PCA(n_components=2)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         elif method == "tsne":
-            # For t-SNE, perplexity should be smaller than n_samples - 1
+            from sklearn.manifold import TSNE
             tsne_params = {
                 'perplexity': min(5, len(centroid_matrix)-1),
                 'early_exaggeration': 12.0,
@@ -157,58 +188,64 @@ def project_to_cielab(centroids, method, random_state=42):
             }
             reducer = TSNE(n_components=2, random_state=random_state, **tsne_params)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         elif method == "umap":
-            # Set n_neighbors small for this small dataset
             reducer = umap.UMAP(
                         n_components=2, 
                         random_state=random_state,
-                        init='random',  # Use random initialization instead of spectral
+                        init='random',
                         min_dist=0.1
                     )
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         elif method == "mds":
             from sklearn.manifold import MDS
             reducer = MDS(n_components=2, random_state=random_state)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
-        
         else:
             from sklearn.decomposition import PCA
-            # Default to PCA if an invalid method is specified
             reducer = PCA(n_components=2)
             reduced_centroids = reducer.fit_transform(centroid_matrix)
     else:
         reduced_centroids = centroid_matrix
         
-    # Scale to [0, 1] range for color mapping
     from sklearn.preprocessing import MinMaxScaler
     scaler = MinMaxScaler(feature_range=(0, 1))
     xy_values = scaler.fit_transform(reduced_centroids)
-    
-    # Extra safety: clip values to ensure they're in [0, 1]
     xy_values = np.clip(xy_values, 0, 1)
     
-    # Convert 2D coordinates to CIELAB hex colors
     hex_colors = []
-    for i, (x, y) in enumerate(xy_values):
+    for x, y in xy_values:
         hex_color = cielab_hex_from_xy(x, y)
         hex_colors.append(hex_color)
     
     return hex_colors
 
+
 @router.get("/get-classes-colors")
-async def get_colors(method):
+async def get_colors(method: str) -> List[str]:
+    """
+    Generate colors for class visualization based on data distribution.
+    
+    Parameters
+    ---------- 
+    method : str
+        Dimensionality reduction method for color generation.
+        
+    Returns
+    -------
+    List[str]
+        List of hex color strings for class visualization.
+        
+    Notes
+    -----
+    For datasets with >10 classes, generates colors using centroid projection
+    to CIELAB color space. Otherwise returns predefined color palette.
+    """
     if len(webapp_state.target_names) > 10:
-        # Compute centroids using the neighborhood data
         centroids = compute_centroids(
             webapp_state.decoded_neighborhood,
             webapp_state.neighb_predictions
         )
-            
-        # Project centroids to 2D and map to CIELAB colors
         colors = project_to_cielab(centroids, method)
-            
         return colors
 
     return safe_json_response(DEFAULT_COLORS)

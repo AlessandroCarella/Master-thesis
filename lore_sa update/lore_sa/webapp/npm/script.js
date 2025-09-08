@@ -28,7 +28,6 @@ import {
     fetchClassifierParameters,
     trainModel,
     fetchExplanation,
-    fetchProvidedInstanceExplanation,
 } from "./jsHelpers/API.js";
 
 import {
@@ -86,8 +85,17 @@ window.selectDataset = async function (datasetName) {
     loadingState.setLoading(true);
 
     closeDatasetPanelIfVisible();
+    
+    // Enhanced reset: clear app state more thoroughly
     resetUIDatasetSelection(appState);
+    
+    // Reset dataset-specific state
     appState.dataset_name = datasetName;
+    appState.selectedClassifier = null;
+    appState.parameters = {};
+    appState.featureDescriptor = null;
+    appState.instanceProvided = false;
+    appState.providedInstance = null;
 
     // Hide dataset info panel until data is loaded
     const datasetInfoDiv = document.getElementById("datasetInfo");
@@ -186,7 +194,27 @@ window.startTraining = async () => {
     }
 };
 
-// Updated explainInstance function to handle custom data workflow
+// Helper function to build unified request data
+function buildUnifiedExplanationRequestData(instanceData, surrogateParams, appState) {
+    const baseRequest = {
+        dataset_name: appState.dataset_name,
+        neighbourhood_size: surrogateParams.neighbourhood_size,
+        scatterPlotStep: surrogateParams.scatterPlotStep,
+        scatterPlotMethod: surrogateParams.scatterPlotMethod,
+        includeOriginalDataset: surrogateParams.includeOriginalDataset,
+        keepDuplicates: surrogateParams.keepDuplicates,
+    };
+
+    // If instanceData is provided, include it in the request
+    // If not, the backend will use the provided instance from webapp state
+    if (instanceData !== null && instanceData !== undefined) {
+        baseRequest.instance = instanceData;
+    }
+
+    return baseRequest;
+}
+
+// Updated explainInstance function to use unified endpoint
 window.explainInstance = async () => {
     // Prevent multiple concurrent requests
     if (loadingState.isLoading) return;
@@ -207,19 +235,20 @@ window.explainInstance = async () => {
         
         const surrogateParams = getSurrogateParameters();
         let requestData;
-        let result;
         
-        // Check if we should use provided instance or user input
+        // Build unified request data
         if (appState.instanceProvided && appState.providedInstance) {
-            // Use provided instance endpoint
-            requestData = buildProvidedInstanceRequestData(surrogateParams, appState);
-            result = await fetchProvidedInstanceExplanation(requestData);
+            // For provided instance case, don't include instance in request
+            // Backend will automatically use webapp_state.provided_instance
+            requestData = buildUnifiedExplanationRequestData(null, surrogateParams, appState);
         } else {
-            // Use regular instance input endpoint
+            // For regular case, include instance from feature inputs
             let instanceData = getFeatureValues();
-            requestData = buildExplanationRequestData(instanceData, surrogateParams, appState);
-            result = await fetchExplanation(requestData);
+            requestData = buildUnifiedExplanationRequestData(instanceData, surrogateParams, appState);
         }
+        
+        // Use single unified endpoint
+        const result = await fetchExplanation(requestData);
 
         // Get the current scatter plot method
         const methodElement = document.querySelector(
@@ -354,8 +383,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Check if instance was provided
             if (appState.instanceProvided) {
                 // Instance provided - skip feature inputs, show only surrogate parameters
-                console.log("Instance provided, skipping feature inputs");
-                
                 const featureButtonContainer = document.getElementById("featureButtonContainer");
                 if (featureButtonContainer) {
                     // Clear and setup container for surrogate params only

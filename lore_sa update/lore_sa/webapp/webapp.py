@@ -1,9 +1,9 @@
-# main.py
+from typing import Optional, List, Any, Union
+import os
+import webbrowser
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from IPython.display import display, HTML
-import os
-import webbrowser
 
 from .routes.webapp_api_datasetDataInfo import router as dataset_router
 from .routes.webapp_api_model import router as model_router
@@ -19,28 +19,53 @@ from .routes.webapp_api_state import webapp_state
 
 
 class Webapp:
-
-    def __init__(self, initial_origins=None):
-        self.app = None
-        self.api_port = None
-        self.client_port = None
+    """
+    Main webapp class for LORE-based machine learning explanations.
+    
+    Provides web interface for model training, explanation generation,
+    and interactive visualization of decision boundaries and local explanations.
+    
+    Parameters
+    ----------
+    initial_origins : List[str]
+        Initial CORS origins for the FastAPI application.
+        If None, uses environment variable or default localhost patterns.
+        
+    Attributes
+    ----------
+    app : FastAPI
+        FastAPI application instance.
+    api_port : int
+        Port number for the API server.
+    client_port : int
+        Port number for the client interface.
+    initial_origins : List[str]
+        CORS origins configuration.
+    """
+    
+    def __init__(self, initial_origins: List[str] = None) -> None:
+        """Initialize webapp with CORS configuration and FastAPI setup."""
+        self.app: FastAPI = None
+        self.api_port: int = None
+        self.client_port: int = None
         self.initial_origins = initial_origins or os.environ.get("ALLOWED_ORIGINS", "http://localhost:*").split(",")
         
         self._setup_app()
     
-    def _setup_app(self):
-        """Set up the FastAPI application with middleware and routers."""
-        # Create lifespan handler
-        async def lifespan(app: FastAPI):
-            # Startup
+    def _setup_app(self) -> None:
+        """
+        Configure FastAPI application with middleware and routers.
+        
+        Notes
+        -----
+        Sets up lifespan events, CORS middleware, and includes all API routers.
+        """
+        async def lifespan(app: FastAPI) -> None:
             configure_logging()
             yield
-            # Shutdown (if needed)
         
-        # Initialize FastAPI app
         self.app = FastAPI(lifespan=lifespan)
         
-        # Add CORS middleware
         self.app.add_middleware(
             CORSMiddleware,
             allow_origins=self.initial_origins,
@@ -49,28 +74,42 @@ class Webapp:
             allow_headers=["*"],
         )
         
-        # Include routers from separate modules
         self._include_routers()
     
-    def _include_routers(self):
-        """Include all the API routers in the FastAPI application."""
+    def _include_routers(self) -> None:
+        """Include all API endpoint routers in the FastAPI application."""
         self.app.include_router(dataset_router)
         self.app.include_router(model_router)
         self.app.include_router(explain_router)
         self.app.include_router(colors_router)
     
-    def _show_localhost_content(self, port=8080, width='100%', height=1500, scale=0.7):
+    def _show_localhost_content(self, port: int = 8080, width: Union[str, int] = '100%', 
+                               height: int = 1500, scale: float = 0.7) -> None:
         """
-        Display localhost content in a Jupyter notebook iframe.
+        Display webapp content in Jupyter notebook using iframe.
+        
+        Parameters
+        ----------
+        port : int, default=8080
+            Port number where the webapp is running.
+        width : Union[str, int], default='100%'
+            Width of the display container (percentage or pixels).
+        height : int, default=1500
+            Height of the iframe in pixels.
+        scale : float, default=0.7
+            Scaling factor for the iframe content.
+            
+        Notes
+        -----
+        Creates scaled iframe display suitable for Jupyter notebook integration.
+        Handles both percentage and pixel-based width specifications.
         """
         url = f"http://localhost:{port}"
         
-        # Calculate scaled dimensions
         if isinstance(width, str) and width.endswith('%'):
             container_width = width
             iframe_width = f"{int(100 / scale)}%"
         else:
-            # Handle pixel values
             width_val = int(width) if isinstance(width, (int, str)) else (1920-80)
             container_width = f"{int(width_val * scale)}px"
             iframe_width = f"{width_val}px"
@@ -105,8 +144,20 @@ class Webapp:
         
         display(HTML(html_content))
     
-    def _open_browser_at_localhost(self, port=8080):
-        """Open the default browser at localhost with specified port"""
+    def _open_browser_at_localhost(self, port: int = 8080) -> None:
+        """
+        Open webapp in default web browser.
+        
+        Parameters
+        ----------
+        port : int, default=8080
+            Port number where the webapp is running.
+            
+        Returns
+        -------
+        bool
+            True if browser opened successfully, False otherwise.
+        """
         url = f'http://localhost:{port}'
         
         try:
@@ -115,15 +166,33 @@ class Webapp:
             print("Browser opened successfully!")
         except Exception as e:
             print(f"Error opening browser: {e}")
-            return False
-        
-        return True
 
-    def _launch_webapp (self, inJupyter, width, height, scale, title):
+    def _launch_webapp(self, inJupyter: bool, width: Union[str, int], height: int, 
+                      scale: float, title: str) -> None:
+        """
+        Launch complete webapp with API server and client interface.
+        
+        Parameters
+        ----------
+        inJupyter : bool
+            Whether to display in Jupyter notebook or open browser.
+        width : Union[str, int]
+            Display width for Jupyter integration.
+        height : int
+            Display height for Jupyter integration.
+        scale : float
+            Scaling factor for Jupyter display.
+        title : str
+            Title message to display during startup.
+            
+        Notes
+        -----
+        Orchestrates complete webapp startup including port allocation,
+        CORS configuration, server startup, and client interface launch.
+        """
         print(title)
         print("=" * 50)
         
-        # Find available ports
         self.api_port = 8000
         self.client_port = 8080
         
@@ -132,26 +201,21 @@ class Webapp:
         
         reconfigure_cors(self.app, self.client_port)
         
-        # Get host configuration
         host = os.environ.get("HOST", "0.0.0.0")
         
         print(f"Starting API server on {host}:{self.api_port}")
         
-        # Start server in background thread
         actual_api_port = start_server_thread(self.app, host, self.api_port)
         
-        # Wait for server to be ready
         if not wait_for_server("localhost", actual_api_port):
             print("Failed to start API server. Exiting...")
-            return None, None
+            return
         
-        # Start client
         client_process, actual_client_port = start_client(self.client_port)
         if not client_process or actual_client_port is None:
             print("Failed to start client. Exiting...")
-            return None, None
+            return
         
-        # Update stored ports with actual values
         self.api_port = actual_api_port
         self.client_port = actual_client_port
         
@@ -160,18 +224,38 @@ class Webapp:
         print(f"Client: http://localhost:{actual_client_port}")
         print("=" * 50)
         
-        # Show the client in the notebook
         if inJupyter:
             self._show_localhost_content(actual_client_port, width, height, scale)
         else:
             self._open_browser_at_localhost(actual_client_port)
 
-    def launch_demo(self, inJupyter=False, width='100%', height=1500, scale=0.7, title="Launching LORE_sa Demo Application"):
-        # Set environment flag for custom data
+    def launch_demo(self, inJupyter: bool = False, width: Union[str, int] = '100%', 
+                   height: int = 1500, scale: float = 0.7, 
+                   title: str = "Launching LORE_sa Demo Application") -> None:
+        """
+        Launch demo webapp with sample datasets and default configuration.
+        
+        Parameters
+        ----------
+        inJupyter : bool, default=False
+            Whether to display in Jupyter notebook instead of opening browser.
+        width : Union[str, int], default='100%'
+            Display width for Jupyter notebook integration.
+        height : int, default=1500
+            Display height in pixels for Jupyter notebook.
+        scale : float, default=0.7
+            Scaling factor for Jupyter notebook display.
+        title : str, default="Launching LORE_sa Demo Application"
+            Title message displayed during startup.
+            
+        Notes
+        -----
+        Configures webapp for demo mode with built-in datasets.
+        Resets webapp state and sets environment flags for demo workflow.
+        """
         os.environ["CUSTOM_DATA_LOADED"] = "false"
         os.environ["INSTANCE_PROVIDED"] = "false"
 
-        # Update webapp state to match what training normally does
         webapp_state.bbox = None
         webapp_state.dataset = None
         webapp_state.descriptor = None
@@ -180,7 +264,6 @@ class Webapp:
         webapp_state.dataset_name = None
         webapp_state.provided_instance = None
         
-        # Launch the webapp with demo parameters
         self._launch_webapp(
             inJupyter=inJupyter,
             width=width, 
@@ -189,17 +272,55 @@ class Webapp:
             title=title
         )
 
-    def interactive_explanation(self, bbox, dataset, target_column, encoder, generator, surrogate, instance=None, inJupyter=True, width='100%', height=1500, scale=0.7, title="Launching LORE_sa explanation viz webapp"):
-        # Set environment flag for custom data
+    def interactive_explanation(self, bbox: Any, dataset: Any, target_column: str, 
+                              encoder: Any, generator: Any, surrogate: Any, 
+                              instance: Any = None, inJupyter: bool = True, 
+                              width: Union[str, int] = '100%', height: int = 1500, 
+                              scale: float = 0.7, 
+                              title: str = "Launching LORE_sa explanation viz webapp") -> None:
+        """
+        Launch interactive explanation interface with custom model and data.
+        
+        Parameters
+        ----------
+        bbox : Any
+            Black box model wrapper for generating predictions.
+        dataset : Any
+            Dataset object with descriptor and data information.
+        target_column : str
+            Name of the target column in the dataset.
+        encoder : Any
+            Feature encoder/decoder for data transformations.
+        generator : Any
+            Neighborhood sample generator for local explanations.
+        surrogate : Any
+            Surrogate model for generating interpretable explanations.
+        instance : Any, default=None
+            Specific instance to explain (if provided).
+        inJupyter : bool, default=True
+            Whether to display in Jupyter notebook.
+        width : Union[str, int], default='100%'
+            Display width for Jupyter integration.
+        height : int, default=1500
+            Display height for Jupyter integration.
+        scale : float, default=0.7
+            Scaling factor for Jupyter display.
+        title : str, default="Launching LORE_sa explanation viz webapp"
+            Startup title message.
+            
+        Notes
+        -----
+        Configures webapp for custom explanation workflow with user-provided
+        models and data. Updates webapp state with all necessary components
+        for explanation generation and visualization.
+        """
         os.environ["CUSTOM_DATA_LOADED"] = "true"
         
-        # Set environment flag for provided instance
         if instance is not None:
             os.environ["INSTANCE_PROVIDED"] = "true"
         else:
             os.environ["INSTANCE_PROVIDED"] = "false"
 
-        # Update webapp state to match what training normally does
         webapp_state.bbox = bbox
         webapp_state.dataset = dataset
         webapp_state.descriptor = dataset.descriptor
@@ -211,7 +332,6 @@ class Webapp:
         webapp_state.dataset_name = "Custom Dataset"
         webapp_state.provided_instance = instance
         
-        # Launch the webapp with custom title
         self._launch_webapp(
             inJupyter=inJupyter,
             width=width, 

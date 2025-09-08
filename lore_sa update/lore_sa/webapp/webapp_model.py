@@ -1,12 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Union
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
-"""
-Module for training machine learning classifiers using the LORE framework.
-
-This module provides helper functions to retrieve available classifiers with their default parameters,
-create classifier instances with specified hyperparameters, and train models using the LORE framework.
-"""
-# Dictionary of available classifiers and their default parameters.
 CLASSIFIERS = {
     'RandomForestClassifier': {
         'n_estimators': 100,
@@ -40,82 +37,94 @@ CLASSIFIERS = {
     }
 }
 
+
 def get_available_classifiers() -> Dict[str, Dict[str, Any]]:
     """
-    Retrieve the dictionary of available classifiers along with their default parameters.
-
-    Returns:
-        Dict[str, Dict[str, Any]]: A dictionary where keys are classifier names and values are dictionaries 
-        of their corresponding default hyperparameters.
+    Get available machine learning classifiers with their default parameters.
+    
+    Returns
+    -------
+    Dict[str, Dict[str, Any]]
+        Dictionary mapping classifier names to their default parameter configurations.
+        
+    Notes
+    -----
+    Provides standardized access to supported classifiers and their
+    sensible default hyperparameters for webapp integration.
     """
     return CLASSIFIERS
 
-def create_classifier(classifier_name: str, parameters: Dict[str, Any]):
+
+def create_classifier(classifier_name: str, parameters: Dict[str, Any]) -> Union[
+    RandomForestClassifier, LogisticRegression, SVC, KNeighborsClassifier, GradientBoostingClassifier
+]:
     """
-    Create an instance of a classifier based on the given name and parameters.
-
-    Args:
-        classifier_name (str): The name of the classifier to instantiate.
-        parameters (Dict[str, Any]): A dictionary of parameters to initialize the classifier.
-
-    Returns:
-        An instance of the specified classifier initialized with the provided parameters.
-
-    Raises:
-        ValueError: If the provided classifier_name is not supported.
-    """
-    if classifier_name == "RandomForestClassifier":
-        from sklearn.ensemble import RandomForestClassifier
-        return RandomForestClassifier(**parameters)
-    elif classifier_name == "LogisticRegression":
-        from sklearn.linear_model import LogisticRegression
-        return LogisticRegression(**parameters)
-    elif classifier_name == "SVC":
-        from sklearn.svm import SVC
-        return SVC(**parameters)
-    elif classifier_name == "KNeighborsClassifier":
-        from sklearn.neighbors import KNeighborsClassifier
-        return KNeighborsClassifier(**parameters)
-    elif classifier_name == "GradientBoostingClassifier":
-        from sklearn.ensemble import GradientBoostingClassifier
-        return GradientBoostingClassifier(**parameters)
-    else:
-        raise ValueError(f"Unsupported classifier: {classifier_name}")
-
-def train_model_with_lore(dataset_name: str, classifier_name: str, parameters: Dict[str, Any]):
-    """
-    Train a machine learning model using the LORE framework with optimized caching.
-
-    This function creates the specified classifier and leverages cached results when available
-    to avoid expensive dataset preparation operations. The heavy lifting of dataset loading,
-    preparation, and model training is only performed when no cached classifier exists.
-
-    Args:
-        dataset_name (str): The name of the dataset to load.
-        classifier_name (str): The name of the classifier to use.
-        parameters (Dict[str, Any]): A dictionary of parameters for initializing the classifier.
-
-    Returns:
-        A tuple containing:
-            - The trained model (classifier_bbox) as returned by load_cached_classifier.
-            - The prepared LORE dataset (an instance of TabularDataset).
-            - The original feature names from the dataset.
-
-    Process:
-        1. Create the classifier instance using the provided classifier name and parameters.
-        2. Call load_cached_classifier which handles caching logic and dataset preparation.
-        3. Return the trained model, prepared dataset, and feature names.
+    Create sklearn classifier instance with specified parameters.
+    
+    Parameters
+    ----------
+    classifier_name : str
+        Name of the classifier to create. Must be one of the supported types.
+    parameters : Dict[str, Any]
+        Hyperparameters to configure the classifier.
         
-    Performance Notes:
-        - When a cached classifier exists, this function avoids expensive operations like
-          dataset loading, data dictionary creation, and TabularDataset preparation.
-        - Only when no webapp cache is available does it perform the full preparation pipeline.
+    Returns
+    -------
+    Union[RandomForestClassifier, LogisticRegression, SVC, KNeighborsClassifier, GradientBoostingClassifier]
+        Configured sklearn classifier instance.
+        
+    Raises
+    ------
+    ValueError
+        If classifier_name is not supported.
+        
+    Notes
+    -----
+    Factory function that instantiates the appropriate sklearn classifier
+    based on the provided name and configuration parameters.
     """
-    # Create the classifier instance with the provided parameters
+    classifier_map = {
+        "RandomForestClassifier": RandomForestClassifier,
+        "LogisticRegression": LogisticRegression,
+        "SVC": SVC,
+        "KNeighborsClassifier": KNeighborsClassifier,
+        "GradientBoostingClassifier": GradientBoostingClassifier,
+    }
+    
+    if classifier_name not in classifier_map:
+        raise ValueError(f"Unsupported classifier: {classifier_name}")
+    
+    classifier_class = classifier_map[classifier_name]
+    return classifier_class(**parameters)
+
+
+def train_model_with_lore(dataset_name: str, classifier_name: str, 
+                         parameters: Dict[str, Any]) -> Tuple[Any, Any, Any]:
+    """
+    Train machine learning model using LORE methodology with caching.
+    
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the dataset to train on.
+    classifier_name : str
+        Type of classifier to use for training.
+    parameters : Dict[str, Any]
+        Hyperparameters for the classifier.
+        
+    Returns
+    -------
+    Tuple[Any, Any, Any]
+        Trained model wrapper, dataset object, and feature names.
+        
+    Notes
+    -----
+    Integrates classifier creation with LORE's caching system for
+    efficient model training and reuse across explanation sessions.
+    """
     classifier = create_classifier(classifier_name, parameters)
 
     from .webapp_lore import load_cached_classifier
-    # Load cached classifier or train new one with optimized caching
     trained_model, dataset, feature_names = load_cached_classifier(
         dataset_name=dataset_name,
         classifier=classifier,

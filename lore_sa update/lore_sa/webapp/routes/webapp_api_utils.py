@@ -1,15 +1,24 @@
+from typing import Any, Dict, List, Union, Set
 import numpy as np
-from typing import Any
+
 
 def convert_numpy_types(obj: Any) -> Any:
     """
-    Recursively convert numpy types to Python native types for JSON serialization.
+    Recursively convert NumPy types to JSON-serializable Python types.
     
-    Args:
-        obj: Object that may contain numpy types
+    Parameters
+    ----------
+    obj : Any
+        Object that may contain NumPy types needing conversion.
         
-    Returns:
-        Object with all numpy types converted to Python native types
+    Returns
+    -------
+    Any
+        Object with NumPy types converted to native Python types.
+        
+    Notes
+    -----
+    Handles nested structures including dictionaries, lists, tuples, and sets.
     """
     if isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
         return int(obj)
@@ -28,14 +37,19 @@ def convert_numpy_types(obj: Any) -> Any:
     else:
         return obj
 
+
 def safe_json_response(response_data: Any) -> Any:
     """
-    Wrapper function to ensure response data is JSON serializable.
+    Ensure response data is JSON-serializable by converting NumPy types.
     
-    Args:
-        response_data: The response data to be serialized
+    Parameters
+    ----------
+    response_data : Any
+        Response data that may contain NumPy types.
         
-    Returns:
-        JSON-serializable response data
+    Returns
+    -------
+    Any
+        JSON-serializable response data.
     """
     return convert_numpy_types(response_data)

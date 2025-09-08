@@ -8,7 +8,7 @@ export function populateDatasetGrid(data) {
     const grid = document.createElement("div");
     grid.className = "carousel-grid";
 
-    Object.keys(data.datasets).forEach((dataset) => {
+    data.datasets.forEach((dataset) => {
         const card = document.createElement("div");
         card.className = "carousel-card";
         card.innerHTML = `<h3>${dataset}</h3>`;
