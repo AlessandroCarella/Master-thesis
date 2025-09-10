@@ -21,6 +21,7 @@ import {
     resetFeatures,
     getSurrogateParameters,
     getVisualizationSettings,
+    getAllDimensionalityReductionParameters,
 } from "./UIHelpers/featureManagement.js";
 
 /**
@@ -134,4 +135,5 @@ export {
     resetFeatures,
     getSurrogateParameters,
     getVisualizationSettings,
+    getAllDimensionalityReductionParameters,
 };

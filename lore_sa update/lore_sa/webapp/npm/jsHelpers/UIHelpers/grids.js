@@ -4,7 +4,7 @@
  * @author Generated documentation
  */
 
-import { createSection, createSurrogateInput, createVisualizationToggle, createDimensionalityReductionInput } from "./inputs.js";
+import { createSection, createCollapsibleSection, createSurrogateInput, createVisualizationToggle, createDimensionalityReductionInput } from "./inputs.js";
 
 /**
  * Populates the dataset grid with available datasets as clickable cards
@@ -372,61 +372,33 @@ export function populateSurrogateForm(container) {
         createSurrogateInput(section, param, details);
     });
 
-    // Dimensionality Reduction Parameters Section
-    const dimReductionSection = createSection(
+    // Dimensionality Reduction Parameters Section - COLLAPSIBLE and COLLAPSED by default
+    const dimReductionSection = createCollapsibleSection(
         "Dimensionality Reduction Parameters",
-        "dimensionality-reduction-parameters"
+        "dimensionality-reduction-parameters",
+        true // collapsed by default
     );
     container.appendChild(dimReductionSection);
 
-    // Create method selection first
-    const methodSelection = document.createElement("div");
-    methodSelection.className = "feature-box method-selection";
-    methodSelection.innerHTML = `
-        <div class="feature-label">
-            Select Dimensionality Reduction Method
-            <span class="feature-type">Method</span>
-        </div>
-    `;
-    
-    const methodSelect = document.createElement("select");
-    methodSelect.id = "dimreduction-method";
-    methodSelect.className = "method-selector";
-    
-    Object.keys(dimensionalityReductionParameters).forEach(method => {
-        const option = document.createElement("option");
-        option.value = method;
-        option.textContent = method;
-        option.selected = method === "UMAP"; // Default to UMAP
-        methodSelect.appendChild(option);
+    // Create parameters for all methods simultaneously
+    Object.entries(dimensionalityReductionParameters).forEach(([method, methodParams]) => {
+        // Create a sub-section for each method
+        const methodSubSection = createSection(
+            `${method} Parameters`,
+            `${method.toLowerCase()}-parameters`
+        );
+        dimReductionSection.querySelector(".feature-section-content").appendChild(methodSubSection);
+
+        // Add parameters for this method
+        Object.entries(methodParams).forEach(([paramName, details]) => {
+            createDimensionalityReductionInput(
+                methodSubSection.querySelector(".feature-section-content"), 
+                method, 
+                paramName, 
+                details
+            );
+        });
     });
-    
-    methodSelection.appendChild(methodSelect);
-    dimReductionSection.querySelector(".feature-section-content").appendChild(methodSelection);
-
-    // Create container for method-specific parameters
-    const parametersContainer = document.createElement("div");
-    parametersContainer.id = "method-parameters-container";
-    dimReductionSection.querySelector(".feature-section-content").appendChild(parametersContainer);
-
-    // Function to update parameters based on selected method
-    function updateMethodParameters() {
-        const selectedMethod = methodSelect.value;
-        const container = document.getElementById("method-parameters-container");
-        container.innerHTML = "";
-
-        if (dimensionalityReductionParameters[selectedMethod]) {
-            Object.entries(dimensionalityReductionParameters[selectedMethod]).forEach(([param, details]) => {
-                createDimensionalityReductionInput(container, selectedMethod, param, details);
-            });
-        }
-    }
-
-    // Set up event listener for method changes
-    methodSelect.addEventListener("change", updateMethodParameters);
-    
-    // Initialize with default method parameters
-    updateMethodParameters();
 
     // Visualization Selection Section
     const visualizationSection = createSection(
@@ -434,11 +406,6 @@ export function populateSurrogateForm(container) {
         "visualization-toggles"
     );
     container.appendChild(visualizationSection);
-
-    const instructionText = document.createElement("p");
-    instructionText.className = "visualization-instruction";
-    instructionText.textContent = "Select which visualizations to display (at least one must be selected):";
-    visualizationSection.querySelector(".feature-section-content").appendChild(instructionText);
 
     Object.entries(visualizationToggles).forEach(([param, details]) => {
         createVisualizationToggle(visualizationSection, param, details);

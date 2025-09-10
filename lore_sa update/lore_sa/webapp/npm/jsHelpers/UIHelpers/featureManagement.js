@@ -237,7 +237,71 @@ export function getVisualizationSettings() {
 }
 
 /**
- * Gets current dimensionality reduction parameters from UI controls
+ * Gets current dimensionality reduction parameters for ALL methods
+ * @description Collects parameters for all dimensionality reduction methods
+ * @returns {Object} Object containing all method parameters
+ * @returns {Object} returns.UMAP - UMAP method parameters
+ * @returns {Object} returns.PCA - PCA method parameters  
+ * @returns {Object} returns["t-SNE"] - t-SNE method parameters
+ * @returns {Object} returns.MDS - MDS method parameters
+ * @example
+ * const allParams = getAllDimensionalityReductionParameters();
+ * // Returns: { 
+ * //   "UMAP": { n_neighbors: 15, min_dist: 0.1, spread: 1.0, ... },
+ * //   "PCA": { whiten: false, svd_solver: "auto", ... },
+ * //   "t-SNE": { perplexity: 30.0, early_exaggeration: 12.0, ... },
+ * //   "MDS": { metric: true, n_init: 4, ... }
+ * // }
+ */
+export function getAllDimensionalityReductionParameters() {
+    const methods = ["UMAP", "PCA", "t-SNE", "MDS"];
+    const allParameters = {};
+    
+    methods.forEach(method => {
+        const methodParameters = {};
+        
+        // Get all parameter inputs for this method
+        const parameterInputs = document.querySelectorAll(
+            `[id^="dimreduction-${method.toLowerCase()}-"]`
+        );
+
+        parameterInputs.forEach((input) => {
+            const paramName = input.id.split('-').slice(2).join('_'); // Get parameter name from id
+            
+            if (input.type === "number") {
+                const value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    methodParameters[paramName] = value;
+                }
+            } else if (input.tagName === "SELECT") {
+                let value = input.value;
+                
+                // Convert string boolean values to actual booleans
+                if (value === "True") {
+                    value = true;
+                } else if (value === "False") {
+                    value = false;
+                }
+                // Convert numeric strings to numbers where appropriate
+                else if (!isNaN(value) && value !== "") {
+                    value = parseFloat(value);
+                }
+                
+                methodParameters[paramName] = value;
+            }
+        });
+        
+        // Only add the method if it has parameters
+        if (Object.keys(methodParameters).length > 0) {
+            allParameters[method] = methodParameters;
+        }
+    });
+
+    return allParameters;
+}
+
+/**
+ * Gets current dimensionality reduction parameters from UI controls (backward compatibility)
  * @description Collects the selected method and its specific parameters
  * @returns {Object} Object containing dimensionality reduction configuration
  * @returns {string} returns.method - Selected dimensionality reduction method
@@ -250,47 +314,19 @@ export function getVisualizationSettings() {
  * // }
  */
 export function getDimensionalityReductionParameters() {
-    const methodSelect = document.getElementById("dimreduction-method");
-    if (!methodSelect) {
-        return { method: "umap", parameters: {} };
-    }
-
-    const selectedMethod = methodSelect.value;
-    const parameters = {};
-
-    // Get all parameter inputs for the selected method
-    const parameterInputs = document.querySelectorAll(
-        `[id^="dimreduction-${selectedMethod.toLowerCase()}-"]`
+    // Get the selected method from scatter plot radio buttons
+    const methodElement = document.querySelector(
+        'input[name="scatterPlotMethod"]:checked'
     );
-
-    parameterInputs.forEach((input) => {
-        const paramName = input.id.split('-').slice(2).join('_'); // Get parameter name from id
-        
-        if (input.type === "number") {
-            const value = parseFloat(input.value);
-            if (!isNaN(value)) {
-                parameters[paramName] = value;
-            }
-        } else if (input.tagName === "SELECT") {
-            let value = input.value;
-            
-            // Convert string boolean values to actual booleans
-            if (value === "True") {
-                value = true;
-            } else if (value === "False") {
-                value = false;
-            }
-            // Convert numeric strings to numbers where appropriate
-            else if (!isNaN(value) && value !== "") {
-                value = parseFloat(value);
-            }
-            
-            parameters[paramName] = value;
-        }
-    });
-
+    
+    const selectedMethod = methodElement ? methodElement.value.toUpperCase() : "UMAP";
+    
+    // Get all parameters for all methods
+    const allParameters = getAllDimensionalityReductionParameters();
+    
     return {
         method: selectedMethod.toLowerCase(), // Convert to lowercase for consistency with backend
-        parameters: parameters
+        parameters: allParameters[selectedMethod] || {},
+        allMethodParameters: allParameters // Include all parameters for backend storage
     };
 }

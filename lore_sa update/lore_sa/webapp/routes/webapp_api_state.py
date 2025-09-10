@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 import numpy as np
 import pandas as pd
 
@@ -48,6 +48,8 @@ class WebappState:
         Surrogate model for local explanations.
     provided_instance : Any
         User-provided instance for explanation.
+    dimensionality_reduction_parameters : Dict[str, Dict[str, Any]]
+        Parameters for all dimensionality reduction methods.
     """
     
     def __init__(self) -> None:
@@ -75,6 +77,14 @@ class WebappState:
         self.surrogate: Any = None
 
         self.provided_instance: Any = None
+        
+        # Store parameters for all dimensionality reduction methods
+        self.dimensionality_reduction_parameters: Dict[str, Dict[str, Any]] = {
+            "UMAP": {},
+            "PCA": {},
+            "t-SNE": {},
+            "MDS": {}
+        }
 
     def reset(self) -> None:
         """
@@ -119,6 +129,38 @@ class WebappState:
         self.dataset_name = None
         self.feature_names = None
         self.target_names = None
+        
+    def update_dimensionality_reduction_parameters(self, parameters: Dict[str, Dict[str, Any]]) -> None:
+        """
+        Update dimensionality reduction parameters for all methods.
+        
+        Parameters
+        ----------
+        parameters : Dict[str, Dict[str, Any]]
+            Parameters organized by method name (UMAP, PCA, t-SNE, MDS).
+        """
+        if parameters:
+            for method, method_params in parameters.items():
+                if method in self.dimensionality_reduction_parameters:
+                    self.dimensionality_reduction_parameters[method].update(method_params)
+    
+    def get_dimensionality_reduction_parameters(self, method: str = None) -> Dict[str, Any]:
+        """
+        Get dimensionality reduction parameters for a specific method or all methods.
+        
+        Parameters
+        ----------
+        method : str, optional
+            Specific method to get parameters for. If None, returns all parameters.
+            
+        Returns
+        -------
+        Dict[str, Any]
+            Parameters for the specified method, or all methods if method is None.
+        """
+        if method:
+            return self.dimensionality_reduction_parameters.get(method.upper(), {})
+        return self.dimensionality_reduction_parameters.copy()
 
 
 webapp_state = WebappState()

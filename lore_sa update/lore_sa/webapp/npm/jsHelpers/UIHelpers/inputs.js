@@ -33,6 +33,76 @@ export function createSection(title, id) {
 }
 
 /**
+ * Creates a collapsible section with expandable/collapsible functionality
+ * @description Generates a collapsible section container with click-to-expand functionality
+ * @param {string} title - The title text to display in the section header
+ * @param {string} id - Unique identifier for the section element
+ * @param {boolean} [collapsed=true] - Whether the section should start collapsed
+ * @returns {HTMLElement} The created collapsible section element
+ * @example
+ * const section = createCollapsibleSection("Advanced Settings", "advanced-settings", true);
+ * document.body.appendChild(section);
+ */
+export function createCollapsibleSection(title, id, collapsed = true) {
+    const section = document.createElement("div");
+    section.className = "feature-section collapsible";
+    section.id = id;
+    
+    if (!collapsed) {
+        section.classList.add("expanded");
+    }
+
+    const header = document.createElement("div");
+    header.className = "collapsible-header";
+
+    const titleElement = document.createElement("h3");
+    titleElement.textContent = title;
+
+    const toggle = document.createElement("div");
+    toggle.className = "collapsible-toggle";
+    toggle.textContent = "+";
+
+    header.appendChild(titleElement);
+    header.appendChild(toggle);
+
+    const contentWrapper = document.createElement("div");
+    contentWrapper.className = "collapsible-content";
+    
+    if (!collapsed) {
+        contentWrapper.classList.add("expanded");
+    }
+
+    const contentInner = document.createElement("div");
+    contentInner.className = "collapsible-content-inner";
+
+    const content = document.createElement("div");
+    content.className = "feature-section-content";
+
+    contentInner.appendChild(content);
+    contentWrapper.appendChild(contentInner);
+
+    // Add click handler to toggle collapsed state
+    header.addEventListener("click", () => {
+        const isExpanded = section.classList.contains("expanded");
+        
+        if (isExpanded) {
+            section.classList.remove("expanded");
+            contentWrapper.classList.remove("expanded");
+            toggle.textContent = "+";
+        } else {
+            section.classList.add("expanded");
+            contentWrapper.classList.add("expanded");
+            toggle.textContent = "×";
+        }
+    });
+
+    section.appendChild(header);
+    section.appendChild(contentWrapper);
+
+    return section;
+}
+
+/**
  * Creates a numeric input control for feature values
  * @description Generates a numeric input with validation, range display, and statistical tooltips
  * @param {HTMLElement} container - The container element to append the input to

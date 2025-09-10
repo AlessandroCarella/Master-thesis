@@ -16,6 +16,7 @@ import {
     getFeatureValues,
     resetFeatures,
     setState,
+    getAllDimensionalityReductionParameters, // Import new function
 } from "./jsHelpers/ui.js";
 
 import { initializeVisualizations } from "./jsHelpers/visualizations.js";
@@ -72,6 +73,7 @@ import { checkCustomData } from "./jsHelpers/API.js";
  * @property {Object|null} featureDescriptor - Dataset feature information
  * @property {boolean} instanceProvided - Whether an instance was pre-provided
  * @property {Object|null} providedInstance - Pre-provided instance data
+ * @property {Object} dimensionalityReductionParameters - All dimensionality reduction method parameters
  */
 
 /**
@@ -85,6 +87,13 @@ export const appState = {
     featureDescriptor: null,
     instanceProvided: false,
     providedInstance: null,
+    // Store parameters for all dimensionality reduction methods
+    dimensionalityReductionParameters: {
+        "UMAP": {},
+        "PCA": {},
+        "t-SNE": {},
+        "MDS": {}
+    }
 };
 
 /**
@@ -116,6 +125,13 @@ window.selectDataset = async function (datasetName) {
     appState.featureDescriptor = null;
     appState.instanceProvided = false;
     appState.providedInstance = null;
+    // Reset dimensionality reduction parameters
+    appState.dimensionalityReductionParameters = {
+        "UMAP": {},
+        "PCA": {},
+        "t-SNE": {},
+        "MDS": {}
+    };
 
     const datasetInfoDiv = document.getElementById("datasetInfo");
     datasetInfoDiv.style.display = "none";
@@ -232,6 +248,23 @@ window.startTraining = async () => {
 };
 
 /**
+ * Updates dimensionality reduction parameters in app state
+ * @description Collects current UI values and stores them in app state
+ * @returns {void}
+ * @example
+ * updateDimensionalityReductionParameters();
+ * // Updates appState.dimensionalityReductionParameters with current UI values
+ */
+function updateDimensionalityReductionParameters() {
+    try {
+        const allParams = getAllDimensionalityReductionParameters();
+        appState.dimensionalityReductionParameters = { ...appState.dimensionalityReductionParameters, ...allParams };
+    } catch (error) {
+        console.warn("Could not update dimensionality reduction parameters:", error);
+    }
+}
+
+/**
  * Builds unified request data for explanation endpoint.
  * Combines instance data with surrogate parameters for API call.
  * 
@@ -247,11 +280,22 @@ window.startTraining = async () => {
  * );
  */
 function buildUnifiedExplanationRequestData(instanceData, surrogateParams, appState) {
+    // Update stored parameters with current UI values
+    updateDimensionalityReductionParameters();
+    
+    const methodElement = document.querySelector(
+        'input[name="scatterPlotMethod"]:checked'
+    );
+    const scatterPlotMethod = methodElement ? methodElement.value : "umap";
+    
     const baseRequest = {
         dataset_name: appState.dataset_name,
         neighbourhood_size: surrogateParams.neighbourhood_size,
         scatterPlotStep: surrogateParams.scatterPlotStep,
-        scatterPlotMethod: surrogateParams.scatterPlotMethod,
+        scatterPlotMethod: scatterPlotMethod,
+        dimensionalityReductionMethod: scatterPlotMethod,
+        dimensionalityReductionParameters: appState.dimensionalityReductionParameters[scatterPlotMethod.toUpperCase()] || {},
+        allMethodParameters: appState.dimensionalityReductionParameters,
         includeOriginalDataset: surrogateParams.includeOriginalDataset,
         keepDuplicates: surrogateParams.keepDuplicates,
     };
@@ -394,6 +438,8 @@ window.getVisualizationSettings = getVisualizationSettings;
 window.showExplanationLoading = showExplanationLoading;
 window.updateVisualizationUI = updateVisualizationUI;
 window.buildExplanationRequestData = buildExplanationRequestData;
+window.getAllDimensionalityReductionParameters = getAllDimensionalityReductionParameters;
+window.updateDimensionalityReductionParameters = updateDimensionalityReductionParameters;
 
 /**
  * Initializes application when DOM is loaded.

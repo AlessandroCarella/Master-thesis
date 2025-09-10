@@ -38,6 +38,8 @@ class InstanceRequest(BaseModel):
         Dimensionality reduction method name.
     dimensionalityReductionParameters : Dict[str, Any]
         Method-specific parameters for dimensionality reduction.
+    allMethodParameters : Dict[str, Dict[str, Any]]
+        Parameters for all dimensionality reduction methods.
     includeOriginalDataset : bool
         Whether to include original training data in visualization.
     keepDuplicates : bool
@@ -50,6 +52,7 @@ class InstanceRequest(BaseModel):
     scatterPlotMethod: str = "umap"
     dimensionalityReductionMethod: str = "umap"
     dimensionalityReductionParameters: Dict[str, Any] = {}
+    allMethodParameters: Dict[str, Dict[str, Any]] = {}
     includeOriginalDataset: bool
     keepDuplicates: bool
 
@@ -70,6 +73,8 @@ class VisualizationRequest(BaseModel):
         Dimensionality reduction method name.
     dimensionalityReductionParameters : Dict[str, Any]
         Method-specific parameters for dimensionality reduction.
+    allMethodParameters : Dict[str, Dict[str, Any]]
+        Parameters for all dimensionality reduction methods.
     includeOriginalDataset : bool
         Whether to overlay original training data.
     """
@@ -78,6 +83,7 @@ class VisualizationRequest(BaseModel):
     scatterPlotMethod: str = "umap"
     dimensionalityReductionMethod: str = "umap"
     dimensionalityReductionParameters: Dict[str, Any] = {}
+    allMethodParameters: Dict[str, Dict[str, Any]] = {}
     includeOriginalDataset: bool
 
 
@@ -260,9 +266,15 @@ class VisualizationGenerator:
         Dict[str, Any]
             Scatter plot visualization data including transformed coordinates.
         """
-        # Use dimensionalityReductionMethod and parameters if available, fallback to scatterPlotMethod
-        method = getattr(request, 'dimensionalityReductionMethod', request.scatterPlotMethod)
-        parameters = getattr(request, 'dimensionalityReductionParameters', {})
+        # Store all method parameters in webapp_state 
+        webapp_state.update_dimensionality_reduction_parameters(request.allMethodParameters)
+
+        
+        method = request.dimensionalityReductionMethod
+        parameters = {
+            **webapp_state.get_dimensionality_reduction_parameters(method), 
+            **request.dimensionalityReductionParameters
+        }
         
         return create_scatter_plot_data_raw(
             X=X,

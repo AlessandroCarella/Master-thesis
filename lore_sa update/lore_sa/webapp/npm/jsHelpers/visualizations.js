@@ -241,22 +241,35 @@ async function handleScatterPlotMethodChange(event) {
 
 /**
  * Builds request data for visualization updates.
- * Combines selected method with current surrogate parameters.
+ * Combines selected method with current surrogate parameters and all dimensionality reduction parameters.
  * 
  * @param {string} selectedMethod - Selected dimensionality reduction method
  * @returns {Object} Request data for API call
  * @example
  * const requestData = buildVisualizationRequestData('umap');
- * // Returns: { dataset_name: 'iris', scatterPlotMethod: 'umap', ... }
+ * // Returns: { dataset_name: 'iris', scatterPlotMethod: 'umap', allMethodParameters: {...}, ... }
  * 
  * @see getSurrogateParameters
+ * @see getAllDimensionalityReductionParameters
  */
 function buildVisualizationRequestData(selectedMethod) {
     const surrogateParams = getSurrogateParameters();
+    
+    // Update stored parameters with current UI values
+    if (window.updateDimensionalityReductionParameters) {
+        window.updateDimensionalityReductionParameters();
+    }
+    
+    const allMethodParams = window.appState.dimensionalityReductionParameters || {};
+    const methodSpecificParams = allMethodParams[selectedMethod.toUpperCase()] || {};
+    
     return {
         dataset_name: window.appState.dataset_name,
         scatterPlotStep: surrogateParams.scatterPlotStep,
         scatterPlotMethod: selectedMethod,
+        dimensionalityReductionMethod: selectedMethod,
+        dimensionalityReductionParameters: methodSpecificParams,
+        allMethodParameters: allMethodParams,
         includeOriginalDataset: surrogateParams.includeOriginalDataset,
     };
 }

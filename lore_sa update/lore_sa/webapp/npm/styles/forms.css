@@ -45,6 +45,73 @@
     gap: 1.25rem;
 }
 
+/* Collapsible section styles */
+.feature-section.collapsible {
+    padding: 0;
+    overflow: hidden;
+}
+
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    cursor: pointer;
+    background-color: var(--surface-color);
+    border-radius: var(--radius-lg);
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.collapsible-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.collapsible-toggle {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background-color: var(--surface-color);
+}
+
+.collapsible-content.expanded {
+    max-height: 2000px; /* Large enough to accommodate content */
+}
+
+.collapsible-content-inner {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.collapsible.expanded .collapsible-toggle {
+    transform: rotate(45deg);
+}
+
+.collapsible.expanded .collapsible-header {
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.collapsible.expanded {
+    border-radius: var(--radius-lg);
+}
+
 .feature-box {
     background-color: #f8fafc;
     padding: 1.25rem;
