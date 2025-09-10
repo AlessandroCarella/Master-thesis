@@ -3,14 +3,13 @@ import numpy as np
 import pandas as pd
 import logging
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE, MDS
 from sklearn.cluster import KMeans
-from umap import UMAP
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import networkx as nx
+
+from .webapp_dimensionality_reduction_utils import create_dimensionality_reducer, can_generate_boundary
 
 
 class DimensionalityReducer:
@@ -69,117 +68,15 @@ class DimensionalityReducer:
         """
         X_scaled = self.scaler.fit_transform(X)
         
-        if self.method == 'pca':
-            self.reducer = self._create_pca_reducer()
-        elif self.method == 'tsne':
-            self.reducer = self._create_tsne_reducer(X_scaled)
-        elif self.method == 'umap':
-            self.reducer = self._create_umap_reducer()
-        elif self.method == 'mds':
-            self.reducer = self._create_mds_reducer()
-        else:
-            raise ValueError(f"Unsupported method: {self.method}")
+        self.reducer = create_dimensionality_reducer(
+            self.method, 
+            n_components=2, 
+            parameters=self.parameters, 
+            random_state=self.random_state,
+            X_scaled=X_scaled
+        )
         
         return self.reducer.fit_transform(X_scaled)
-    
-    def _create_pca_reducer(self):
-        """Create PCA reducer with specified parameters."""
-        params = {
-            'n_components': 2,
-            'random_state': self.random_state
-        }
-        
-        # Update with user parameters
-        if 'whiten' in self.parameters:
-            params['whiten'] = self.parameters['whiten']
-        if 'svd_solver' in self.parameters:
-            params['svd_solver'] = self.parameters['svd_solver']
-        if 'tol' in self.parameters and self.parameters.get('svd_solver') == 'arpack':
-            params['tol'] = self.parameters['tol']
-        if 'iterated_power' in self.parameters and self.parameters.get('svd_solver') == 'randomized':
-            params['iterated_power'] = int(self.parameters['iterated_power'])
-            
-        return PCA(**params)
-    
-    def _create_tsne_reducer(self, X_scaled: np.ndarray):
-        """Create t-SNE reducer with specified parameters."""
-        params = {
-            'n_components': 2,
-            'random_state': self.random_state,
-            'n_jobs': 1  # Avoid parallel processing issues
-        }
-        
-        # Update with user parameters
-        if 'perplexity' in self.parameters:
-            # Ensure perplexity is valid for dataset size
-            max_perplexity = min(self.parameters['perplexity'], (X_scaled.shape[0] - 1) / 3)
-            params['perplexity'] = max(5.0, max_perplexity)
-        else:
-            params['perplexity'] = min(30.0, X_scaled.shape[0] / 3)
-            
-        if 'early_exaggeration' in self.parameters:
-            params['early_exaggeration'] = self.parameters['early_exaggeration']
-        if 'learning_rate' in self.parameters:
-            if self.parameters['learning_rate'] == 'auto':
-                params['learning_rate'] = 'auto'
-            else:
-                params['learning_rate'] = float(self.parameters['learning_rate'])
-        if 'max_iter' in self.parameters:
-            params['max_iter'] = int(self.parameters['max_iter'])
-        if 'metric' in self.parameters:
-            params['metric'] = self.parameters['metric']
-        if 'init' in self.parameters:
-            params['init'] = self.parameters['init']
-        if 'method' in self.parameters:
-            params['method'] = self.parameters['method']
-            
-        return TSNE(**params)
-    
-    def _create_umap_reducer(self):
-        """Create UMAP reducer with specified parameters."""
-        logging.getLogger('numba').setLevel(logging.WARNING)
-        
-        params = {
-            'n_components': 2,
-            'random_state': self.random_state
-        }
-        
-        # Update with user parameters
-        if 'n_neighbors' in self.parameters:
-            params['n_neighbors'] = int(self.parameters['n_neighbors'])
-        if 'min_dist' in self.parameters:
-            params['min_dist'] = self.parameters['min_dist']
-        if 'spread' in self.parameters:
-            params['spread'] = self.parameters['spread']
-        if 'n_epochs' in self.parameters:
-            params['n_epochs'] = int(self.parameters['n_epochs'])
-        if 'learning_rate' in self.parameters:
-            params['learning_rate'] = self.parameters['learning_rate']
-        if 'metric' in self.parameters:
-            params['metric'] = self.parameters['metric']
-            
-        return UMAP(**params)
-    
-    def _create_mds_reducer(self):
-        """Create MDS reducer with specified parameters."""
-        params = {
-            'n_components': 2,
-            'random_state': self.random_state
-        }
-        
-        # Update with user parameters
-        if 'metric' in self.parameters:
-            params['metric'] = self.parameters['metric']
-        if 'n_init' in self.parameters:
-            params['n_init'] = int(self.parameters['n_init'])
-        if 'max_iter' in self.parameters:
-            params['max_iter'] = int(self.parameters['max_iter'])
-        if 'eps' in self.parameters:
-            params['eps'] = self.parameters['eps']
-        if 'dissimilarity' in self.parameters:
-            params['dissimilarity'] = self.parameters['dissimilarity']
-            
-        return MDS(**params)
     
     def can_generate_boundary(self) -> bool:
         """
@@ -195,7 +92,7 @@ class DimensionalityReducer:
         Only PCA currently supports decision boundary generation due to
         its linear and invertible nature.
         """
-        return self.method == 'pca'
+        return can_generate_boundary(self.method)
 
 
 class DataFilter:
@@ -336,7 +233,7 @@ class DecisionBoundaryGenerator:
         grid_points = np.c_[xx.ravel(), yy.ravel()]
         grid_original = reducer.inverse_transform(grid_points)
         grid_original = scaler.inverse_transform(grid_original)
-        Z = model.predict(grid_original).reshape(xx.shape)
+        Z = model.dt.predict(grid_original).reshape(xx.shape)
         
         regions, region_classes = self._create_voronoi_regions(xx, yy, Z, class_names)
         

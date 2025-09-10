@@ -4,10 +4,10 @@ import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 from fastapi import APIRouter
 from skimage import color
-import umap
 
 from .webapp_api_state import webapp_state
 from .webapp_api_utils import safe_json_response
+from ..webapp_dimensionality_reduction_utils import create_dimensionality_reducer
 
 
 DEFAULT_COLORS = [
@@ -44,10 +44,10 @@ def compute_centroids(X: np.ndarray, y: np.ndarray) -> Dict[int, np.ndarray]:
     return centroids
 
 
-def project_to_rgb(centroids: Dict[int, np.ndarray], method: str, 
+def project_to_rgb(centroids: Dict[int, np.ndarray], method: str, parameters: dict = None,
                   random_state: int = 42) -> Dict[int, np.ndarray]:
     """
-    Project high-dimensional centroids to RGB color space.
+    Project high-dimensional centroids to RGB color space using consistent parameters.
     
     Parameters
     ----------
@@ -55,6 +55,8 @@ def project_to_rgb(centroids: Dict[int, np.ndarray], method: str,
         Class centroids in original feature space.
     method : str
         Dimensionality reduction method ('pca', 'tsne', 'umap', 'mds').
+    parameters : dict, default=None
+        Method-specific parameters (same as used for scatter plot).
     random_state : int, default=42
         Random seed for reproducible results.
         
@@ -68,38 +70,15 @@ def project_to_rgb(centroids: Dict[int, np.ndarray], method: str,
     Reduces centroids to 3D space then maps to RGB color channels.
     Uses MinMaxScaler to ensure valid RGB ranges.
     """
+    if parameters is None:
+        parameters = {}
+        
     labels = list(centroids.keys())
     centroid_matrix = np.array([centroids[label] for label in labels])
     
     if centroid_matrix.shape[1] > 3:
-        method = method.lower()
-
-        if method == "pca":
-            from sklearn.decomposition import PCA
-            reducer = PCA(n_components=3)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        elif method == "tsne":
-            from sklearn.manifold import TSNE
-            tsne_params = {
-                'perplexity': min(5, len(centroid_matrix)-1),
-                'early_exaggeration': 12.0,
-                'learning_rate': 'auto',
-                'n_iter': 1000,
-                'n_iter_without_progress': 300
-            }
-            reducer = TSNE(n_components=2, random_state=random_state, **tsne_params)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        elif method == "umap":
-            reducer = umap.UMAP(n_components=3, random_state=random_state)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        elif method == "mds":
-            from sklearn.manifold import MDS
-            reducer = MDS(n_components=3, random_state=random_state)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        else:
-            from sklearn.decomposition import PCA
-            reducer = PCA(n_components=3)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
+        reducer = create_dimensionality_reducer(method, 3, parameters, random_state)
+        reduced_centroids = reducer.fit_transform(centroid_matrix)
     else:
         reduced_centroids = centroid_matrix
     
@@ -143,10 +122,10 @@ def cielab_hex_from_xy(x: float, y: float, L: int = 70) -> str:
     return "#{:02x}{:02x}{:02x}".format(int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
 
 
-def project_to_cielab(centroids: Dict[int, np.ndarray], method: str, 
+def project_to_cielab(centroids: Dict[int, np.ndarray], method: str, parameters: dict = None,
                      random_state: int = 42) -> List[str]:
     """
-    Project centroids to 2D space and generate CIELAB-based hex colors.
+    Project centroids to 2D space and generate CIELAB-based hex colors using consistent parameters.
     
     Parameters
     ----------
@@ -154,6 +133,8 @@ def project_to_cielab(centroids: Dict[int, np.ndarray], method: str,
         Class centroids in original feature space.
     method : str
         Dimensionality reduction method ('pca', 'tsne', 'umap', 'mds').
+    parameters : dict, default=None
+        Method-specific parameters (same as used for scatter plot).
     random_state : int, default=42
         Random seed for reproducible results.
         
@@ -167,43 +148,15 @@ def project_to_cielab(centroids: Dict[int, np.ndarray], method: str,
     Designed for datasets with many classes (>10) to generate
     perceptually distinct colors using CIELAB color space.
     """
+    if parameters is None:
+        parameters = {}
+        
     labels = list(centroids.keys())
     centroid_matrix = np.array([centroids[label] for label in labels])
     
     if centroid_matrix.shape[1] > 2:
-        method = method.lower()
-
-        if method == "pca":
-            from sklearn.decomposition import PCA
-            reducer = PCA(n_components=2)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        elif method == "tsne":
-            from sklearn.manifold import TSNE
-            tsne_params = {
-                'perplexity': min(5, len(centroid_matrix)-1),
-                'early_exaggeration': 12.0,
-                'learning_rate': 'auto',
-                'n_iter': 1000,
-                'n_iter_without_progress': 300
-            }
-            reducer = TSNE(n_components=2, random_state=random_state, **tsne_params)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        elif method == "umap":
-            reducer = umap.UMAP(
-                        n_components=2, 
-                        random_state=random_state,
-                        init='random',
-                        min_dist=0.1
-                    )
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        elif method == "mds":
-            from sklearn.manifold import MDS
-            reducer = MDS(n_components=2, random_state=random_state)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
-        else:
-            from sklearn.decomposition import PCA
-            reducer = PCA(n_components=2)
-            reduced_centroids = reducer.fit_transform(centroid_matrix)
+        reducer = create_dimensionality_reducer(method, 2, parameters, random_state)
+        reduced_centroids = reducer.fit_transform(centroid_matrix)
     else:
         reduced_centroids = centroid_matrix
         
@@ -221,14 +174,16 @@ def project_to_cielab(centroids: Dict[int, np.ndarray], method: str,
 
 
 @router.get("/get-classes-colors")
-async def get_colors(method: str) -> List[str]:
+async def get_colors(method: str, parameters: str = None) -> List[str]:
     """
-    Generate colors for class visualization based on data distribution.
+    Generate colors for class visualization based on data distribution using consistent parameters.
     
     Parameters
     ---------- 
     method : str
         Dimensionality reduction method for color generation.
+    parameters : str, default=None
+        JSON string of method-specific parameters (same as used for scatter plot).
         
     Returns
     -------
@@ -238,14 +193,15 @@ async def get_colors(method: str) -> List[str]:
     Notes
     -----
     For datasets with >10 classes, generates colors using centroid projection
-    to CIELAB color space. Otherwise returns predefined color palette.
+    to CIELAB color space with the same parameters as scatter plot generation.
+    Otherwise returns predefined color palette.
     """
     if len(webapp_state.target_names) > 10:
         centroids = compute_centroids(
             webapp_state.decoded_neighborhood,
             webapp_state.neighb_predictions
         )
-        colors = project_to_cielab(centroids, method)
+        colors = project_to_cielab(centroids, method, webapp_state.reduction_parameters)
         return colors
 
     return safe_json_response(DEFAULT_COLORS)
