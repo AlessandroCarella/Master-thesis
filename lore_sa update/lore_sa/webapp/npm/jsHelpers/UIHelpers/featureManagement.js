@@ -235,3 +235,62 @@ export function getVisualizationSettings() {
         treeSpawn: document.getElementById("viz-treeSpawn")?.checked || false,
     };
 }
+
+/**
+ * Gets current dimensionality reduction parameters from UI controls
+ * @description Collects the selected method and its specific parameters
+ * @returns {Object} Object containing dimensionality reduction configuration
+ * @returns {string} returns.method - Selected dimensionality reduction method
+ * @returns {Object} returns.parameters - Method-specific parameters
+ * @example
+ * const dimReductionParams = getDimensionalityReductionParameters();
+ * // Returns: { 
+ * //   method: "UMAP", 
+ * //   parameters: { n_neighbors: 15, min_dist: 0.1, spread: 1.0 }
+ * // }
+ */
+export function getDimensionalityReductionParameters() {
+    const methodSelect = document.getElementById("dimreduction-method");
+    if (!methodSelect) {
+        return { method: "umap", parameters: {} };
+    }
+
+    const selectedMethod = methodSelect.value;
+    const parameters = {};
+
+    // Get all parameter inputs for the selected method
+    const parameterInputs = document.querySelectorAll(
+        `[id^="dimreduction-${selectedMethod.toLowerCase()}-"]`
+    );
+
+    parameterInputs.forEach((input) => {
+        const paramName = input.id.split('-').slice(2).join('_'); // Get parameter name from id
+        
+        if (input.type === "number") {
+            const value = parseFloat(input.value);
+            if (!isNaN(value)) {
+                parameters[paramName] = value;
+            }
+        } else if (input.tagName === "SELECT") {
+            let value = input.value;
+            
+            // Convert string boolean values to actual booleans
+            if (value === "True") {
+                value = true;
+            } else if (value === "False") {
+                value = false;
+            }
+            // Convert numeric strings to numbers where appropriate
+            else if (!isNaN(value) && value !== "") {
+                value = parseFloat(value);
+            }
+            
+            parameters[paramName] = value;
+        }
+    });
+
+    return {
+        method: selectedMethod.toLowerCase(), // Convert to lowercase for consistency with backend
+        parameters: parameters
+    };
+}

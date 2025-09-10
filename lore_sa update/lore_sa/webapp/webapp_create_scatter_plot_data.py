@@ -21,6 +21,8 @@ class DimensionalityReducer:
     ----------
     method : str, default='umap'
         Reduction method ('pca', 'tsne', 'umap', 'mds').
+    parameters : dict, default=None
+        Method-specific parameters.
     random_state : int, default=42
         Random seed for reproducible results.
         
@@ -28,6 +30,8 @@ class DimensionalityReducer:
     ----------
     method : str
         Selected dimensionality reduction method.
+    parameters : dict
+        Method-specific parameters.
     random_state : int
         Random seed value.
     scaler : StandardScaler
@@ -36,9 +40,10 @@ class DimensionalityReducer:
         Fitted dimensionality reduction model.
     """
     
-    def __init__(self, method: str = 'umap', random_state: int = 42) -> None:
-        """Initialize dimensionality reducer with specified method."""
+    def __init__(self, method: str = 'umap', parameters: dict = None, random_state: int = 42) -> None:
+        """Initialize dimensionality reducer with specified method and parameters."""
         self.method = method.lower()
+        self.parameters = parameters or {}
         self.random_state = random_state
         self.scaler = StandardScaler()
         self.reducer = None
@@ -65,26 +70,116 @@ class DimensionalityReducer:
         X_scaled = self.scaler.fit_transform(X)
         
         if self.method == 'pca':
-            self.reducer = PCA(n_components=2)
+            self.reducer = self._create_pca_reducer()
         elif self.method == 'tsne':
-            self.reducer = TSNE(
-                n_components=2, 
-                random_state=self.random_state,
-                perplexity=min(30.0, X_scaled.shape[0] / 3),
-                early_exaggeration=12.0,
-                learning_rate='auto',
-                n_iter=1000,
-                n_iter_without_progress=300
-            )
+            self.reducer = self._create_tsne_reducer(X_scaled)
         elif self.method == 'umap':
-            logging.getLogger('numba').setLevel(logging.WARNING)
-            self.reducer = UMAP(n_components=2, random_state=self.random_state)
+            self.reducer = self._create_umap_reducer()
         elif self.method == 'mds':
-            self.reducer = MDS(n_components=2, random_state=self.random_state)
+            self.reducer = self._create_mds_reducer()
         else:
             raise ValueError(f"Unsupported method: {self.method}")
         
         return self.reducer.fit_transform(X_scaled)
+    
+    def _create_pca_reducer(self):
+        """Create PCA reducer with specified parameters."""
+        params = {
+            'n_components': 2,
+            'random_state': self.random_state
+        }
+        
+        # Update with user parameters
+        if 'whiten' in self.parameters:
+            params['whiten'] = self.parameters['whiten']
+        if 'svd_solver' in self.parameters:
+            params['svd_solver'] = self.parameters['svd_solver']
+        if 'tol' in self.parameters and self.parameters.get('svd_solver') == 'arpack':
+            params['tol'] = self.parameters['tol']
+        if 'iterated_power' in self.parameters and self.parameters.get('svd_solver') == 'randomized':
+            params['iterated_power'] = int(self.parameters['iterated_power'])
+            
+        return PCA(**params)
+    
+    def _create_tsne_reducer(self, X_scaled: np.ndarray):
+        """Create t-SNE reducer with specified parameters."""
+        params = {
+            'n_components': 2,
+            'random_state': self.random_state,
+            'n_jobs': 1  # Avoid parallel processing issues
+        }
+        
+        # Update with user parameters
+        if 'perplexity' in self.parameters:
+            # Ensure perplexity is valid for dataset size
+            max_perplexity = min(self.parameters['perplexity'], (X_scaled.shape[0] - 1) / 3)
+            params['perplexity'] = max(5.0, max_perplexity)
+        else:
+            params['perplexity'] = min(30.0, X_scaled.shape[0] / 3)
+            
+        if 'early_exaggeration' in self.parameters:
+            params['early_exaggeration'] = self.parameters['early_exaggeration']
+        if 'learning_rate' in self.parameters:
+            if self.parameters['learning_rate'] == 'auto':
+                params['learning_rate'] = 'auto'
+            else:
+                params['learning_rate'] = float(self.parameters['learning_rate'])
+        if 'max_iter' in self.parameters:
+            params['max_iter'] = int(self.parameters['max_iter'])
+        if 'metric' in self.parameters:
+            params['metric'] = self.parameters['metric']
+        if 'init' in self.parameters:
+            params['init'] = self.parameters['init']
+        if 'method' in self.parameters:
+            params['method'] = self.parameters['method']
+            
+        return TSNE(**params)
+    
+    def _create_umap_reducer(self):
+        """Create UMAP reducer with specified parameters."""
+        logging.getLogger('numba').setLevel(logging.WARNING)
+        
+        params = {
+            'n_components': 2,
+            'random_state': self.random_state
+        }
+        
+        # Update with user parameters
+        if 'n_neighbors' in self.parameters:
+            params['n_neighbors'] = int(self.parameters['n_neighbors'])
+        if 'min_dist' in self.parameters:
+            params['min_dist'] = self.parameters['min_dist']
+        if 'spread' in self.parameters:
+            params['spread'] = self.parameters['spread']
+        if 'n_epochs' in self.parameters:
+            params['n_epochs'] = int(self.parameters['n_epochs'])
+        if 'learning_rate' in self.parameters:
+            params['learning_rate'] = self.parameters['learning_rate']
+        if 'metric' in self.parameters:
+            params['metric'] = self.parameters['metric']
+            
+        return UMAP(**params)
+    
+    def _create_mds_reducer(self):
+        """Create MDS reducer with specified parameters."""
+        params = {
+            'n_components': 2,
+            'random_state': self.random_state
+        }
+        
+        # Update with user parameters
+        if 'metric' in self.parameters:
+            params['metric'] = self.parameters['metric']
+        if 'n_init' in self.parameters:
+            params['n_init'] = int(self.parameters['n_init'])
+        if 'max_iter' in self.parameters:
+            params['max_iter'] = int(self.parameters['max_iter'])
+        if 'eps' in self.parameters:
+            params['eps'] = self.parameters['eps']
+        if 'dissimilarity' in self.parameters:
+            params['dissimilarity'] = self.parameters['dissimilarity']
+            
+        return MDS(**params)
     
     def can_generate_boundary(self) -> bool:
         """
@@ -488,6 +583,8 @@ class ScatterPlotGenerator:
     ----------
     method : str, default='umap'
         Dimensionality reduction method.
+    parameters : dict, default=None
+        Method-specific parameters.
     step : float, default=0.1
         Decision boundary mesh resolution.
     random_state : int, default=42
@@ -505,9 +602,9 @@ class ScatterPlotGenerator:
         Feature processing utilities.
     """
     
-    def __init__(self, method: str = 'umap', step: float = 0.1, random_state: int = 42) -> None:
+    def __init__(self, method: str = 'umap', parameters: dict = None, step: float = 0.1, random_state: int = 42) -> None:
         """Initialize scatter plot generator with specified parameters."""
-        self.reducer = DimensionalityReducer(method, random_state)
+        self.reducer = DimensionalityReducer(method, parameters, random_state)
         self.filter = DataFilter(random_state=random_state)
         self.boundary_gen = DecisionBoundaryGenerator(step)
         self.feature_proc = FeatureProcessor()
@@ -580,7 +677,8 @@ class ScatterPlotGenerator:
 def create_scatter_plot_data_raw(X: np.ndarray, y: np.ndarray, pretrained_tree: Any, 
                                class_names: List[str], feature_names: List[str] = None, 
                                X_original: np.ndarray = None, y_original: np.ndarray = None, 
-                               method: str = 'umap', step: float = 0.1, random_state: int = 42) -> Dict[str, Any]:
+                               method: str = 'umap', parameters: dict = None, step: float = 0.1, 
+                               random_state: int = 42) -> Dict[str, Any]:
     """
     Main interface function for creating scatter plot visualization data.
     
@@ -602,6 +700,8 @@ def create_scatter_plot_data_raw(X: np.ndarray, y: np.ndarray, pretrained_tree: 
         Original training dataset labels.
     method : str, default='umap'
         Dimensionality reduction method ('pca', 'tsne', 'umap', 'mds').
+    parameters : dict, default=None
+        Method-specific parameters for dimensionality reduction.
     step : float, default=0.1
         Resolution for decision boundary mesh generation.
     random_state : int, default=42
@@ -624,6 +724,6 @@ def create_scatter_plot_data_raw(X: np.ndarray, y: np.ndarray, pretrained_tree: 
     feature data to 2D visualization with decision boundaries and interactive
     data mappings for frontend consumption.
     """
-    generator = ScatterPlotGenerator(method, step, random_state)
+    generator = ScatterPlotGenerator(method, parameters, step, random_state)
     return generator.generate(X, y, pretrained_tree, class_names, feature_names, 
                              X_original, y_original)

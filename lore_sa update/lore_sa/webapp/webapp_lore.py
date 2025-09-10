@@ -387,9 +387,7 @@ class NeighborhoodGenerator:
             raw predictions, and encoded feature names.
         """
         instance_df = self._prepare_instance(instance)
-        print (instance_df, "instance_df")
         encoded_instance = webapp_state.encoder.encode(instance_df)
-        print (encoded_instance, "encoded_instance")
         encoded_instance = encoded_instance[0]
 
         if webapp_state.generator is None:
@@ -402,14 +400,7 @@ class NeighborhoodGenerator:
         if not keepDuplicates:
             neighborhood = self._remove_duplicates(neighborhood)
         neighborhood = self._ensure_instance_at_end(copy.deepcopy(encoded_instance), neighborhood)
-        print(instance, "instance")
-        print (encoded_instance, "encoded_instance")
-        print (type(encoded_instance), "type encoded_instance")
-        print(neighborhood[-1], "neighborhood[-1]")
-        print(neighborhood[0], "neighborhood[0]")
         decoded_neighborhood = webapp_state.encoder.decode(neighborhood)
-        print("decoded_neighborhood[-1]",decoded_neighborhood[-1])
-        print("decoded_neighborhood[0]",decoded_neighborhood[0])
         decoded_neighborhood = self._to_dataframe(decoded_neighborhood)
 
         predictions = self.bbox.predict(decoded_neighborhood)

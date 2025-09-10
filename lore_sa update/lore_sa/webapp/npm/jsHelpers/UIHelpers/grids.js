@@ -4,7 +4,7 @@
  * @author Generated documentation
  */
 
-import { createSection, createSurrogateInput, createVisualizationToggle } from "./inputs.js";
+import { createSection, createSurrogateInput, createVisualizationToggle, createDimensionalityReductionInput } from "./inputs.js";
 
 /**
  * Populates the dataset grid with available datasets as clickable cards
@@ -109,6 +109,201 @@ export function populateParameterForm(parameters) {
 }
 
 /**
+ * Dimensionality reduction parameter definitions with descriptions
+ * @description Configuration object containing parameter specifications for each dimensionality reduction method
+ */
+const dimensionalityReductionParameters = {
+    "UMAP": {
+        "n_neighbors": {
+            label: "Number of Neighbors",
+            type: "number",
+            min: 2,
+            max: 200,
+            default: 15,
+            step: 1,
+            description: "Number of neighboring points used to approximate the local manifold structure."
+        },
+        "min_dist": {
+            label: "Minimum Distance",
+            type: "number",
+            min: 0.0,
+            max: 2.0,
+            default: 0.1,
+            step: 0.01,
+            description: "Minimum distance between points in the embedding — controls clustering tightness."
+        },
+        "spread": {
+            label: "Spread",
+            type: "number",
+            min: 0.1,
+            max: 3.0,
+            default: 1.0,
+            step: 0.1,
+            description: "Effective scale of embedded points that interacts with min_dist."
+        },
+        "n_epochs": {
+            label: "Number of Epochs",
+            type: "number",
+            min: 50,
+            max: 1000,
+            default: 200,
+            step: 50,
+            description: "Number of training epochs; determined heuristically when None."
+        },
+        "learning_rate": {
+            label: "Learning Rate",
+            type: "number",
+            min: 0.1,
+            max: 5.0,
+            default: 1.0,
+            step: 0.1,
+            description: "Step size for optimization."
+        },
+        "metric": {
+            label: "Distance Metric",
+            type: "select",
+            options: ["euclidean", "manhattan", "chebyshev", "minkowski", "canberra", "braycurtis", "haversine", "mahalanobis", "wminkowski", "seuclidean", "cosine", "correlation", "hamming", "jaccard", "dice", "russellrao", "kulsinski", "rogerstanimoto", "sokalmichener", "sokalsneath", "yule"],
+            default: "euclidean",
+            description: "Distance metric used to compute the neighbor graph."
+        }
+    },
+    "PCA": {
+        "whiten": {
+            label: "Whiten Components",
+            type: "select",
+            options: ["True", "False"],
+            default: "False",
+            description: "If True, project onto components with unit variance (decorrelated output)."
+        },
+        "svd_solver": {
+            label: "SVD Solver",
+            type: "select",
+            options: ["auto", "full", "arpack", "randomized"],
+            default: "auto",
+            description: "SVD solver used ('auto', 'full', 'arpack', 'randomized')."
+        },
+        "tol": {
+            label: "Tolerance",
+            type: "number",
+            min: 0.0,
+            max: 1.0,
+            default: 0.0,
+            step: 0.0001,
+            description: "Tolerance for singular values when using 'arpack' solver."
+        },
+        "iterated_power": {
+            label: "Iterated Power",
+            type: "number",
+            min: 1,
+            max: 10,
+            default: 7,
+            step: 1,
+            description: "Number of iterations for the randomized SVD solver."
+        }
+    },
+    "t-SNE": {
+        "perplexity": {
+            label: "Perplexity",
+            type: "number",
+            min: 5.0,
+            max: 50.0,
+            default: 30.0,
+            step: 1.0,
+            description: "Related to the number of nearest neighbors; balances local/global structure (default 30.0)."
+        },
+        "early_exaggeration": {
+            label: "Early Exaggeration",
+            type: "number",
+            min: 1.0,
+            max: 50.0,
+            default: 12.0,
+            step: 1.0,
+            description: "Controls cluster tightness during early optimization (default 12.0)."
+        },
+        "learning_rate": {
+            label: "Learning Rate",
+            type: "select",
+            options: ["auto", "10", "50", "100", "200", "500", "1000"],
+            default: "auto",
+            description: "Learning rate for optimization (default 'auto')."
+        },
+        "max_iter": {
+            label: "Maximum Iterations",
+            type: "number",
+            min: 100,
+            max: 5000,
+            default: 1000,
+            step: 100,
+            description: "Maximum number of iterations (default 1000)."
+        },
+        "metric": {
+            label: "Distance Metric",
+            type: "select",
+            options: ["euclidean", "manhattan", "chebyshev", "minkowski", "canberra", "braycurtis", "cosine", "correlation"],
+            default: "euclidean",
+            description: "Distance metric in input space (default 'euclidean')."
+        },
+        "init": {
+            label: "Initialization Method",
+            type: "select",
+            options: ["pca", "random"],
+            default: "pca",
+            description: "Initialization method ('pca' or 'random'; default 'pca')."
+        },
+        "method": {
+            label: "Optimization Method",
+            type: "select",
+            options: ["barnes_hut", "exact"],
+            default: "barnes_hut",
+            description: "Optimization method ('barnes_hut' or 'exact'; default 'barnes_hut')."
+        }
+    },
+    "MDS": {
+        "metric": {
+            label: "Metric MDS",
+            type: "select",
+            options: ["True", "False"],
+            default: "True",
+            description: "If True, metric MDS; if False, non-metric MDS."
+        },
+        "n_init": {
+            label: "Number of Initializations",
+            type: "number",
+            min: 1,
+            max: 20,
+            default: 4,
+            step: 1,
+            description: "Number of SMACOF algorithm initializations (default 4)."
+        },
+        "max_iter": {
+            label: "Maximum Iterations",
+            type: "number",
+            min: 50,
+            max: 1000,
+            default: 300,
+            step: 50,
+            description: "Maximum number of iterations per run (default 300)."
+        },
+        "eps": {
+            label: "Convergence Tolerance",
+            type: "number",
+            min: 0.0001,
+            max: 0.1,
+            default: 0.001,
+            step: 0.0001,
+            description: "Relative tolerance for convergence (default 0.001)."
+        },
+        "dissimilarity": {
+            label: "Dissimilarity Type",
+            type: "select",
+            options: ["euclidean", "precomputed"],
+            default: "euclidean",
+            description: "Type of dissimilarity ('euclidean' or 'precomputed')."
+        }
+    }
+};
+
+/**
  * Populates the surrogate model parameter form and visualization toggles
  * @description Creates comprehensive form sections for surrogate model configuration and visualization selection
  * @param {HTMLElement} container - DOM container element to populate with form sections
@@ -166,6 +361,7 @@ export function populateSurrogateForm(container) {
         },
     };
 
+    // Surrogate Model Parameters Section
     const section = createSection(
         "Surrogate Model Parameters",
         "surrogate-parameters"
@@ -176,6 +372,63 @@ export function populateSurrogateForm(container) {
         createSurrogateInput(section, param, details);
     });
 
+    // Dimensionality Reduction Parameters Section
+    const dimReductionSection = createSection(
+        "Dimensionality Reduction Parameters",
+        "dimensionality-reduction-parameters"
+    );
+    container.appendChild(dimReductionSection);
+
+    // Create method selection first
+    const methodSelection = document.createElement("div");
+    methodSelection.className = "feature-box method-selection";
+    methodSelection.innerHTML = `
+        <div class="feature-label">
+            Select Dimensionality Reduction Method
+            <span class="feature-type">Method</span>
+        </div>
+    `;
+    
+    const methodSelect = document.createElement("select");
+    methodSelect.id = "dimreduction-method";
+    methodSelect.className = "method-selector";
+    
+    Object.keys(dimensionalityReductionParameters).forEach(method => {
+        const option = document.createElement("option");
+        option.value = method;
+        option.textContent = method;
+        option.selected = method === "UMAP"; // Default to UMAP
+        methodSelect.appendChild(option);
+    });
+    
+    methodSelection.appendChild(methodSelect);
+    dimReductionSection.querySelector(".feature-section-content").appendChild(methodSelection);
+
+    // Create container for method-specific parameters
+    const parametersContainer = document.createElement("div");
+    parametersContainer.id = "method-parameters-container";
+    dimReductionSection.querySelector(".feature-section-content").appendChild(parametersContainer);
+
+    // Function to update parameters based on selected method
+    function updateMethodParameters() {
+        const selectedMethod = methodSelect.value;
+        const container = document.getElementById("method-parameters-container");
+        container.innerHTML = "";
+
+        if (dimensionalityReductionParameters[selectedMethod]) {
+            Object.entries(dimensionalityReductionParameters[selectedMethod]).forEach(([param, details]) => {
+                createDimensionalityReductionInput(container, selectedMethod, param, details);
+            });
+        }
+    }
+
+    // Set up event listener for method changes
+    methodSelect.addEventListener("change", updateMethodParameters);
+    
+    // Initialize with default method parameters
+    updateMethodParameters();
+
+    // Visualization Selection Section
     const visualizationSection = createSection(
         "Visualization Selection",
         "visualization-toggles"

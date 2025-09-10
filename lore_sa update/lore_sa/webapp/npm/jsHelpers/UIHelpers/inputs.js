@@ -271,6 +271,84 @@ Default: ${details.default}`;
 }
 
 /**
+ * Creates input controls for dimensionality reduction parameters
+ * @description Generates inputs with tooltips for dimensionality reduction technique parameters
+ * @param {HTMLElement} container - The container element to append the input to
+ * @param {string} method - Name of the dimensionality reduction method (UMAP, PCA, t-SNE, MDS)
+ * @param {string} paramName - Name of the parameter
+ * @param {Object} details - Parameter configuration
+ * @param {string} details.label - Human-readable label for the parameter
+ * @param {string} details.type - Input type ("number" or "select")
+ * @param {*} details.default - Default value for the parameter
+ * @param {string} details.description - Detailed description for tooltip
+ * @param {number} [details.min] - Minimum value for numeric parameters
+ * @param {number} [details.max] - Maximum value for numeric parameters
+ * @param {number} [details.step] - Step size for numeric parameters
+ * @param {string[]} [details.options] - Options for select type parameters
+ * @returns {void}
+ * @example
+ * createDimensionalityReductionInput(container, "UMAP", "n_neighbors", {
+ *   label: "Number of Neighbors", type: "number", min: 2, max: 200, 
+ *   default: 15, step: 1, description: "Number of neighboring points..."
+ * });
+ */
+export function createDimensionalityReductionInput(container, method, paramName, details) {
+    const box = document.createElement("div");
+    box.className = "feature-box dimensionality-reduction-feature";
+
+    if (details.type === "select") {
+        const select = document.createElement("select");
+        select.id = `dimreduction-${method.toLowerCase()}-${paramName}`;
+        select.className = "dimreduction-parameter";
+        
+        details.options.forEach(option => {
+            const optionElement = document.createElement("option");
+            optionElement.value = option;
+            optionElement.textContent = option;
+            optionElement.selected = option === details.default;
+            select.appendChild(optionElement);
+        });
+
+        box.innerHTML = `
+            <div class="feature-label" title="${details.description}">
+                ${details.label}
+                <span class="feature-type">Select</span>
+                <div class="feature-description">${method} Parameter</div>
+            </div>
+        `;
+        box.appendChild(select);
+    } else if (details.type === "number") {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = details.step;
+        input.id = `dimreduction-${method.toLowerCase()}-${paramName}`;
+        input.className = "dimreduction-parameter";
+        input.min = details.min;
+        input.max = details.max;
+        input.value = details.default;
+
+        const tooltipText = `${details.description}
+
+Min: ${details.min}
+Max: ${details.max}
+Default: ${details.default}`;
+
+        box.innerHTML = `
+            <div class="feature-label" title="${tooltipText}">
+                ${details.label}
+                <span class="feature-type">Numeric</span>
+                <div class="feature-range">${method}: ${details.min} - ${details.max}</div>
+            </div>
+        `;
+        box.appendChild(input);
+
+        addNumericValidation(input, details);
+    }
+
+    container.appendChild(box);
+}
+
+/**
  * Creates a checkbox toggle for visualization selection
  * @description Generates a checkbox with validation to ensure at least one visualization is selected
  * @param {HTMLElement} container - The container element to append the toggle to

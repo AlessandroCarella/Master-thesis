@@ -34,6 +34,10 @@ class InstanceRequest(BaseModel):
         Step size for scatter plot generation.
     scatterPlotMethod : str
         Method for dimensionality reduction in scatter plot.
+    dimensionalityReductionMethod : str
+        Dimensionality reduction method name.
+    dimensionalityReductionParameters : Dict[str, Any]
+        Method-specific parameters for dimensionality reduction.
     includeOriginalDataset : bool
         Whether to include original training data in visualization.
     keepDuplicates : bool
@@ -44,6 +48,8 @@ class InstanceRequest(BaseModel):
     neighbourhood_size: int
     scatterPlotStep: float
     scatterPlotMethod: str = "umap"
+    dimensionalityReductionMethod: str = "umap"
+    dimensionalityReductionParameters: Dict[str, Any] = {}
     includeOriginalDataset: bool
     keepDuplicates: bool
 
@@ -60,12 +66,18 @@ class VisualizationRequest(BaseModel):
         Step size for scatter plot mesh generation.
     scatterPlotMethod : str
         Dimensionality reduction method for visualization.
+    dimensionalityReductionMethod : str
+        Dimensionality reduction method name.
+    dimensionalityReductionParameters : Dict[str, Any]
+        Method-specific parameters for dimensionality reduction.
     includeOriginalDataset : bool
         Whether to overlay original training data.
     """
     dataset_name: str
     scatterPlotStep: float
     scatterPlotMethod: str = "umap"
+    dimensionalityReductionMethod: str = "umap"
+    dimensionalityReductionParameters: Dict[str, Any] = {}
     includeOriginalDataset: bool
 
 
@@ -248,6 +260,10 @@ class VisualizationGenerator:
         Dict[str, Any]
             Scatter plot visualization data including transformed coordinates.
         """
+        # Use dimensionalityReductionMethod and parameters if available, fallback to scatterPlotMethod
+        method = getattr(request, 'dimensionalityReductionMethod', request.scatterPlotMethod)
+        parameters = getattr(request, 'dimensionalityReductionParameters', {})
+        
         return create_scatter_plot_data_raw(
             X=X,
             y=y,
@@ -255,7 +271,8 @@ class VisualizationGenerator:
             class_names=class_names,
             feature_names=webapp_state.encoded_feature_names,
             step=request.scatterPlotStep,
-            method=request.scatterPlotMethod,
+            method=method,
+            parameters=parameters,
             X_original=X_original,
             y_original=y_original
         )

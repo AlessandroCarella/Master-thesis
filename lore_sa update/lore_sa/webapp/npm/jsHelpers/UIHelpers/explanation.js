@@ -5,7 +5,7 @@
  */
 
 import { setupScatterPlotMethodListeners } from "../visualizations.js";
-import { getVisualizationSettings } from "./featureManagement.js";
+import { getVisualizationSettings, getDimensionalityReductionParameters } from "./featureManagement.js";
 
 /**
  * Shows loading state while explanation is being generated
@@ -54,6 +54,7 @@ export function buildExplanationRequestData(
     );
 
     const scatterPlotMethod = methodElement ? methodElement.value : "umap";
+    const dimReductionParams = getDimensionalityReductionParameters();
 
     return {
         instance: instanceData,
@@ -61,6 +62,8 @@ export function buildExplanationRequestData(
         neighbourhood_size: surrogateParams.neighbourhood_size,
         scatterPlotStep: surrogateParams.scatterPlotStep,
         scatterPlotMethod: scatterPlotMethod,
+        dimensionalityReductionMethod: dimReductionParams.method,
+        dimensionalityReductionParameters: dimReductionParams.parameters,
         includeOriginalDataset: surrogateParams.includeOriginalDataset,
         keepDuplicates: surrogateParams.keepDuplicates,
     };
@@ -92,12 +95,15 @@ export function buildProvidedInstanceRequestData(
     );
 
     const scatterPlotMethod = methodElement ? methodElement.value : "umap";
+    const dimReductionParams = getDimensionalityReductionParameters();
 
     return {
         dataset_name: appState.dataset_name,
         neighbourhood_size: surrogateParams.neighbourhood_size,
         scatterPlotStep: surrogateParams.scatterPlotStep,
         scatterPlotMethod: scatterPlotMethod,
+        dimensionalityReductionMethod: dimReductionParams.method,
+        dimensionalityReductionParameters: dimReductionParams.parameters,
         includeOriginalDataset: surrogateParams.includeOriginalDataset,
         keepDuplicates: surrogateParams.keepDuplicates,
     };
