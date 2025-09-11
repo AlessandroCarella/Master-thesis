@@ -9,11 +9,35 @@ from .webapp_api_state import webapp_state
 from .webapp_api_utils import safe_json_response
 from ..webapp_dimensionality_reduction_utils import create_dimensionality_reducer
 
+#########################################################
+###################FROM DTREEVIZ#########################
+#########################################################
+DARKBLUE = '#313695'
+BLUE = '#4575b4'
+LIGHTORANGE = '#fee090'
 
-DEFAULT_COLORS = [
-    "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
-    "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
+COLOR_BLIND_FRIENDLY_COLORS = [
+    None,  # 0 classes
+    None,  # 1 class
+    ['#FEFEBB', '#a1dab4'],  # 2 classes
+    ['#FEFEBB', '#D9E6F5', '#a1dab4'],  # 3 classes
+    ['#FEFEBB', '#D9E6F5', '#a1dab4', LIGHTORANGE],  # 4
+    ['#FEFEBB', '#D9E6F5', '#a1dab4', '#41b6c4', LIGHTORANGE],  # 5
+    ['#FEFEBB', '#c7e9b4', '#41b6c4', '#2c7fb8', LIGHTORANGE, '#f46d43'],  # 6
+    ['#FEFEBB', '#c7e9b4', '#7fcdbb', '#41b6c4', '#225ea8', '#fdae61', '#f46d43'],  # 7
+    ['#FEFEBB', '#edf8b1', '#c7e9b4', '#7fcdbb', '#1d91c0', '#225ea8', '#fdae61', '#f46d43'],  # 8
+    ['#FEFEBB', '#c7e9b4', '#41b6c4', '#74add1', BLUE, DARKBLUE, LIGHTORANGE, '#fdae61', '#f46d43'],  # 9
+    ['#FEFEBB', '#c7e9b4', '#41b6c4', '#74add1', BLUE, DARKBLUE, LIGHTORANGE, '#fdae61', '#f46d43', '#d73027']  # 10
 ]
+#########################################################
+###################FROM DTREEVIZ#########################
+#########################################################
+
+# # Previously chosen color palette
+# DEFAULT_COLORS = [
+#     "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
+#     "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
+# ]
 
 router = APIRouter(prefix="/api")
 
@@ -204,4 +228,4 @@ async def get_colors(method: str, parameters: str = None) -> List[str]:
         colors = project_to_cielab(centroids, method, webapp_state.reduction_parameters)
         return colors
 
-    return safe_json_response(DEFAULT_COLORS)
+    return safe_json_response(COLOR_BLIND_FRIENDLY_COLORS[len(webapp_state.target_names)])
