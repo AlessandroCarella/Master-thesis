@@ -15,7 +15,7 @@ def create_dimensionality_reducer(method: str, n_components: int, parameters: Di
     Parameters
     ----------
     method : str
-        Reduction method ('pca', 'tsne', 'umap', 'mds').
+        Reduction method ('pca', 'tsne', 'umap', 'mds')#, 'pacmap').
     n_components : int
         Number of output dimensions (2 or 3).
     parameters : Dict[str, Any], default=None
@@ -48,6 +48,8 @@ def create_dimensionality_reducer(method: str, n_components: int, parameters: Di
         return _create_umap_reducer(n_components, parameters, random_state)
     elif method == "mds":
         return _create_mds_reducer(n_components, parameters, random_state)
+    # elif method == "pacmap":
+    #     return _create_pacmap_reducer(n_components, parameters, random_state)
     else:
         # Default to PCA if method not recognized
         from sklearn.decomposition import PCA
@@ -168,6 +170,42 @@ def _create_mds_reducer(n_components: int, parameters: Dict[str, Any], random_st
         params['dissimilarity'] = parameters['dissimilarity']
         
     return MDS(**params)
+
+
+# def _create_pacmap_reducer(n_components: int, parameters: Dict[str, Any], random_state: int):
+#     """Create PaCMAP reducer with specified parameters."""
+#     try:
+#         import pacmap
+#     except ImportError:
+#         raise ImportError("pacmap is required for PaCMAP dimensionality reduction. "
+#                          "Install it with: pip install pacmap")
+    
+#     params = {
+#         'n_components': n_components,
+#         'random_state': random_state
+#     }
+    
+#     # Update with user parameters
+#     if 'n_neighbors' in parameters:
+#         params['n_neighbors'] = int(parameters['n_neighbors'])
+#     if 'MN_ratio' in parameters:
+#         params['MN_ratio'] = parameters['MN_ratio']
+#     if 'FP_ratio' in parameters:
+#         params['FP_ratio'] = parameters['FP_ratio']
+#     if 'pair_neighbors' in parameters:
+#         params['pair_neighbors'] = int(parameters['pair_neighbors'])
+#     if 'distance' in parameters:
+#         params['distance'] = parameters['distance']
+#     if 'lr' in parameters:
+#         params['lr'] = parameters['lr']
+#     if 'num_iters' in parameters:
+#         params['num_iters'] = int(parameters['num_iters'])
+#     if 'verbose' in parameters:
+#         params['verbose'] = parameters['verbose']
+#     if 'apply_pca' in parameters:
+#         params['apply_pca'] = parameters['apply_pca']
+        
+#     return pacmap.PaCMAP(**params)
 
 
 def can_generate_boundary(method: str) -> bool:

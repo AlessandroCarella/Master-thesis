@@ -15,7 +15,7 @@ import {
 } from "./UIHelpers/explanation.js";
 import { getSurrogateParameters, getVisualizationSettings } from "./UIHelpers/featureManagement.js";
 import { fetchVisualizationUpdate } from "./API.js";
-import { setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
+import { initializeColors, setGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { 
     getExplainedInstance,
     resetVisualizationState,
@@ -225,7 +225,8 @@ async function handleScatterPlotMethodChange(event) {
     try {
         const requestData = buildVisualizationRequestData(event.target.value);
         const result = await fetchVisualizationUpdate(requestData);
-        
+
+        await initializeColors(event.target.value);
         setGlobalColorMap(result.uniqueClasses);
         
         updateVisualizationUI();

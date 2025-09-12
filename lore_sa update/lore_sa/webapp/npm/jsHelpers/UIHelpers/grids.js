@@ -300,7 +300,84 @@ const dimensionalityReductionParameters = {
             default: "euclidean",
             description: "Type of dissimilarity ('euclidean' or 'precomputed')."
         }
-    }
+    }//,
+    // "PaCMAP": {
+    //     "n_neighbors": {
+    //         label: "Number of Neighbors",
+    //         type: "number",
+    //         min: 2,
+    //         max: 200,
+    //         default: 10,
+    //         step: 1,
+    //         description: "Number of neighbors to consider for each point in the high-dimensional space."
+    //     },
+    //     "MN_ratio": {
+    //         label: "Mid-Near Ratio",
+    //         type: "number",
+    //         min: 0.1,
+    //         max: 1.0,
+    //         default: 0.5,
+    //         step: 0.1,
+    //         description: "Ratio of mid-near pairs (balances local and global structure)."
+    //     },
+    //     "FP_ratio": {
+    //         label: "Further Pairs Ratio",
+    //         type: "number",
+    //         min: 1.0,
+    //         max: 5.0,
+    //         default: 2.0,
+    //         step: 0.1,
+    //         description: "Ratio of further pairs to maintain global structure."
+    //     },
+    //     "pair_neighbors": {
+    //         label: "Pair Neighbors",
+    //         type: "number",
+    //         min: 2,
+    //         max: 100,
+    //         default: 10,
+    //         step: 1,
+    //         description: "Number of neighbors for pair finding (leave at default for automatic selection)."
+    //     },
+    //     "distance": {
+    //         label: "Distance Metric",
+    //         type: "select",
+    //         options: ["euclidean", "manhattan", "angular", "hamming"],
+    //         default: "euclidean",
+    //         description: "Distance metric for computing similarities in the original space."
+    //     },
+    //     "lr": {
+    //         label: "Learning Rate",
+    //         type: "number",
+    //         min: 0.1,
+    //         max: 10.0,
+    //         default: 1.0,
+    //         step: 0.1,
+    //         description: "Learning rate for the optimization process."
+    //     },
+    //     "num_iters": {
+    //         label: "Number of Iterations",
+    //         type: "number",
+    //         min: 100,
+    //         max: 1000,
+    //         default: 450,
+    //         step: 50,
+    //         description: "Number of optimization iterations."
+    //     },
+    //     "verbose": {
+    //         label: "Verbose Output",
+    //         type: "select",
+    //         options: ["True", "False"],
+    //         default: "False",
+    //         description: "Whether to print progress information during optimization."
+    //     },
+    //     "apply_pca": {
+    //         label: "Apply PCA Preprocessing",
+    //         type: "select",
+    //         options: ["True", "False"],
+    //         default: "True",
+    //         description: "Whether to apply PCA preprocessing for dimensionality reduction before PaCMAP."
+    //     }
+    // }
 };
 
 /**

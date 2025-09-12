@@ -244,17 +244,19 @@ export function getVisualizationSettings() {
  * @returns {Object} returns.PCA - PCA method parameters  
  * @returns {Object} returns["t-SNE"] - t-SNE method parameters
  * @returns {Object} returns.MDS - MDS method parameters
+ * @returns {Object} (NO) returns.PaCMAP - PaCMAP method parameters
  * @example
  * const allParams = getAllDimensionalityReductionParameters();
  * // Returns: { 
  * //   "UMAP": { n_neighbors: 15, min_dist: 0.1, spread: 1.0, ... },
  * //   "PCA": { whiten: false, svd_solver: "auto", ... },
  * //   "t-SNE": { perplexity: 30.0, early_exaggeration: 12.0, ... },
- * //   "MDS": { metric: true, n_init: 4, ... }
+ * //   "MDS": { metric: true, n_init: 4, ... },
+ * //   "PaCMAP": { n_neighbors: 10, MN_ratio: 0.5, FP_ratio: 2.0, ... }
  * // }
  */
 export function getAllDimensionalityReductionParameters() {
-    const methods = ["UMAP", "PCA", "t-SNE", "MDS"];
+    const methods = ["UMAP", "PCA", "t-SNE", "MDS"];//, "PaCMAP"];
     const allParameters = {};
     
     methods.forEach(method => {

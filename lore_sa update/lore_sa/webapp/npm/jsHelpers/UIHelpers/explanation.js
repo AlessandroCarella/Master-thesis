@@ -140,18 +140,24 @@ export const updateVisualizationUI = () => {
                       <span>UMAP</span>
                     </label>
                     <label>
-                      <input type="radio" name="scatterPlotMethod" value="pca" />
-                      <span>PCA</span>
+                    <!-- 
+                    <input type="radio" name="scatterPlotMethod" value="pacmap" />
+                    <span>PaCMAP</span>
+                    -->
                     </label>
                     <label>
-                      <input type="radio" name="scatterPlotMethod" value="tsne" />
-                      <span>t-SNE</span>
+                    <input type="radio" name="scatterPlotMethod" value="tsne" />
+                    <span>t-SNE</span>
                     </label>
                     <label>
-                      <input type="radio" name="scatterPlotMethod" value="mds" />
-                      <span>MDS</span>
+                    <input type="radio" name="scatterPlotMethod" value="pca" />
+                    <span>PCA</span>
                     </label>
-                  </div>
+                    <label>
+                    <input type="radio" name="scatterPlotMethod" value="mds" />
+                    <span>MDS</span>
+                    </label>
+                    </div>
                 </div>
                 <div id="scatter-plot"></div>
               </div>
