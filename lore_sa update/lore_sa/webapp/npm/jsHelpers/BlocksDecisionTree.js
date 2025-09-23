@@ -12,7 +12,6 @@ import { calculateTreeMetrics, depthAlignedLayout } from "./TreesCommon/metrics.
 import {
     clearExistingSVG,
     createSVGContainer,
-    createTooltip,
     ensureVisualizationVisibility,
     initializeZoom
 }from "./TreesCommon/svg.js";
@@ -21,6 +20,7 @@ import { renderNodes, renderLabels } from "./BlocksDecisionTreeHelpers/node_bloc
 import { blocksTreeState } from "./TreesCommon/state.js";
 import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 import { createHierarchy, getAllPathsFromHierarchy, traceInstancePath } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
+import { createTooltip } from "./TreesCommon/tooltipTrees.js";
 
 /**
  * @typedef {Object} BlocksTreeVisualization

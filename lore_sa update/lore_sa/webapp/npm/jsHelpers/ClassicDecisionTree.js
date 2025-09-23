@@ -10,7 +10,6 @@ import {
     clearExistingSVG,
     createSVGContainer,
     createContentGroup,
-    createTooltip,
     addBackgroundLayer,
     initializeZoom
 } from "./TreesCommon/svg.js";
@@ -22,6 +21,7 @@ import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 import { registerClassicTree } from "./visualizationConnectorHelpers/HighlightingCoordinator.js";
 import { TreeDataProcessorFactory } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
 import { highlightInstancePathInTree } from "./visualizationConnector.js";
+import { createTooltip } from "./TreesCommon/tooltipTrees.js";
 
 /**
  * @typedef {Object} ClassicTreeVisualization

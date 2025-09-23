@@ -14,7 +14,6 @@ import {
     clearExistingSVG,
     createSVGContainer,
     createContentGroup,
-    createTooltip,
     addBackgroundLayer,
     initializeZoom
 } from "./TreesCommon/svg.js";
@@ -24,6 +23,7 @@ import { getGlobalColorMap } from "./visualizationConnectorHelpers/colors.js";
 import { spawnTreeState } from "./TreesCommon/state.js";
 import { TREES_SETTINGS } from "./TreesCommon/settings.js";
 import { createHierarchy, findInstancePath } from "./visualizationConnectorHelpers/TreeDataProcessor.js";
+import { createTooltip } from "./TreesCommon/tooltipTrees.js";
 
 /**
  * @typedef {Object} TreeSpawnVisualization

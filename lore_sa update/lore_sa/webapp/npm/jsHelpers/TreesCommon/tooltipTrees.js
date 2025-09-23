@@ -202,3 +202,18 @@ export function handleMouseMove(event, tooltip) {
 export function handleMouseOut(tooltip) {
     tooltip.style("visibility", "hidden");
 }
+
+/**
+ * Creates a tooltip element for tree node interactions
+ * @description Generates a hidden tooltip div attached to the document body
+ * @returns {d3.Selection} D3 selection of the created tooltip element
+ * @example
+ * const tooltip = createTooltip();
+ */
+export function createTooltip() {
+    return d3
+        .select("body")
+        .append("div")
+        .attr("class", "decision-tree-tooltip")
+        .style("visibility", "hidden");
+}

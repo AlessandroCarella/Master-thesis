@@ -3,6 +3,7 @@
 cache 
 webapp cache
 project-structure.txt
+latex/*
 
 #### Python ####
 # Byte-compiled / optimized / DLL files
