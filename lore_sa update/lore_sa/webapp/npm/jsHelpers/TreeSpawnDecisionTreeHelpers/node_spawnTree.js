@@ -177,6 +177,7 @@ export function addNodes(
                 .attr("height", TREES_SETTINGS.visual.rectHeight)
                 .attr("rx", TREES_SETTINGS.visual.rectBorderRadius)
                 .attr("ry", TREES_SETTINGS.visual.rectBorderRadius)
+                .attr("data-original-stroke-width", metrics.nodeBorderStrokeWidth)
                 .style("fill", getNodeColor(d, colorMap))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
                 .style("stroke", colorScheme.ui.nodeStroke)
@@ -203,6 +204,7 @@ export function addNodes(
         } else {
             element.append("circle")
                 .attr("r", metrics.nodeRadius)
+                .attr("data-original-stroke-width", metrics.nodeBorderStrokeWidth)
                 .style("fill", getNodeColor(d, colorMap))
                 .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
                 .style("stroke", colorScheme.ui.nodeStroke)

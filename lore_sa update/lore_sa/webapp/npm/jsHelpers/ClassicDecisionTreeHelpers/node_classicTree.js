@@ -58,6 +58,7 @@ export function addNodes(contentGroup, treeData, metrics, tooltip, colorMap) {
     nodes
         .append("circle")
         .attr("r", (d) => metrics.nodeRadius)
+        .attr("data-original-stroke-width", metrics.nodeBorderStrokeWidth)
         .style("fill", (d) => getNodeColor(d, colorMap))
         .style("stroke-width", `${metrics.nodeBorderStrokeWidth}px`)
         .style("stroke", colorScheme.ui.nodeStroke)

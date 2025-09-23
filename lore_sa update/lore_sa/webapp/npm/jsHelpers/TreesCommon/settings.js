@@ -40,7 +40,7 @@
  * @property {number} width - Width for rectangular nodes
  * @property {number} height - Height for rectangular nodes
  * @property {number} borderRadius - Border radius for rectangles
- */
+*/
 
 /**
  * @typedef {Object} VisualConfig
@@ -52,6 +52,7 @@
  * @property {number} verticalGap - Gap between path and subtrees
  * @property {Object} strokeWidth - Stroke width configurations
  * @property {number} strokeWidth.pathHighlightMultiplier - Multiplier for highlighted paths
+ * @property {number} strokeWidth.extraBorderThickHighlightMult - Border enanchement for highlight
  */
 
 /**
@@ -173,7 +174,8 @@ export const TREES_SETTINGS = {
         subtreeSizeSpacingMultiplier: 20,
         verticalGap: 100,
         strokeWidth: {
-            pathHighlightMultiplier: 3
+            pathHighlightMultiplier: 3,
+            extraBorderThickHighlightMult: 2.5,
         },
     },
     

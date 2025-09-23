@@ -95,7 +95,7 @@ export function createBlocksTreeVisualization(rawTreeData, instance) {
     const links = createLinks(allPaths, nodePositions);
     const linkElements = renderLinks(g, links, instancePath, tooltip);
 
-    const nodeElements = renderNodes(g, nodePositions, instancePath, tooltip);
+    const nodeElements = renderNodes(g, nodePositions, instancePath, tooltip, metrics);
     renderLabels(g, nodePositions);
 
     const visualization = {

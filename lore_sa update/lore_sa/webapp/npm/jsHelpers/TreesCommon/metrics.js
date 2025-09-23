@@ -217,6 +217,9 @@ function calculateBlocksMetrics(allPaths) {
                 )
             );
         },
+        get nodeStrokeWidth() {
+            return this.linkStrokeWidth; // Use same logic as links for consistency
+        },
     };
 }
 

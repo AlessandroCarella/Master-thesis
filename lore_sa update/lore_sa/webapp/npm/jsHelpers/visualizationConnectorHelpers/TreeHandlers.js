@@ -175,7 +175,9 @@ export class ClassicTreeHandler extends BaseTreeHandler {
             .filter(d => d.data.node_id === nodeId)
             .select("circle")
             .style("stroke", colorScheme.ui.highlight)
-            .style("stroke-width", `${this.visualization.metrics.nodeBorderStrokeWidth}px`);
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width") * TREES_SETTINGS.visual.strokeWidth.extraBorderThickHighlightMult}px`;
+            });
     }
     
     /**
@@ -241,7 +243,9 @@ export class ClassicTreeHandler extends BaseTreeHandler {
         this.visualization.contentGroup
             .selectAll(".node circle")
             .style("stroke", colorScheme.ui.nodeStroke)
-            .style("stroke-width", `${this.visualization.metrics.nodeBorderStrokeWidth}px`);
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
+            });        
         
         this.visualization.contentGroup
             .selectAll(".link")
@@ -411,7 +415,10 @@ export class BlocksTreeHandler extends BaseTreeHandler {
         this.visualization.container
             .selectAll(".node")
             .filter(d => d.id === nodeId)
-            .style("stroke", colorScheme.ui.highlight);
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width") * TREES_SETTINGS.visual.strokeWidth.extraBorderThickHighlightMult}px`;
+            });
     }
     
     /**
@@ -500,7 +507,10 @@ export class BlocksTreeHandler extends BaseTreeHandler {
         
         this.visualization.container
             .selectAll(".node")
-            .style("stroke", colorScheme.ui.nodeStroke);
+            .style("stroke", colorScheme.ui.nodeStroke)
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
+            });
         
         this.visualization.container
             .selectAll(".link")
@@ -679,7 +689,10 @@ export class TreeSpawnHandler extends BaseTreeHandler {
             .selectAll(".node")
             .filter(d => d.data?.node_id === nodeId)
             .selectAll("circle, rect")
-            .style("stroke", colorScheme.ui.highlight);
+            .style("stroke", colorScheme.ui.highlight)
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width") * TREES_SETTINGS.visual.strokeWidth.extraBorderThickHighlightMult}px`;
+            });
     }
     
     /**
@@ -798,12 +811,18 @@ export class TreeSpawnHandler extends BaseTreeHandler {
         this.visualization.container
             .selectAll(".node")
             .selectAll("circle, rect")
-            .style("stroke", colorScheme.ui.nodeStroke);
+            .style("stroke", colorScheme.ui.nodeStroke)
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
+            });
         
         this.visualization.container
             .selectAll(".link")
             .style("stroke", function(d) {
                 return d3.select(this).attr("data-original-stroke-color") || colorScheme.ui.linkStroke;
+            })
+            .style("stroke-width", function(d) {
+                return `${d3.select(this).attr("data-original-stroke-width")}px`;
             });
     }
     

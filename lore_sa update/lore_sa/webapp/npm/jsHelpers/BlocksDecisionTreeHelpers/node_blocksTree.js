@@ -11,6 +11,7 @@ import { handleMouseOver, handleMouseMove, handleMouseOut } from "../TreesCommon
 import { TreeDataProcessorFactory } from "../visualizationConnectorHelpers/TreeDataProcessor.js";
 import { calculateFontSize, TREES_SETTINGS } from "../TreesCommon/settings.js";
 import { FeatureDecoder } from "../visualizationConnectorHelpers/featureDecoder.js";
+import { calculateMetrics } from "../TreesCommon/metrics.js";
 
 /**
  * @typedef {Object} BlocksNodeData
@@ -137,11 +138,10 @@ function getBlocksNodeColor(nodeId) {
  * @see handleNodeClick
  * @see TREES_SETTINGS.node
  */
-export function renderNodes(container, nodePositions, instancePath, tooltip) {
+export function renderNodes(container, nodePositions, instancePath, tooltip, metrics) {
     const nodes = Object.values(nodePositions);
     
     const featureMappingInfo = window.currentFeatureMappingInfo || null;
-
     const nodeElements = container
         .selectAll(".node")
         .data(nodes)
@@ -158,6 +158,8 @@ export function renderNodes(container, nodePositions, instancePath, tooltip) {
         .attr("rx", TREES_SETTINGS.node.borderRadius)
         .attr("ry", TREES_SETTINGS.node.borderRadius)
         .attr("fill", (d) => getBlocksNodeColor(d.id))
+        .attr("data-original-stroke-width", metrics?.nodeStrokeWidth || TREES_SETTINGS.node.baseLinkAndNodeBorderStrokeWidth)
+        .style("stroke-width", `${metrics?.nodeStrokeWidth || TREES_SETTINGS.node.baseLinkAndNodeBorderStrokeWidth}px`)
         .on("mouseover", (event, d) => {
             const processor = TreeDataProcessorFactory.create(TREES_SETTINGS.treeKindID.blocks);
             const nodeData = processor.getNodeById(d.id);
