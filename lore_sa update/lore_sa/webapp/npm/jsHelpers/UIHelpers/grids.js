@@ -399,7 +399,7 @@ export function populateSurrogateForm(container) {
             step: 10,
         },
         scatterPlotStep: {
-            label: "Scatter plot PCA decision boundaries step Size",
+            label: "PCA Scatter plot granularity",
             min: 0.001,
             max: 1,
             default: 0.1,
@@ -415,32 +415,36 @@ export function populateSurrogateForm(container) {
             label: "Keep the duplicates in the generated neighborhood",
             type: "select",
             options: ["Yes", "No"],
-            default: "No",
+            default: "Yes",
         }
     };
 
     const visualizationToggles = {
         scatterPlot: {
-            label: "2D Scatter Plot",
+            label: "Neighborhood 2D projection",
             default: true,
+            alwaysSelected: true,
         },
         blocksTree: {
-            label: "Blocks Decision Tree",
+            label: "Rule and Counterfactual Rules Centred",
             default: true,
+            isTreeViz: true,
         },
         classicTree: {
-            label: "Classic Decision Tree",
+            label: "Tree Layout",
             default: false,
+            isTreeViz: true,
         },
         treeSpawn: {
-            label: "TreeSpawn Decision Tree",
+            label: "Rule Centred",
             default: false,
+            isTreeViz: true,
         },
     };
 
     // Surrogate Model Parameters Section
     const section = createSection(
-        "Surrogate Model Parameters",
+        "Explanation Parameters",
         "surrogate-parameters"
     );
     container.appendChild(section);
@@ -449,9 +453,9 @@ export function populateSurrogateForm(container) {
         createSurrogateInput(section, param, details);
     });
 
-    // Dimensionality Reduction Parameters Section - COLLAPSIBLE and COLLAPSED by default
+    // Dimensionality Reduction techniques Parameters Section - COLLAPSIBLE and COLLAPSED by default
     const dimReductionSection = createCollapsibleSection(
-        "Dimensionality Reduction Parameters",
+        "Dimensionality Reduction techniques Parameters",
         "dimensionality-reduction-parameters",
         true // collapsed by default
     );

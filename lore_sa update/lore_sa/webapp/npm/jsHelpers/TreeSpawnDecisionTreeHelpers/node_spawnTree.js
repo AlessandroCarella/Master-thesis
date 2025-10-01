@@ -1,5 +1,5 @@
 /**
- * @fileoverview Node rendering and interaction for TreeSpawn decision tree visualization.
+ * @fileoverview Node rendering and interaction for Rule Centred surrogate model visualization.
  * Handles dual node styling (rectangles for path, circles for off-path), feature decoding, and interactive highlighting.
  * @author Generated documentation
  * @module NodeSpawnTree

@@ -133,7 +133,7 @@ export const updateVisualizationUI = () => {
             html: `
               <div class="visualization-container">
                 <div class="visualization-header">
-                  <h2>Neighborhood scatter plot</h2>
+                  <h2>Neighborhood 2D projection</h2>
                   <div class="scatter-plot-controls">
                     <label>
                       <input type="radio" name="scatterPlotMethod" value="umap" checked />
@@ -171,7 +171,7 @@ export const updateVisualizationUI = () => {
             html: `
               <div class="visualization-container">
                 <div class="visualization-header">
-                  <h2>Blocks Decision Tree</h2>
+                  <h2>Rule and Counterfactual Rules Centred surrogate model</h2>
                   <div></div> <!-- Empty div to maintain consistent layout -->
                 </div>
                 <div id="blocks-tree-plot"></div>
@@ -186,7 +186,7 @@ export const updateVisualizationUI = () => {
             html: `
               <div class="visualization-container">
                 <div class="visualization-header">
-                  <h2>Surrogate Model</h2>
+                  <h2>Tree Layout surrogate model</h2>
                   <div></div> <!-- Empty div to maintain consistent layout -->
                 </div>
                 <div id="classic-tree-plot"></div>
@@ -201,7 +201,7 @@ export const updateVisualizationUI = () => {
             html: `
               <div class="visualization-container">
                 <div class="visualization-header">
-                  <h2>TreeSpawn Decision Tree</h2>
+                  <h2>Rule Centred surrogate model</h2>
                   <div></div> <!-- Empty div to maintain consistent layout -->
                 </div>
                 <div id="treespawn-tree-plot"></div>

@@ -216,28 +216,33 @@ export function getSurrogateParameters() {
 }
 
 /**
- * Gets current visualization toggle settings from UI checkboxes
- * @description Reads which visualizations are currently enabled for display
- * @returns {Object} Object containing boolean flags for each visualization type
- * @returns {boolean} returns.scatterPlot - Whether 2D scatter plot is enabled
- * @returns {boolean} returns.blocksTree - Whether blocks decision tree is enabled
- * @returns {boolean} returns.classicTree - Whether classic decision tree is enabled
- * @returns {boolean} returns.treeSpawn - Whether TreeSpawn decision tree is enabled
+ * Gets current visualization selection settings
+ * @description Retrieves which visualizations are currently selected/enabled
+ * All inputs are checkboxes, but tree visualizations behave like radio buttons
+ * @returns {Object} Object with boolean values for each visualization
  * @example
  * const settings = getVisualizationSettings();
- * // Returns: { scatterPlot: true, blocksTree: false, classicTree: true, treeSpawn: false }
+ * // Returns: { scatterPlot: true, blocksTree: true, classicTree: false, treeSpawn: false }
  */
 export function getVisualizationSettings() {
-    return {
-        scatterPlot: document.getElementById("viz-scatterPlot")?.checked || false,
-        blocksTree: document.getElementById("viz-blocksTree")?.checked || false,
-        classicTree: document.getElementById("viz-classicTree")?.checked || false,
-        treeSpawn: document.getElementById("viz-treeSpawn")?.checked || false,
-    };
+    const settings = {};
+    
+    // Handle all checkboxes the same way
+    const scatterPlotCheckbox = document.getElementById("viz-scatterPlot");
+    const blocksTreeCheckbox = document.getElementById("viz-blocksTree");
+    const classicTreeCheckbox = document.getElementById("viz-classicTree");
+    const treeSpawnCheckbox = document.getElementById("viz-treeSpawn");
+    
+    settings.scatterPlot = scatterPlotCheckbox ? scatterPlotCheckbox.checked : true;
+    settings.blocksTree = blocksTreeCheckbox ? blocksTreeCheckbox.checked : false;
+    settings.classicTree = classicTreeCheckbox ? classicTreeCheckbox.checked : false;
+    settings.treeSpawn = treeSpawnCheckbox ? treeSpawnCheckbox.checked : false;
+    
+    return settings;
 }
 
 /**
- * Gets current dimensionality reduction parameters for ALL methods
+ * Gets current Dimensionality Reduction techniques Parameters for ALL methods
  * @description Collects parameters for all dimensionality reduction methods
  * @returns {Object} Object containing all method parameters
  * @returns {Object} returns.UMAP - UMAP method parameters
@@ -303,7 +308,8 @@ export function getAllDimensionalityReductionParameters() {
 }
 
 /**
- * Gets current dimensionality reduction parameters from UI controls (backward compatibility)
+ * Gets current Dimensionality Reduction techniques Parameters 
+ * from UI controls (backward compatibility)
  * @description Collects the selected method and its specific parameters
  * @returns {Object} Object containing dimensionality reduction configuration
  * @returns {string} returns.method - Selected dimensionality reduction method

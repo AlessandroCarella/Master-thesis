@@ -242,7 +242,8 @@ async function handleScatterPlotMethodChange(event) {
 
 /**
  * Builds request data for visualization updates.
- * Combines selected method with current surrogate parameters and all dimensionality reduction parameters.
+ * Combines selected method with current surrogate parameters and all Dimensionality 
+ * Reduction techniques Parameters.
  * 
  * @param {string} selectedMethod - Selected dimensionality reduction method
  * @returns {Object} Request data for API call

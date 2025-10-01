@@ -132,7 +132,7 @@ class WebappState:
         
     def update_dimensionality_reduction_parameters(self, parameters: Dict[str, Dict[str, Any]]) -> None:
         """
-        Update dimensionality reduction parameters for all methods.
+        Update Dimensionality Reduction techniques Parameters for all methods.
         
         Parameters
         ----------
@@ -146,7 +146,7 @@ class WebappState:
     
     def get_dimensionality_reduction_parameters(self, method: str = None) -> Dict[str, Any]:
         """
-        Get dimensionality reduction parameters for a specific method or all methods.
+        Get Dimensionality Reduction techniques Parameters for a specific method or all methods.
         
         Parameters
         ----------

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Point creation and interaction utilities for 2D scatter plot visualizations
+ * @fileoverview Point creation and interaction utilities for Neighborhood 2D projection visualizations
  * @module points
  * @author Generated documentation
  */
@@ -12,7 +12,7 @@ import { togglePointColor } from "./tree.js";
 import { setOriginalPointsNeighPointsBoolArray } from "../visualizationConnectorHelpers/HighlightingCoordinator.js";
 
 /**
- * Creates interactive points for the 2D scatter plot with tooltips and highlighting
+ * Creates interactive points for the Neighborhood 2D projection with tooltips and highlighting
  * @description Generates SVG path elements for data points with different symbols for instances vs neighborhoods
  * @param {d3.Selection} g - D3 selection of the SVG group element to append points to
  * @param {Object} data - Data object containing points, targets, and metadata

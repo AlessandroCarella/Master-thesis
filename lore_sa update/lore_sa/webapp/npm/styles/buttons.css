@@ -69,3 +69,13 @@
 .submit-btn:hover {
     background-color: #16a34a;
 }
+
+.disabled-toggle input[type="checkbox"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.disabled-toggle label {
+    cursor: not-allowed;
+    opacity: 0.8;
+}

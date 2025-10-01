@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tooltip utilities for 2D scatter plot point interactions and feature display
+ * @fileoverview Tooltip utilities for Neighborhood 2D projection point interactions and feature display
  * @module tooltipScatterPlot
  * @author Generated documentation
  */

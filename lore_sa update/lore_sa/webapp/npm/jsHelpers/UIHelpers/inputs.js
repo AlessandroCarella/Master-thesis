@@ -341,7 +341,7 @@ Default: ${details.default}`;
 }
 
 /**
- * Creates input controls for dimensionality reduction parameters
+ * Creates input controls for Dimensionality Reduction techniques Parameters
  * @description Generates inputs with tooltips for dimensionality reduction technique parameters
  * @param {HTMLElement} container - The container element to append the input to
  * @param {string} method - Name of the dimensionality reduction method (UMAP, PCA, t-SNE, MDS)
@@ -420,43 +420,81 @@ Default: ${details.default}`;
 
 /**
  * Creates a checkbox toggle for visualization selection
- * @description Generates a checkbox with validation to ensure at least one visualization is selected
+ * @description Generates a checkbox with validation and custom behavior for tree visualizations
  * @param {HTMLElement} container - The container element to append the toggle to
  * @param {string} paramName - Name of the visualization parameter
  * @param {Object} details - Toggle configuration
  * @param {string} details.label - Human-readable label for the visualization
  * @param {boolean} details.default - Default checked state
+ * @param {boolean} [details.alwaysSelected] - Whether the checkbox should always remain checked
+ * @param {boolean} [details.isTreeViz] - Whether this is a tree visualization (radio behavior)
  * @returns {void}
  * @example
  * createVisualizationToggle(container, "scatterPlot", {
- *   label: "2D Scatter Plot", default: true
+ *   label: "Neighborhood 2D projection", default: true, alwaysSelected: true
  * });
  */
 export function createVisualizationToggle(container, paramName, details) {
     const box = document.createElement("div");
     box.className = "feature-box visualization-toggle";
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = `viz-${paramName}`;
-    checkbox.checked = details.default;
-    checkbox.className = "visualization-checkbox";
-
-    checkbox.addEventListener("change", validateVisualizationSelection);
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.id = `viz-${paramName}`;
+    input.checked = details.default;
+    input.className = "visualization-checkbox";
+    
+    // Mark tree visualizations for special handling
+    if (details.isTreeViz) {
+        input.setAttribute("data-tree-viz", "true");
+        input.addEventListener("change", handleTreeVisualizationChange);
+    }
+    
+    // Handle always-selected checkbox (prevent unchecking)
+    if (details.alwaysSelected) {
+        input.addEventListener("click", function(event) {
+            event.preventDefault();
+            this.checked = true;
+            return false;
+        });
+    } else if (!details.isTreeViz) {
+        // Only add validation for non-tree, non-always-selected checkboxes
+        input.addEventListener("change", validateVisualizationSelection);
+    }
 
     box.innerHTML = `
         <label for="viz-${paramName}" class="visualization-label">
             <div class="visualization-label-content">
                 ${details.label}
-                <span class="feature-type">Visualization</span>
             </div>
         </label>
     `;
 
     const label = box.querySelector("label");
-    label.insertBefore(checkbox, label.firstChild);
+    label.insertBefore(input, label.firstChild);
 
     container.querySelector(".feature-section-content").appendChild(box);
+}
+
+/**
+ * Handles tree visualization checkbox changes with radio button behavior
+ * @description When a tree visualization is checked, unchecks all other tree visualizations
+ * @returns {void}
+ * @private
+ */
+function handleTreeVisualizationChange(event) {
+    if (event.target.checked) {
+        // Uncheck all other tree visualizations
+        const allTreeViz = document.querySelectorAll('input[data-tree-viz="true"]');
+        allTreeViz.forEach(checkbox => {
+            if (checkbox !== event.target) {
+                checkbox.checked = false;
+            }
+        });
+    } else {
+        // If trying to uncheck, keep it checked (at least one must be selected)
+        event.target.checked = true;
+    }
 }
 
 /**

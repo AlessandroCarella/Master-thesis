@@ -125,7 +125,7 @@ window.selectDataset = async function (datasetName) {
     appState.featureDescriptor = null;
     appState.instanceProvided = false;
     appState.providedInstance = null;
-    // Reset dimensionality reduction parameters
+    // Reset Dimensionality Reduction techniques Parameters
     appState.dimensionalityReductionParameters = {
         "UMAP": {},
         "PCA": {},
@@ -248,7 +248,8 @@ window.startTraining = async () => {
 };
 
 /**
- * Updates dimensionality reduction parameters in app state
+ * Updates Dimensionality Reduction techniques Parameters
+ in app state
  * @description Collects current UI values and stores them in app state
  * @returns {void}
  * @example
@@ -260,7 +261,7 @@ function updateDimensionalityReductionParameters() {
         const allParams = getAllDimensionalityReductionParameters();
         appState.dimensionalityReductionParameters = { ...appState.dimensionalityReductionParameters, ...allParams };
     } catch (error) {
-        console.warn("Could not update dimensionality reduction parameters:", error);
+        console.warn("Could not update Dimensionality Reduction techniques Parameters:", error);
     }
 }
 

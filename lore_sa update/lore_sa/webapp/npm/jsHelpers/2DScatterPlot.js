@@ -1,5 +1,5 @@
 /**
- * @fileoverview Creates 2D scatter plot visualization with interaction capabilities.
+ * @fileoverview Creates Neighborhood 2D projection visualization with interaction capabilities.
  * Supports PCA and UMAP dimensionality reduction methods with Voronoi diagrams and point highlighting.
  * @author Generated documentation
  * @module ScatterPlot2D
@@ -28,7 +28,7 @@ import { registerScatterPlot } from "./visualizationConnectorHelpers/Highlightin
  */
 
 /**
- * Creates a 2D scatter plot visualization with zoom, tooltips, and highlighting capabilities.
+ * Creates a Neighborhood 2D projection visualization with zoom, tooltips, and highlighting capabilities.
  * Registers the visualization with the highlighting coordinator for cross-visualization interaction.
  * 
  * @param {ScatterPlotData} data - Complete scatter plot data including transformed coordinates
