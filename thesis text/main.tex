@@ -1,0 +1,139 @@
+\PassOptionsToPackage{table, dvipsnames}{xcolor}
+\documentclass[a4paper,12pt,twoside,openright]{report}
+
+% Font and encoding - LOAD FIRST
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Language
+\usepackage[english]{babel}
+
+\let\CheckCommand\providecommand
+\usepackage{microtype}
+\usepackage{pifont}
+\usepackage{titlesec}
+% \titlespacing*{\section}{0pt}{24pt plus 4pt minus 4pt}{0pt plus 2pt minus 2pt}
+\usepackage{geometry}
+
+% Tables
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{amssymb}
+
+% Math packages
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+% Graphics and colors
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{colortbl}
+
+% Algorithms
+\usepackage[ruled,vlined]{algorithm2e}
+
+% TikZ and PGF
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Minted (code highlighting) - loads fvextra
+\usepackage[newfloat]{minted}
+\usemintedstyle{monokai}
+\definecolor{bg}{RGB}{40, 44, 52}
+\SetupFloatingEnvironment{listing}{name=Codice}
+
+% csquotes - LOAD AFTER minted/fvextra
+\usepackage{csquotes}
+
+% Captions and subcaptions
+\usepackage[font=small,skip=1pt]{caption}
+\usepackage{subcaption}
+
+% Layout packages
+\usepackage{lscape}
+\usepackage{adjustbox}
+\usepackage{wrapfig}
+\usepackage{tocloft}
+
+% URL handling
+\sloppy
+
+% Bibliography - LOAD AFTER csquotes
+\usepackage[backend=biber, style=numeric, sorting=none, url=true]{biblatex}
+\addbibresource{references.bib}
+
+% Custom commands
+\newcommand{\walter}[1]{\textcolor{red}{{\bf [Walter: }{#1}{\bf ]}}}
+
+% Hyperref (load last)
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    allcolors=black
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%PARAGRAPHS SHOW%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setcounter{tocdepth}{3}    % Show up to paragraph level in TOC
+\setcounter{secnumdepth}{2} % Number up to paragraph level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%PARAGRAPHS SHOW%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% workaround for listing
+% save the current meaning of \listing
+\let\savedlisting\listing
+% at the right spot, restore the meaning
+\AtBeginDocument{\let\listing\savedlisting}
+%%% end of workaround
+
+\makeatletter
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+    \hbox{}
+    \vspace*{\fill}
+    \vspace{\fill}
+    \thispagestyle{empty}
+    \newpage
+    \if@twocolumn\hbox{}\newpage\fi\fi\fi}
+\makeatother
+
+\newenvironment{preface}{
+    \begin{flushright} % Align text to the right
+    \thispagestyle{plain}
+    \vspace*{\stretch{0.1}} % Adjust this value to move it lower
+    \begin{minipage}{0.45\linewidth} % Adjust width to avoid excessive line breaks
+        \raggedleft % Ensure the text aligns to the right within the minipage
+}
+{\end{minipage}
+    \end{flushright}%
+    \vspace*{\stretch{1}}}
+
+\begin{document}
+% \english
+
+\input{front}
+\pagenumbering{gobble}
+\include{Preface}
+\cleardoublepage
+
+\input{abstract}
+\cleardoublepage
+
+\pagenumbering{roman}
+\tableofcontents
+\cleardoublepage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{structure}
+
+% \bibliography{references}
+\printbibliography
+
+\end{document}
