@@ -111,9 +111,9 @@ function createLinkTooltipContent(sourceId, targetId, treeKind) {
     
     let linkType = "Unknown";
     if (targetId === sourceNode.left_child) {
-        linkType = "False (≤ threshold)";
-    } else if (targetId === sourceNode.right_child) {
         linkType = "True (> threshold)";
+    } else if (targetId === sourceNode.right_child) {
+        linkType = "False (≤ threshold)";
     }
     
     const content = [];

@@ -94,9 +94,9 @@ function determineLinkColor(sourceNode, targetNodeId) {
     }
     
     if (targetNodeId === sourceData.left_child) {
-        return colorScheme.ui.falseLink;
-    } else if (targetNodeId === sourceData.right_child) {
         return colorScheme.ui.trueLink;
+    } else if (targetNodeId === sourceData.right_child) {
+        return colorScheme.ui.falseLink;
     }
     
     return colorScheme.ui.linkStroke;

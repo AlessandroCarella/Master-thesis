@@ -426,18 +426,18 @@ export function populateSurrogateForm(container) {
             alwaysSelected: true,
         },
         blocksTree: {
-            label: "Rule and Counterfactual Rules Centred",
+            label: "Rule and Counterfactual Rules Centered",
             default: true,
             isTreeViz: true,
         },
         classicTree: {
             label: "Tree Layout",
-            default: false,
+            default: true,
             isTreeViz: true,
         },
         treeSpawn: {
-            label: "Rule Centred",
-            default: false,
+            label: "Rule Centered",
+            default: true,
             isTreeViz: true,
         },
     };

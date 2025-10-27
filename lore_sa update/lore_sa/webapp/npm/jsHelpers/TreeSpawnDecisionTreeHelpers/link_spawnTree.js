@@ -70,9 +70,9 @@ function determineLinkColor(sourceNodeId, targetNodeId) {
     }
     
     if (targetNodeId === sourceNode.left_child) {
-        return colorScheme.ui.falseLink;
-    } else if (targetNodeId === sourceNode.right_child) {
         return colorScheme.ui.trueLink;
+    } else if (targetNodeId === sourceNode.right_child) {
+        return colorScheme.ui.falseLink;
     }
     
     return colorScheme.ui.linkStroke; //fallback

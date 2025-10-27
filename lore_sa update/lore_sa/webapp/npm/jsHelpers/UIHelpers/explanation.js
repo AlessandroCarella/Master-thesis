@@ -171,7 +171,7 @@ export const updateVisualizationUI = () => {
             html: `
               <div class="visualization-container">
                 <div class="visualization-header">
-                  <h2>Rule and Counterfactual Rules Centred surrogate model</h2>
+                  <h2>Rule and Counterfactual Rules Centered surrogate model</h2>
                   <div></div> <!-- Empty div to maintain consistent layout -->
                 </div>
                 <div id="blocks-tree-plot"></div>
@@ -201,7 +201,7 @@ export const updateVisualizationUI = () => {
             html: `
               <div class="visualization-container">
                 <div class="visualization-header">
-                  <h2>Rule Centred surrogate model</h2>
+                  <h2>Rule Centered surrogate model</h2>
                   <div></div> <!-- Empty div to maintain consistent layout -->
                 </div>
                 <div id="treespawn-tree-plot"></div>
