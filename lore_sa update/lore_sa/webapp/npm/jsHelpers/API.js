@@ -164,7 +164,7 @@ export const fetchExplanation = async (requestData) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
     });
-    
+    console.log(response)
     return response;
 };
 
