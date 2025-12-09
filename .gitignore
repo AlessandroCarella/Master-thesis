@@ -4,6 +4,7 @@ cache
 webapp cache
 project-structure.txt
 latex/*
+Wextra/*
 
 #### Python ####
 # Byte-compiled / optimized / DLL files
