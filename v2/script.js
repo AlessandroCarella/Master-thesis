@@ -19,6 +19,10 @@ const CONFIG = {
     },
     transition: {
         duration: 600,
+        linkFade: 300,
+        shapeMorph: 400,
+        position: 500,
+        stagger: 100,
     },
 };
 
@@ -369,108 +373,398 @@ function createVisualization() {
     const innerHeight =
         CONFIG.height - CONFIG.margin.top - CONFIG.margin.bottom;
 
-    d3.select("#tree-container").selectAll("*").remove();
+    // First time setup
+    if (!svg) {
+        d3.select("#tree-container").selectAll("*").remove();
 
-    tooltip = d3.select(".tooltip");
-
-    if (currentMode === "classic") {
         svg = d3
             .select("#tree-container")
             .append("svg")
             .attr("width", CONFIG.width)
             .attr("height", CONFIG.height);
 
-        contentGroup = svg
-            .append("g")
-            .attr(
-                "transform",
-                `translate(${CONFIG.margin.left},${CONFIG.margin.top})`
-            );
-
-        renderClassicTree(innerWidth, innerHeight);
-
-        // Add zoom
-        const zoom = d3
-            .zoom()
-            .scaleExtent([0.5, 20])
-            .on("zoom", (event) => {
-                contentGroup.attr(
-                    "transform",
-                    `translate(${CONFIG.margin.left + event.transform.x},${
-                        CONFIG.margin.top + event.transform.y
-                    }) scale(${event.transform.k})`
-                );
-            });
-
-        svg.call(zoom);
-    } else {
-        // For blocks tree, calculate layout first to get proper dimensions
-        const allPaths = getAllPaths(hierarchyRoot);
-        const instancePath = instanceData
-            ? findInstancePath(hierarchyRoot, instanceData)
-            : allPaths[0] || [];
-        const metrics = calculateBlocksMetrics(allPaths);
-        const layout = depthAlignedLayout(allPaths, instancePath, metrics);
-
-        svg = d3
-            .select("#tree-container")
-            .append("svg")
-            .attr("width", CONFIG.width)
-            .attr("height", CONFIG.height)
-            .attr("viewBox", `0 0 ${layout.width} ${layout.height}`)
-            .attr("preserveAspectRatio", "xMidYMid meet");
-
         contentGroup = svg.append("g");
+        tooltip = d3.select(".tooltip");
 
-        renderBlocksTree(allPaths, instancePath, layout.positions, metrics);
-
-        // Add zoom
-        const zoom = d3
-            .zoom()
-            .scaleExtent([0.5, 20])
-            .on("zoom", (event) => {
-                contentGroup.attr("transform", event.transform);
-            });
-
-        svg.call(zoom);
+        // Initial render
+        renderInitial();
+    } else {
+        // Animate transition
+        animateTransition();
     }
 }
 
-// Render classic tree with circles and curves
-function renderClassicTree(innerWidth, innerHeight) {
+// Initial render (first load)
+function renderInitial() {
+    if (currentMode === "classic") {
+        setupClassicLayout();
+    } else {
+        setupBlocksLayout();
+    }
+}
+
+// Animate transition between modes
+function animateTransition() {
+    // Step 1: Fade out links
+    contentGroup
+        .selectAll(".link, .link-highlight")
+        .transition()
+        .duration(CONFIG.transition.linkFade)
+        .style("opacity", 0)
+        .remove();
+
+    // Step 2 & 3: Morph shapes and rearrange (happening together after link fade)
+    setTimeout(() => {
+        if (currentMode === "classic") {
+            transitionToClassic();
+        } else {
+            transitionToBlocks();
+        }
+    }, CONFIG.transition.linkFade);
+}
+
+// Setup classic tree layout
+function setupClassicLayout() {
     const root = d3.hierarchy(hierarchyRoot);
     const treeLayout = d3
         .tree()
-        .size([innerWidth, innerHeight])
+        .size([
+            CONFIG.width - CONFIG.margin.left - CONFIG.margin.right,
+            CONFIG.height - CONFIG.margin.top - CONFIG.margin.bottom,
+        ])
         .separation((a, b) => (a.parent === b.parent ? 1 : 2));
 
     const tree = treeLayout(root);
-    const totalSamples = treeData[0].n_samples;
 
-    // Add links
-    const links = contentGroup
-        .selectAll(".link")
-        .data(tree.links())
-        .join("path")
-        .attr("class", "link")
-        .attr("d", (d) => createCurvedPath(d.source, d.target))
-        .style("stroke", (d) => getLinkColor(d.source, d.target.data.node_id))
-        .style("stroke-width", (d) => {
-            const samples =
-                d.target.data.weighted_n_samples || d.target.data.n_samples;
-            return getStrokeWidth(samples, totalSamples) + "px";
-        })
-        .style("opacity", 0)
-        .on("mouseover", (event, d) => showLinkTooltip(event, d))
-        .on("mousemove", (event) => moveTooltip(event))
-        .on("mouseout", () => hideTooltip());
+    contentGroup.attr(
+        "transform",
+        `translate(${CONFIG.margin.left},${CONFIG.margin.top})`
+    );
 
-    links.transition().duration(CONFIG.transition.duration).style("opacity", 1);
+    // Update viewBox for classic
+    svg.attr("viewBox", null).attr("preserveAspectRatio", null);
 
     // Add nodes
+    renderClassicNodes(tree);
+
+    // Add links after nodes are in place
+    setTimeout(() => {
+        renderClassicLinks(tree);
+        highlightInstancePath(tree);
+    }, CONFIG.transition.stagger);
+
+    // Setup zoom
+    setupZoom("classic");
+}
+
+// Setup blocks tree layout
+function setupBlocksLayout() {
+    const allPaths = getAllPaths(hierarchyRoot);
+    const instancePath = instanceData
+        ? findInstancePath(hierarchyRoot, instanceData)
+        : allPaths[0] || [];
+    const metrics = calculateBlocksMetrics(allPaths);
+    const layout = depthAlignedLayout(allPaths, instancePath, metrics);
+
+    contentGroup.attr("transform", "");
+
+    // Update viewBox for blocks
+    svg.attr("viewBox", `0 0 ${layout.width} ${layout.height}`).attr(
+        "preserveAspectRatio",
+        "xMidYMid meet"
+    );
+
+    // Add nodes
+    renderBlocksNodes(layout.positions, metrics);
+
+    // Add links after nodes are in place
+    setTimeout(() => {
+        renderBlocksLinks(allPaths, layout.positions, metrics);
+    }, CONFIG.transition.stagger);
+
+    // Setup zoom
+    setupZoom("blocks");
+}
+
+// Transition from blocks to classic
+function transitionToClassic() {
+    const root = d3.hierarchy(hierarchyRoot);
+    const treeLayout = d3
+        .tree()
+        .size([
+            CONFIG.width - CONFIG.margin.left - CONFIG.margin.right,
+            CONFIG.height - CONFIG.margin.top - CONFIG.margin.bottom,
+        ])
+        .separation((a, b) => (a.parent === b.parent ? 1 : 2));
+
+    const tree = treeLayout(root);
+
+    // Create lookup for new positions
+    const positionMap = {};
+    tree.descendants().forEach((d) => {
+        positionMap[d.data.node_id] = { x: d.x, y: d.y };
+    });
+
+    // Animate SVG attributes
+    svg.transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .attr("viewBox", null)
+        .attr("preserveAspectRatio", null);
+
+    // Animate content group transform
+    contentGroup
+        .transition()
+        .duration(CONFIG.transition.position)
+        .attr(
+            "transform",
+            `translate(${CONFIG.margin.left},${CONFIG.margin.top})`
+        );
+
+    // Transition nodes
+    const nodes = contentGroup.selectAll(".node");
+
+    // Fade out rectangles and labels
+    nodes
+        .selectAll("rect")
+        .transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .style("opacity", 0);
+
+    nodes
+        .selectAll(".node-label")
+        .transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .style("opacity", 0)
+        .remove();
+
+    // Move and show circles
+    nodes.raise(); // Ensure nodes are on top
+    nodes.each(function (d) {
+        const nodeId = d.id || d.data?.node_id;
+        const newPos = positionMap[nodeId];
+
+        const node = d3.select(this);
+
+        if (!newPos) {
+            // Node doesn't have a position in new layout - keep visible but don't move
+            console.warn("Node missing from positionMap:", nodeId);
+            let circle = node.select("circle");
+            if (circle.empty()) {
+                const nodeData = treeData.find((n) => n.node_id === nodeId);
+                circle = node
+                    .append("circle")
+                    .attr("r", 0)
+                    .style("fill", getNodeColor(nodeData))
+                    .style("stroke", CONFIG.colors.nodeStroke)
+                    .style("stroke-width", CONFIG.node.strokeWidth)
+                    .on("mouseover", (event) =>
+                        showNodeTooltip(event, nodeData)
+                    )
+                    .on("mousemove", (event) => moveTooltip(event))
+                    .on("mouseout", () => hideTooltip());
+            }
+            circle
+                .transition()
+                .delay(CONFIG.transition.shapeMorph)
+                .duration(CONFIG.transition.shapeMorph)
+                .attr("r", CONFIG.node.radius)
+                .style("opacity", 1);
+            return;
+        }
+
+        // Transition position
+        node.transition()
+            .duration(CONFIG.transition.position)
+            .attr("transform", `translate(${newPos.x},${newPos.y})`);
+
+        // Show/create circle
+        let circle = node.select("circle");
+        if (circle.empty()) {
+            const nodeData = treeData.find((n) => n.node_id === nodeId);
+            circle = node
+                .append("circle")
+                .attr("r", 0)
+                .style("fill", getNodeColor(nodeData))
+                .style("stroke", CONFIG.colors.nodeStroke)
+                .style("stroke-width", CONFIG.node.strokeWidth)
+                .on("mouseover", (event) => showNodeTooltip(event, nodeData))
+                .on("mousemove", (event) => moveTooltip(event))
+                .on("mouseout", () => hideTooltip());
+        }
+
+        circle
+            .transition()
+            .delay(CONFIG.transition.shapeMorph)
+            .duration(CONFIG.transition.shapeMorph)
+            .attr("r", CONFIG.node.radius)
+            .style("opacity", 1);
+    });
+
+    // Add links after transition
+    setTimeout(() => {
+        renderClassicLinks(tree);
+        highlightInstancePath(tree);
+    }, CONFIG.transition.linkFade + CONFIG.transition.shapeMorph + CONFIG.transition.position);
+
+    setupZoom("classic");
+}
+
+// Transition from classic to blocks
+function transitionToBlocks() {
+    const allPaths = getAllPaths(hierarchyRoot);
+    const instancePath = instanceData
+        ? findInstancePath(hierarchyRoot, instanceData)
+        : allPaths[0] || [];
+    const metrics = calculateBlocksMetrics(allPaths);
+    const layout = depthAlignedLayout(allPaths, instancePath, metrics);
+
+    // Animate SVG attributes
+    svg.transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .attr("viewBox", `0 0 ${layout.width} ${layout.height}`)
+        .attr("preserveAspectRatio", "xMidYMid meet");
+
+    // Animate content group transform
+    contentGroup
+        .transition()
+        .duration(CONFIG.transition.position)
+        .attr("transform", "");
+
+    // Transition nodes
+    const nodes = contentGroup.selectAll(".node");
+
+    // Fade out circles
+    nodes
+        .selectAll("circle")
+        .transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .attr("r", 0)
+        .style("opacity", 0);
+
+    // Move and show rectangles
+    nodes.raise(); // Ensure nodes are on top
+    nodes.each(function (d) {
+        const nodeId = d.id || d.data?.node_id;
+        const newPos = layout.positions[nodeId];
+
+        const node = d3.select(this);
+        const nodeData = treeData.find((n) => n.node_id === nodeId);
+
+        if (!newPos) {
+            // Node doesn't have a position in new layout - keep visible but don't move
+            console.warn("Node missing from layout.positions:", nodeId);
+            let rect = node.select("rect");
+            if (rect.empty()) {
+                rect = node
+                    .append("rect")
+                    .attr("x", -5)
+                    .attr("y", -5)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("rx", CONFIG.node.borderRadius)
+                    .style("fill", getNodeColor(nodeData))
+                    .style("stroke", CONFIG.colors.nodeStroke)
+                    .style(
+                        "stroke-width",
+                        `${
+                            metrics?.nodeStrokeWidth || CONFIG.node.strokeWidth
+                        }px`
+                    )
+                    .on("mouseover", (event) =>
+                        showNodeTooltip(event, nodeData)
+                    )
+                    .on("mousemove", (event) => moveTooltip(event))
+                    .on("mouseout", () => hideTooltip());
+            }
+            rect.transition()
+                .delay(CONFIG.transition.shapeMorph)
+                .duration(CONFIG.transition.shapeMorph)
+                .attr("x", -CONFIG.node.rectWidth / 2)
+                .attr("y", -CONFIG.node.rectHeight / 2)
+                .attr("width", CONFIG.node.rectWidth)
+                .attr("height", CONFIG.node.rectHeight)
+                .style("opacity", 1);
+            return;
+        }
+
+        // Transition position
+        node.transition()
+            .duration(CONFIG.transition.position)
+            .attr("transform", `translate(${newPos.x},${newPos.y})`);
+
+        // Show/create rectangle
+        let rect = node.select("rect");
+        if (rect.empty()) {
+            rect = node
+                .append("rect")
+                .attr("x", -5)
+                .attr("y", -5)
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("rx", CONFIG.node.borderRadius)
+                .style("fill", getNodeColor(nodeData))
+                .style("stroke", CONFIG.colors.nodeStroke)
+                .style(
+                    "stroke-width",
+                    `${metrics?.nodeStrokeWidth || CONFIG.node.strokeWidth}px`
+                )
+                .on("mouseover", (event) => showNodeTooltip(event, nodeData))
+                .on("mousemove", (event) => moveTooltip(event))
+                .on("mouseout", () => hideTooltip());
+        }
+
+        rect.transition()
+            .delay(CONFIG.transition.shapeMorph)
+            .duration(CONFIG.transition.shapeMorph)
+            .attr("x", -CONFIG.node.rectWidth / 2)
+            .attr("y", -CONFIG.node.rectHeight / 2)
+            .attr("width", CONFIG.node.rectWidth)
+            .attr("height", CONFIG.node.rectHeight)
+            .style("opacity", 1);
+
+        // Add labels
+        setTimeout(() => {
+            if (node.selectAll(".node-label").empty()) {
+                const label = getNodeLabelForDisplay(nodeData);
+                const lines = label.split("\n");
+                const fontSize = Math.min(
+                    14,
+                    80 / Math.max(...lines.map((l) => l.length))
+                );
+
+                lines.forEach((line, i) => {
+                    node.append("text")
+                        .attr("class", "node-label")
+                        .attr(
+                            "y",
+                            (i - (lines.length - 1) / 2) * fontSize * 1.2
+                        )
+                        .style("font-size", `${fontSize}px`)
+                        .style("opacity", 0)
+                        .text(line)
+                        .transition()
+                        .duration(CONFIG.transition.shapeMorph)
+                        .style("opacity", 1);
+                });
+            }
+        }, CONFIG.transition.shapeMorph);
+    });
+
+    // Add links after transition
+    setTimeout(() => {
+        renderBlocksLinks(allPaths, layout.positions, metrics);
+    }, CONFIG.transition.linkFade + CONFIG.transition.shapeMorph + CONFIG.transition.position);
+
+    setupZoom("blocks");
+}
+
+// Render classic tree with circles and curves
+function renderClassicNodes(tree) {
+    const totalSamples = treeData[0].n_samples;
+
     const nodes = contentGroup
         .selectAll(".node")
-        .data(tree.descendants())
+        .data(tree.descendants(), (d) => d.data.node_id)
         .join("g")
         .attr("class", "node")
         .attr("transform", (d) => `translate(${d.x},${d.y})`)
@@ -486,13 +780,105 @@ function renderClassicTree(innerWidth, innerHeight) {
         .on("mousemove", (event) => moveTooltip(event))
         .on("mouseout", () => hideTooltip());
 
-    nodes.transition().duration(CONFIG.transition.duration).style("opacity", 1);
-
-    highlightInstancePath(tree);
+    nodes
+        .raise() // Ensure nodes are on top
+        .transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .style("opacity", 1);
 }
 
-// Render blocks tree with rectangles
-function renderBlocksTree(allPaths, instancePath, nodePositions, metrics) {
+function renderClassicLinks(tree) {
+    const totalSamples = treeData[0].n_samples;
+
+    const links = contentGroup
+        .selectAll(".link")
+        .data(
+            tree.links(),
+            (d) => `${d.source.data.node_id}-${d.target.data.node_id}`
+        )
+        .join("path")
+        .attr("class", "link")
+        .attr("d", (d) => createCurvedPath(d.source, d.target))
+        .style("stroke", (d) => getLinkColor(d.source, d.target.data.node_id))
+        .style("stroke-width", (d) => {
+            const samples =
+                d.target.data.weighted_n_samples || d.target.data.n_samples;
+            return getStrokeWidth(samples, totalSamples) + "px";
+        })
+        .style("opacity", 0)
+        .on("mouseover", (event, d) => showLinkTooltip(event, d))
+        .on("mousemove", (event) => moveTooltip(event))
+        .on("mouseout", () => hideTooltip());
+
+    links
+        .lower() // Push links behind nodes
+        .transition()
+        .duration(CONFIG.transition.linkFade)
+        .style("opacity", 1);
+}
+
+function renderBlocksNodes(nodePositions, metrics) {
+    const nodeData = Object.values(nodePositions);
+
+    const nodes = contentGroup
+        .selectAll(".node")
+        .data(nodeData, (d) => d.id)
+        .join("g")
+        .attr("class", "node")
+        .attr("transform", (d) => `translate(${d.x},${d.y})`)
+        .style("opacity", 0);
+
+    nodes
+        .append("rect")
+        .attr("x", -CONFIG.node.rectWidth / 2)
+        .attr("y", -CONFIG.node.rectHeight / 2)
+        .attr("width", CONFIG.node.rectWidth)
+        .attr("height", CONFIG.node.rectHeight)
+        .attr("rx", CONFIG.node.borderRadius)
+        .style("fill", (d) => {
+            const nd = treeData.find((n) => n.node_id === d.id);
+            return getNodeColor(nd);
+        })
+        .style("stroke", CONFIG.colors.nodeStroke)
+        .style(
+            "stroke-width",
+            `${metrics?.nodeStrokeWidth || CONFIG.node.strokeWidth}px`
+        )
+        .on("mouseover", (event, d) => {
+            const nd = treeData.find((n) => n.node_id === d.id);
+            showNodeTooltip(event, nd);
+        })
+        .on("mousemove", (event) => moveTooltip(event))
+        .on("mouseout", () => hideTooltip());
+
+    // Add labels
+    nodes.each(function (d) {
+        const nd = treeData.find((n) => n.node_id === d.id);
+        const label = getNodeLabelForDisplay(nd);
+        const lines = label.split("\n");
+        const fontSize = Math.min(
+            14,
+            80 / Math.max(...lines.map((l) => l.length))
+        );
+
+        lines.forEach((line, i) => {
+            d3.select(this)
+                .append("text")
+                .attr("class", "node-label")
+                .attr("y", (i - (lines.length - 1) / 2) * fontSize * 1.2)
+                .style("font-size", `${fontSize}px`)
+                .text(line);
+        });
+    });
+
+    nodes
+        .raise() // Ensure nodes are on top
+        .transition()
+        .duration(CONFIG.transition.shapeMorph)
+        .style("opacity", 1);
+}
+
+function renderBlocksLinks(allPaths, nodePositions, metrics) {
     // Create links
     const links = [];
     const linkSet = new Set();
@@ -514,10 +900,9 @@ function renderBlocksTree(allPaths, instancePath, nodePositions, metrics) {
 
     const totalSamples = treeData[0].n_samples;
 
-    // Render links
     const linkElements = contentGroup
         .selectAll(".link")
-        .data(links)
+        .data(links, (d) => `${d.sourceId}-${d.targetId}`)
         .join("line")
         .attr("class", "link")
         .attr("x1", (d) => d.source.x)
@@ -540,67 +925,36 @@ function renderBlocksTree(allPaths, instancePath, nodePositions, metrics) {
         .on("mouseout", () => hideTooltip());
 
     linkElements
+        .lower() // Push links behind nodes
         .transition()
-        .duration(CONFIG.transition.duration)
-        .style("opacity", 1);
-
-    // Render nodes
-    const nodeData = Object.values(nodePositions);
-    const nodeElements = contentGroup
-        .selectAll(".node")
-        .data(nodeData)
-        .join("g")
-        .attr("class", "node")
-        .attr("transform", (d) => `translate(${d.x},${d.y})`)
-        .style("opacity", 0);
-
-    nodeElements
-        .append("rect")
-        .attr("x", -CONFIG.node.rectWidth / 2)
-        .attr("y", -CONFIG.node.rectHeight / 2)
-        .attr("width", CONFIG.node.rectWidth)
-        .attr("height", CONFIG.node.rectHeight)
-        .attr("rx", CONFIG.node.borderRadius)
-        .style("fill", (d) => {
-            const nodeData = treeData.find((n) => n.node_id === d.id);
-            return getNodeColor(nodeData);
-        })
-        .on("mouseover", (event, d) => {
-            const nodeData = treeData.find((n) => n.node_id === d.id);
-            showNodeTooltip(event, nodeData);
-        })
-        .on("mousemove", (event) => moveTooltip(event))
-        .on("mouseout", () => hideTooltip());
-
-    // Add labels
-    nodeElements.each(function (d) {
-        const nodeData = treeData.find((n) => n.node_id === d.id);
-        const label = getNodeLabelForDisplay(nodeData);
-        const lines = label.split("\n");
-        const fontSize = Math.min(
-            14,
-            80 / Math.max(...lines.map((l) => l.length))
-        );
-
-        lines.forEach((line, i) => {
-            d3.select(this)
-                .append("text")
-                .attr("class", "node-label")
-                .attr("y", (i - (lines.length - 1) / 2) * fontSize * 1.2)
-                .style("font-size", `${fontSize}px`)
-                .text(line);
-        });
-    });
-
-    nodeElements
-        .transition()
-        .duration(CONFIG.transition.duration)
+        .duration(CONFIG.transition.linkFade)
         .style("opacity", 1);
 }
 
-// Highlight instance path
+// Setup zoom behavior
+function setupZoom(mode) {
+    const zoom = d3
+        .zoom()
+        .scaleExtent([0.5, 20])
+        .on("zoom", (event) => {
+            if (mode === "classic") {
+                contentGroup.attr(
+                    "transform",
+                    `translate(${CONFIG.margin.left + event.transform.x},${
+                        CONFIG.margin.top + event.transform.y
+                    }) scale(${event.transform.k})`
+                );
+            } else {
+                contentGroup.attr("transform", event.transform);
+            }
+        });
+
+    svg.call(zoom);
+}
+
+// Highlight instance path (classic mode only)
 function highlightInstancePath(tree) {
-    if (!instanceData) return;
+    if (!instanceData || currentMode !== "classic") return;
 
     const path = findInstancePath(hierarchyRoot, instanceData);
     if (!path || path.length < 2) return;
@@ -635,7 +989,7 @@ function highlightInstancePath(tree) {
                 .style("opacity", 0)
                 .lower()
                 .transition()
-                .duration(CONFIG.transition.duration)
+                .duration(CONFIG.transition.linkFade)
                 .style("opacity", 0.6);
         });
 }
