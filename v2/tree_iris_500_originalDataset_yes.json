@@ -1,0 +1,342 @@
+[
+    {
+        "node_id": 0,
+        "feature_name": "petal length (cm)",
+        "feature_index": 2,
+        "threshold": 4.645980358123779,
+        "left_child": 1,
+        "right_child": 8,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.5084172977032355,
+        "n_samples": 551,
+        "weighted_n_samples": 551.0,
+        "value": [
+            [
+                5.0,
+                282.0,
+                264.0
+            ]
+        ]
+    },
+    {
+        "node_id": 1,
+        "feature_name": "petal width (cm)",
+        "feature_index": 3,
+        "threshold": 1.759705901145935,
+        "left_child": 2,
+        "right_child": 3,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.03486121689620303,
+        "n_samples": 283,
+        "weighted_n_samples": 283.0,
+        "value": [
+            [
+                3.0,
+                278.0,
+                2.0
+            ]
+        ]
+    },
+    {
+        "node_id": 2,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "impurity": 0.0,
+        "n_samples": 273,
+        "weighted_n_samples": 273.0,
+        "value": [
+            [
+                0.0,
+                273.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 3,
+        "feature_name": "petal length (cm)",
+        "feature_index": 2,
+        "threshold": 2.745723009109497,
+        "left_child": 4,
+        "right_child": 5,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.62,
+        "n_samples": 10,
+        "weighted_n_samples": 10.0,
+        "value": [
+            [
+                3.0,
+                5.0,
+                2.0
+            ]
+        ]
+    },
+    {
+        "node_id": 4,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "impurity": 0.0,
+        "n_samples": 3,
+        "weighted_n_samples": 3.0,
+        "value": [
+            [
+                3.0,
+                0.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 5,
+        "feature_name": "sepal width (cm)",
+        "feature_index": 1,
+        "threshold": 3.2748444080352783,
+        "left_child": 6,
+        "right_child": 7,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.40816326530612246,
+        "n_samples": 7,
+        "weighted_n_samples": 7.0,
+        "value": [
+            [
+                0.0,
+                5.0,
+                2.0
+            ]
+        ]
+    },
+    {
+        "node_id": 6,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "virginica",
+        "impurity": 0.0,
+        "n_samples": 2,
+        "weighted_n_samples": 2.0,
+        "value": [
+            [
+                0.0,
+                0.0,
+                2.0
+            ]
+        ]
+    },
+    {
+        "node_id": 7,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "impurity": 0.0,
+        "n_samples": 5,
+        "weighted_n_samples": 5.0,
+        "value": [
+            [
+                0.0,
+                5.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 8,
+        "feature_name": "petal width (cm)",
+        "feature_index": 3,
+        "threshold": 1.170282244682312,
+        "left_child": 9,
+        "right_child": 12,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.0439964357317888,
+        "n_samples": 268,
+        "weighted_n_samples": 268.0,
+        "value": [
+            [
+                2.0,
+                4.0,
+                262.0
+            ]
+        ]
+    },
+    {
+        "node_id": 9,
+        "feature_name": "sepal length (cm)",
+        "feature_index": 0,
+        "threshold": 5.733492612838745,
+        "left_child": 10,
+        "right_child": 11,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.48,
+        "n_samples": 5,
+        "weighted_n_samples": 5.0,
+        "value": [
+            [
+                2.0,
+                3.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 10,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "setosa",
+        "impurity": 0.0,
+        "n_samples": 2,
+        "weighted_n_samples": 2.0,
+        "value": [
+            [
+                2.0,
+                0.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 11,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "impurity": 0.0,
+        "n_samples": 3,
+        "weighted_n_samples": 3.0,
+        "value": [
+            [
+                0.0,
+                3.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 12,
+        "feature_name": "petal width (cm)",
+        "feature_index": 3,
+        "threshold": 1.5667255520820618,
+        "left_child": 13,
+        "right_child": 16,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.007575648050427208,
+        "n_samples": 263,
+        "weighted_n_samples": 263.0,
+        "value": [
+            [
+                0.0,
+                1.0,
+                262.0
+            ]
+        ]
+    },
+    {
+        "node_id": 13,
+        "feature_name": "petal length (cm)",
+        "feature_index": 2,
+        "threshold": 5.363146543502808,
+        "left_child": 14,
+        "right_child": 15,
+        "is_leaf": false,
+        "class_label": null,
+        "impurity": 0.4444444444444444,
+        "n_samples": 3,
+        "weighted_n_samples": 3.0,
+        "value": [
+            [
+                0.0,
+                1.0,
+                2.0
+            ]
+        ]
+    },
+    {
+        "node_id": 14,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "versicolor",
+        "impurity": 0.0,
+        "n_samples": 1,
+        "weighted_n_samples": 1.0,
+        "value": [
+            [
+                0.0,
+                1.0,
+                0.0
+            ]
+        ]
+    },
+    {
+        "node_id": 15,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "virginica",
+        "impurity": 0.0,
+        "n_samples": 2,
+        "weighted_n_samples": 2.0,
+        "value": [
+            [
+                0.0,
+                0.0,
+                2.0
+            ]
+        ]
+    },
+    {
+        "node_id": 16,
+        "feature_name": null,
+        "feature_index": null,
+        "threshold": null,
+        "left_child": null,
+        "right_child": null,
+        "is_leaf": true,
+        "class_label": "virginica",
+        "impurity": 0.0,
+        "n_samples": 260,
+        "weighted_n_samples": 260.0,
+        "value": [
+            [
+                0.0,
+                0.0,
+                260.0
+            ]
+        ]
+    }
+]
